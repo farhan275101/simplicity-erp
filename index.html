@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Welcome to Simplicity - ERP by Farhan Jawed</title>
+    
+    <!-- CSS Link (Same Folder) -->
+    <link rel="stylesheet" href="style.css">
+
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+</head>
+<body oncontextmenu="return false;">
+
+    <!-- 1. AUTH SCREEN -->
+    <div id="login-wrapper">
+        <div class="card" id="login-box">
+            <h2>Welcome to Simplicity</h2>
+            <div><span class="creator-tag">by Farhan Jawed</span></div>
+            <p class="card-subtitle">Karkhana Business Management Portal</p>
+            <div class="input-group">
+                <label>User ID ya Mobile No.</label>
+                <input type="text" id="login-id" placeholder="Apna User ID ya Mobile daalein" autocomplete="off" value="">
+            </div>
+            <div class="input-group">
+                <label>Password</label>
+                <input type="password" id="login-pass" placeholder="Apna Password daalein" autocomplete="new-password" value="">
+            </div>
+            <button class="btn" onclick="handleLogin()">Login Karein</button>
+            <div class="auth-links-row">
+                <a onclick="showForgotPassword()">Password Bhool Gaye?</a>
+                <a onclick="showSignup()">Naya Account Banayein</a>
+            </div>
+            <p id="login-error" class="message error"></p>
+        </div>
+
+        <div class="card" id="signup-box" style="display:none;">
+            <h2>Naya Account</h2>
+            <div><span class="creator-tag">by Farhan Jawed</span></div>
+            <p class="card-subtitle">Apna Personal ERP Account Banayein</p>
+            <div class="input-group"><label>Aapka Naam</label><input type="text" id="reg-name" placeholder="Apna naam daalein"></div>
+            <div class="input-group"><label>Mobile</label><input type="tel" id="reg-mobile" placeholder="10-digit mobile number"></div>
+            <div class="input-group"><label>User ID</label><input type="text" id="reg-id" placeholder="ID (jaise: farhan123)"></div>
+            <div class="input-group"><label>Password</label><input type="password" id="reg-pass" placeholder="Password set karein" autocomplete="new-password"></div>
+            <div class="input-group">
+                <label style="color:#b91c1c;">🔒 4-Digit Secret Security PIN</label>
+                <input type="password" maxlength="4" id="reg-pin" placeholder="4-digit PIN daalein" style="border-color:#fca5a5;">
+            </div>
+            <button class="btn" onclick="handleRegister()">Account Banayein</button>
+            <p id="signup-msg" class="message"></p>
+            <div class="auth-links-row" style="justify-content:center; margin-top:15px;">
+                <span>Pehle se account hai? &nbsp;<a onclick="showLogin()">Login Karein</a></span>
+            </div>
+        </div>
+
+        <div class="card" id="forgot-box" style="display:none;">
+            <h2>Password Reset</h2>
+            <div><span class="creator-tag">by Farhan Jawed</span></div>
+            <p class="card-subtitle">Apne 4-Digit Security PIN Se Password Reset Karein</p>
+            <div id="forgot-step-1">
+                <div class="input-group"><label>User ID ya Mobile</label><input type="text" id="forgot-query" placeholder="User ID ya Mobile number"></div>
+                <div class="input-group">
+                    <label style="color:#b91c1c;">🔒 4-Digit Secret PIN</label>
+                    <input type="password" maxlength="4" id="forgot-pin" placeholder="Account PIN" style="border-color:#fca5a5; font-size:16px; letter-spacing:3px;">
+                </div>
+                <button class="btn" onclick="verifyForgotPin()">PIN Verify Karein</button>
+            </div>
+            <div id="forgot-step-2" style="display:none;">
+                <div class="input-group"><label>Naya Password</label><input type="password" id="forgot-new-pass" placeholder="Naya password" autocomplete="new-password"></div>
+                <div class="input-group"><label>Confirm Password</label><input type="password" id="forgot-confirm-pass" placeholder="Password dobara daalein" autocomplete="new-password"></div>
+                <button class="btn" onclick="saveNewPassword()">Update Password</button>
+            </div>
+            <p id="forgot-msg" class="message"></p>
+            <div class="auth-links-row" style="justify-content:center; margin-top:15px;"><a onclick="showLogin()">← Wapas Login Par Jayein</a></div>
+        </div>
+    </div>
+
+    <!-- 2. DESKTOP WORKSPACE -->
+    <div id="desktop-screen">
+        <div class="navbar">
+            <div class="navbar-brand">
+                <span style="font-size:24px;">✨</span>
+                <div>
+                    <h2>Welcome to Simplicity</h2>
+                    <p>Karkhana & Business ERP Dashboard • <strong>Created by Farhan Jawed</strong></p>
+                </div>
+            </div>
+            <div class="navbar-user-area">
+                <button id="nav-admin-btn" class="admin-nav-btn" onclick="openAdminModule()">👑 Admin Control</button>
+                <button class="profile-btn" onclick="openProfileModal()">👤 Profile & Settings</button>
+                <button class="logout-btn" onclick="logout()">Logout</button>
+            </div>
+        </div>
+
+        <div class="main-container">
+            <div class="welcome-banner">
+                <div>
+                    <h3 id="welcome-text">Swagat hai!</h3>
+                    <p id="welcome-sub-text">Kariger, Saree, Bana, Zari, Sancha aur Payments hisab.</p>
+                </div>
+                <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+                    <span id="cloud-status-badge" class="sync-badge">🟢 Cloud Synced</span>
+                    <button class="add-btn" style="padding:6px 12px; font-size:12px; background:#0284c7;" onclick="syncToGoogleDrive()">☁️ Save</button>
+                    <button class="add-btn" style="padding:6px 12px; font-size:12px; background:#475569;" onclick="document.getElementById('banner-restore-input').click()">📥 Restore</button>
+                    <input type="file" id="banner-restore-input" style="display:none;" accept=".json" onchange="restoreBackupFile(event)">
+                </div>
+            </div>
+
+            <!-- DASHBOARD HOME VIEW -->
+            <div id="dashboard-view">
+                <div class="menu-grid">
+                    <div class="menu-btn" style="border-top:4px solid #14b8a6;" onclick="openKarigerModule()">
+                        <span class="icon">🧵</span>
+                        <span class="title">1. Kariger Master</span>
+                        <span class="menu-badge badge-kar-btn" id="btn-total-kariger">Total: 0</span>
+                    </div>
+                    <div class="menu-btn" style="border-top:4px solid #6366f1;" onclick="openInfoModule()">
+                        <span class="icon">📋</span>
+                        <span class="title">2. Information Ledger</span>
+                        <span class="menu-badge badge-info-btn" id="btn-total-info">Total: 0</span>
+                    </div>
+                    <div class="menu-btn" style="border-top:4px solid #10b981;" onclick="openBanaModule()">
+                        <span class="icon">🧶</span>
+                        <span class="title">3. Bana Stock</span>
+                        <span class="menu-badge badge-bana-btn" id="btn-total-bana">Bacha: 0</span>
+                    </div>
+                    <div class="menu-btn" style="border-top:4px solid #f97316;" onclick="openZariModule()">
+                        <span class="icon">✨</span>
+                        <span class="title">4. Zari Stock</span>
+                        <span class="menu-badge badge-zari-btn" id="btn-total-zari">Bacha: 0</span>
+                    </div>
+                    <div class="menu-btn" style="border-top:4px solid #2563eb;" onclick="openSareeModule()">
+                        <span class="icon">🥻</span>
+                        <span class="title">5. Saree Stock</span>
+                        <span class="menu-badge badge-saree-btn" id="btn-total-saree">Stock: 0</span>
+                    </div>
+                    <div class="menu-btn" style="border-top:4px solid #8b5cf6;" onclick="openPaymentModule()">
+                        <span class="icon">💳</span>
+                        <span class="title">6. Payments (Kariger Hisab)</span>
+                        <span class="menu-badge badge-pay-btn" id="btn-total-payment">Baki: ₹ 0</span>
+                    </div>
+                    <div class="menu-btn" style="border-top:4px solid #0284c7;" onclick="openSanchaModule()">
+                        <span class="icon">⚙️</span>
+                        <span class="title">7. Sancha Stock</span>
+                        <span class="menu-badge badge-sancha-btn" id="btn-total-sancha">Bacha: 0</span>
+                    </div>
+                </div>
+
+                <!-- ROZANA DAY-BOOK -->
+                <div class="daybook-container">
+                    <div class="daybook-header">
+                        <div>
+                            <h3 style="color:#1e3a8a; font-size:18px; font-weight:800;">📖 Rozana Day-Book</h3>
+                            <p style="color:#64748b; font-size:13px; margin-top:3px;">Rozana aane aur jane wale maal ka register</p>
+                        </div>
+                        <div class="daily-controls">
+                            <label style="font-size:12px; font-weight:700; color:#475569;">Tarikh:</label>
+                            <input type="date" id="dash-day-date" onchange="renderDashboardDayBook()">
+                            <button class="today-btn" onclick="setDashboardToday()">📅 Aaj</button>
+                        </div>
+                    </div>
+                    <div class="daybook-btn-grid">
+                        <button class="daybook-tab-btn active" id="btn-tab-bana" onclick="switchDayBookTab('bana')">
+                            <span class="day-icon">🧶</span>
+                            <div><div class="day-title">Bana</div><div class="day-sub" id="sub-day-bana">-</div></div>
+                        </button>
+                        <button class="daybook-tab-btn" id="btn-tab-zari" onclick="switchDayBookTab('zari')">
+                            <span class="day-icon">✨</span>
+                            <div><div class="day-title">Zari</div><div class="day-sub" id="sub-day-zari">-</div></div>
+                        </button>
+                        <button class="daybook-tab-btn" id="btn-tab-saree" onclick="switchDayBookTab('saree')">
+                            <span class="day-icon">🥻</span>
+                            <div><div class="day-title">Saree</div><div class="day-sub" id="sub-day-saree">-</div></div>
+                        </button>
+                        <button class="daybook-tab-btn" id="btn-tab-payment" onclick="switchDayBookTab('payment')">
+                            <span class="day-icon">💳</span>
+                            <div><div class="day-title">Payment</div><div class="day-sub" id="sub-day-payment">-</div></div>
+                        </button>
+                    </div>
+                    <div class="table-responsive">
+                        <table>
+                            <thead id="dash-daybook-thead"></thead>
+                            <tbody id="dash-daybook-tbody"></tbody>
+                            <tfoot id="dash-daybook-tfoot"></tfoot>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="creator-footer">
+                    Simplicity ERP System • Crafted with pride by <span>Farhan Jawed</span>
+                </div>
+            </div>
+
+            <!-- MODULE: ADMIN CONTROL PANEL -->
+            <div id="admin-section" class="module-section">
+                <div class="module-header">
+                    <button class="back-btn" onclick="backToDashboard()">← Dashboard Wapas</button>
+                    <h2 style="color:#d97706; font-size:19px; font-weight:700;">👑 Admin Control Panel</h2>
+                    <button class="add-btn" style="background:#1e3a8a;" onclick="refreshAdminUsersList()">🔄 Refresh</button>
+                </div>
+                <div class="summary-bar">
+                    <div class="summary-box"><span>TOTAL USERS</span><h3 id="admin-total-users" style="color:#2563eb;">0</h3></div>
+                    <div class="summary-box"><span>ACTIVE</span><h3 id="admin-active-users" style="color:#10b981;">0</h3></div>
+                    <div class="summary-box"><span>BLOCKED / EXPIRED</span><h3 id="admin-blocked-users" style="color:#ef4444;">0</h3></div>
+                </div>
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr style="background:#d97706; color:white;">
+                                <th>S.No.</th><th>Naam</th><th>Mobile</th><th>User ID</th><th>Password</th><th>Join Date</th><th>Auto-Block Date</th><th>Status</th><th style="text-align:center;">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="admin-users-table-body"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- MODULE: SANCHA -->
+            <div id="sancha-section" class="module-section">
+                <div class="module-header">
+                    <button class="back-btn" onclick="backToDashboard()">← Dashboard Wapas</button>
+                    <h2 style="color:#0284c7; font-size:19px; font-weight:700;">⚙️ Sancha Stock</h2>
+                    <button class="add-btn" style="background:#0284c7;" onclick="toggleAddSanchaItemForm()">+ Naya Item</button>
+                </div>
+                <div id="add-sancha-item-form" class="custom-form">
+                    <h4 style="color:#0284c7; margin-bottom:10px;">➕ Naya Sancha Item Banayein:</h4>
+                    <div class="form-row-3">
+                        <div class="input-group"><label>Date</label><input type="date" id="sancha-new-item-date"></div>
+                        <div class="input-group"><label>Naam</label><input type="text" id="sancha-new-item-name" placeholder="Jaise: Fancy, Resham"></div>
+                        <div class="input-group"><label>Starting Stock</label><input type="number" step="any" id="sancha-new-item-qty" placeholder="0"></div>
+                    </div>
+                    <button class="add-btn" style="background:#0284c7;" onclick="saveNewSanchaItem()">Save Item</button>
+                </div>
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr style="background:#0284c7;"><th>Date</th><th>Item Naam</th><th>Aaya</th><th>Tani Gaya</th><th>Bacha</th><th style="text-align:center;">Action</th></tr>
+                        </thead>
+                        <tbody id="sancha-table-body"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- MODULE: INFO LEDGER -->
+            <div id="info-section" class="module-section">
+                <div class="module-header">
+                    <button class="back-btn" onclick="backToDashboard()">← Dashboard Wapas</button>
+                    <h2 style="color:#4f46e5; font-size:19px; font-weight:700;">📋 Kariger Saree Information Ledger</h2>
+                    <button class="add-btn" style="background:#4f46e5;" onclick="toggleInfoForm()">+ Nayi Detail</button>
+                </div>
+                <div class="filter-panel">
+                    <input type="text" id="search-info-input" class="search-box" placeholder="🔍 Search any column..." oninput="searchInfoLedger()">
+                </div>
+                <div id="add-info-form" class="custom-form">
+                    <input type="hidden" id="info-edit-id">
+                    <div class="form-row-3">
+                        <div class="input-group"><label>Kariger</label><input type="text" id="info-name"></div>
+                        <div class="input-group"><label>Saree</label><input type="text" id="info-saree"></div>
+                        <div class="input-group"><label>Bana</label><input type="text" id="info-bana"></div>
+                    </div>
+                    <div class="form-row-3">
+                        <div class="input-group"><label>Zari</label><input type="text" id="info-zari"></div>
+                        <div class="input-group"><label>Bani (₹)</label><input type="number" id="info-bani" placeholder="240"></div>
+                        <div class="input-group"><label>Address</label><input type="text" id="info-address"></div>
+                    </div>
+                    <div class="form-row-3">
+                        <div class="input-group"><label>Booti</label><input type="text" id="info-booti"></div>
+                        <div class="input-group"><label>Kadi</label><input type="text" id="info-kadi" placeholder="5 Kadi"></div>
+                        <div class="input-group"><label>Dhaga</label><input type="text" id="info-dhaga"></div>
+                    </div>
+                    <div style="display:flex; gap:10px;">
+                        <button class="add-btn" style="background:#4f46e5;" id="info-save-btn" onclick="saveInfoLedgerEntry()">Save</button>
+                        <button class="reset-btn" id="info-cancel-btn" style="display:none;" onclick="cancelInfoEdit()">Cancel</button>
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr style="background:#4f46e5;"><th>S.No.</th><th>Name</th><th>Saree</th><th>Bana</th><th>Zari</th><th>Bani (₹)</th><th>Address</th><th>Booti</th><th>Kadi</th><th>Dhaga</th><th style="text-align:center;">Action</th></tr>
+                        </thead>
+                        <tbody id="info-table-body"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- MODULE: KARIGER MASTER -->
+            <div id="kariger-section" class="module-section">
+                <div class="module-header">
+                    <button class="back-btn" onclick="backToDashboard()">← Dashboard Wapas</button>
+                    <h2 style="color:#0f766e; font-size:19px; font-weight:700;">🧵 Kariger Master List</h2>
+                    <button class="add-btn" style="background:#0f766e;" onclick="toggleKarigerForm()">+ Naya Kariger</button>
+                </div>
+                
+                <!-- INACTIVE / ABSENT FILTER PANEL -->
+                <div class="filter-panel" style="background:#fff7ed; border-color:#fed7aa;">
+                    <input type="text" id="search-kariger-input" class="search-box" placeholder="🔍 Search Kariger, Saree..." oninput="searchKariger()">
+                    
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <label style="font-size:12px; font-weight:700; color:#c2410c;">⚠️ Kitne din se nahi aaya?</label>
+                        <select id="kariger-absent-filter" onchange="filterInactiveKarigers()" style="padding:8px 12px; border-radius:6px; border:1px solid #fdba74; font-size:12px; font-weight:700; background:white; color:#9a3412;">
+                            <option value="0">Sabhi Kariger Dekhein</option>
+                            <option value="15">15+ Din se nahi aaye</option>
+                            <option value="20">20+ Din se nahi aaye</option>
+                            <option value="30">30+ Din se nahi aaye</option>
+                            <option value="40">40+ Din se nahi aaye</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div id="add-kariger-form" class="custom-form">
+                    <input type="hidden" id="kar-edit-id">
+                    <div class="form-row-3">
+                        <div class="input-group"><label>Kariger Naam</label><input type="text" id="kar-name"></div>
+                        <div class="input-group"><label>Saree</label><input type="text" id="kar-saree"></div>
+                        <div class="input-group"><label>Joining Date</label><input type="date" id="kar-date"></div>
+                    </div>
+                    <div style="display:flex; gap:10px;">
+                        <button class="add-btn" style="background:#0f766e;" id="kar-save-btn" onclick="saveNewKariger()">Save</button>
+                        <button class="reset-btn" id="kar-cancel-btn" style="display:none;" onclick="cancelKarigerEdit()">Cancel</button>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr style="background:#0f766e;">
+                                <th>Kariger Naam</th>
+                                <th>Saree</th>
+                                <th>Aakhiri Entry (Last Date)</th>
+                                <th>Status / Kitne Din Hue</th>
+                                <th style="text-align:center;">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="kariger-table-body"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- MODULE: KARIGER KHATA SHEET -->
+            <div id="kariger-sheet-section" class="module-section">
+                <div class="module-header">
+                    <div style="display:flex; gap:10px; align-items:center;">
+                        <button class="back-btn" onclick="closeKarigerSheet()">⬅️ Wapas Kariger List</button>
+                        <button class="back-btn" style="background:#475569;" onclick="backToDashboard()">🏠 Dashboard</button>
+                    </div>
+                    <h2 style="color:#1e3a8a; font-size:18px; font-weight:700;">📊 Kariger Khata Sheet</h2>
+                    <div style="display:flex; gap:8px;">
+                        <button class="print-btn" onclick="window.print()">🖨️ Print</button>
+                        <button class="whatsapp-btn" onclick="shareSheetOnWhatsApp()">📲 WhatsApp Bhejo</button>
+                    </div>
+                </div>
+                <div class="ledger-box">
+                    <div class="ledger-top-banner">
+                        <span id="sheet-banner-name">KARIGER KHATA</span>
+                        <span id="sheet-active-badge" style="font-size:12px; background:rgba(255,255,255,0.25); padding:3px 8px; border-radius:4px;">Tani 1</span>
+                    </div>
+                    <div class="sheet-tabs-bar">
+                        <div class="sheet-tabs-list" id="tani-tabs-container"></div>
+                        <button class="add-sheet-btn" onclick="addNewTaniSheet()">➕ Add Tani</button>
+                    </div>
+                    <div class="tani-closing-grid">
+                        <div><label>PICHLA BANA (Closing):</label><input type="number" step="any" id="tani-bana" value="0" oninput="saveCurrentSheetConfig()"></div>
+                        <div><label>PICHLA ZARI (Closing):</label><input type="number" step="any" id="tani-zari" value="0" oninput="saveCurrentSheetConfig()"></div>
+                        <div><label>PICHLA BAKI (₹ Bani):</label><input type="number" step="any" id="tani-bani" value="0" oninput="saveCurrentSheetConfig()"></div>
+                        <div><label>NOTE:</label><input type="text" id="tani-note" oninput="saveCurrentSheetConfig()"></div>
+                    </div>
+                    <div style="display:flex; gap:12px; background:#f8fafc; padding:10px 14px; border-radius:8px; font-size:13px; margin-bottom:12px; align-items:center; flex-wrap:wrap; border:1px solid #e2e8f0;">
+                        <strong style="color:#1e3a8a;">⚙️ Rate:</strong>
+                        <div>Bana/Saree: <input type="number" step="any" id="rate-bana" style="width:70px; padding:4px;" value="0.311" oninput="saveCurrentSheetConfig()"></div>
+                        <div>Zari/Saree: <input type="number" step="any" id="rate-zari" style="width:70px; padding:4px;" value="0.110" oninput="saveCurrentSheetConfig()"></div>
+                        <div>Bani/Saree: <input type="number" step="any" id="rate-bani" style="width:70px; padding:4px; font-weight:700; color:#b91c1c;" value="240" oninput="saveCurrentSheetConfig()"></div>
+                    </div>
+
+                    <div style="background:#f0f9ff; border:1px solid #bae6fd; border-radius:10px; padding:12px; margin-bottom:14px; display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:10px;">
+                        <div>
+                            <label style="font-size:11px; font-weight:700; color:#059669;">Bana Item:</label>
+                            <input type="text" id="line-bana-name" list="sheet-bana-dl" oninput="updateLiveStockDisplay()" style="width:100%; padding:6px; font-size:12px; border:1px solid #cbd5e1; border-radius:6px; margin-top:3px;">
+                            <datalist id="sheet-bana-dl"></datalist>
+                            <span id="live-bana-stock-badge" style="font-size:11px; font-weight:700; color:#059669; display:block; margin-top:2px;">Bacha: 0.00</span>
+                        </div>
+                        <div>
+                            <label style="font-size:11px; font-weight:700; color:#ea580c;">Zari Item:</label>
+                            <input type="text" id="line-zari-name" list="sheet-zari-dl" oninput="updateLiveStockDisplay()" style="width:100%; padding:6px; font-size:12px; border:1px solid #cbd5e1; border-radius:6px; margin-top:3px;">
+                            <datalist id="sheet-zari-dl"></datalist>
+                            <span id="live-zari-stock-badge" style="font-size:11px; font-weight:700; color:#ea580c; display:block; margin-top:2px;">Bacha: 0.00</span>
+                        </div>
+                        <div>
+                            <label style="font-size:11px; font-weight:700; color:#0284c7;">Sancha Item:</label>
+                            <input type="text" id="line-sancha-name" list="sheet-sancha-dl" oninput="updateLiveStockDisplay()" style="width:100%; padding:6px; font-size:12px; border:1px solid #cbd5e1; border-radius:6px; margin-top:3px;">
+                            <datalist id="sheet-sancha-dl"></datalist>
+                            <span id="live-sancha-stock-badge" style="font-size:11px; font-weight:700; color:#0284c7; display:block; margin-top:2px;">Bacha: 0.00</span>
+                        </div>
+                    </div>
+
+                    <div id="add-line-form" style="background:#f8fafc; border:1px solid #cbd5e1; padding:15px; border-radius:10px; margin-bottom:14px;">
+                        <strong style="font-size:13px; color:#1e3a8a; display:block; margin-bottom:10px;">➕ Nayi Line Entry Jodein:</strong>
+                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px;">
+                            <div><label style="font-size:11px; font-weight:700;">DATE</label><input type="date" id="line-date" style="width:100%; padding:7px; font-size:12px; border:1px solid #cbd5e1; border-radius:6px;"></div>
+                            <div><label style="font-size:11px; font-weight:700; color:#2563eb;">SAREE (Pcs Aayi)</label><input type="number" id="line-saree" placeholder="0" style="width:100%; padding:7px; font-size:12px; font-weight:bold; border:1px solid #93c5fd; border-radius:6px;"></div>
+                        </div>
+                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px;">
+                            <div><label style="font-size:11px; font-weight:700;">SANCHA</label><input type="text" id="line-entry-sancha" list="sheet-sancha-dl" style="width:100%; padding:7px; font-size:12px; border:1px solid #cbd5e1; border-radius:6px;"></div>
+                            <div><label style="font-size:11px; font-weight:700;">TANI NAME</label><input type="text" id="line-tani-name" placeholder="Tani-1" style="width:100%; padding:7px; font-size:12px; border:1px solid #cbd5e1; border-radius:6px;"></div>
+                        </div>
+                        <div style="margin-bottom:10px;"><label style="font-size:11px; font-weight:700;">TANI WAZAN (Kg)</label><input type="number" step="any" id="line-tani-wazan" placeholder="0" style="width:100%; padding:7px; font-size:12px; border:1px solid #cbd5e1; border-radius:6px;"></div>
+                        <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-bottom:10px; background:#f0fdf4; padding:8px; border-radius:8px;">
+                            <div><label style="font-size:10px; font-weight:700;">BANA CONE</label><input type="number" step="any" id="line-bana-cone" placeholder="0" style="width:100%; padding:6px; border:1px solid #cbd5e1; border-radius:6px;"></div>
+                            <div><label style="font-size:10px; font-weight:700;">BANA TP</label><input type="number" step="any" id="line-bana-tp" placeholder="0" style="width:100%; padding:6px; border:1px solid #cbd5e1; border-radius:6px;"></div>
+                            <div><label style="font-size:10px; font-weight:700; color:#dc2626;">LESS TP</label><input type="number" step="any" id="line-bana-less" placeholder="0" style="width:100%; padding:6px; border:1px solid #cbd5e1; border-radius:6px;"></div>
+                        </div>
+                        <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-bottom:10px; background:#fff7ed; padding:8px; border-radius:8px;">
+                            <div><label style="font-size:10px; font-weight:700;">ZARI QTY</label><input type="number" step="any" id="line-zari" placeholder="0" style="width:100%; padding:6px; border:1px solid #cbd5e1; border-radius:6px;"></div>
+                            <div><label style="font-size:10px; font-weight:700;">ZARI TP</label><input type="number" step="any" id="line-zari-tp" placeholder="0" style="width:100%; padding:6px; border:1px solid #cbd5e1; border-radius:6px;"></div>
+                            <div><label style="font-size:10px; font-weight:700; color:#dc2626;">TOPI</label><input type="number" step="any" id="line-zari-topi" placeholder="0" style="width:100%; padding:6px; border:1px solid #cbd5e1; border-radius:6px;"></div>
+                        </div>
+                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px;">
+                            <div><label style="font-size:11px; font-weight:700; color:#059669;">PAID (₹ Diya)</label><input type="number" id="line-paid" placeholder="0" style="width:100%; padding:7px; border:1px solid #cbd5e1; border-radius:6px;"></div>
+                            <div><label style="font-size:11px; font-weight:700; color:#dc2626;">LOTT (Damage)</label><input type="number" id="line-lott" placeholder="0" style="width:100%; padding:7px; border:1px solid #cbd5e1; border-radius:6px;"></div>
+                        </div>
+                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:12px;">
+                            <div><label style="font-size:11px; font-weight:700;">RET. BANA</label><input type="number" step="any" id="line-ret-bana" placeholder="0" style="width:100%; padding:7px; border:1px solid #cbd5e1; border-radius:6px;"></div>
+                            <div><label style="font-size:11px; font-weight:700;">RET. ZARI</label><input type="number" step="any" id="line-ret-zari" placeholder="0" style="width:100%; padding:7px; border:1px solid #cbd5e1; border-radius:6px;"></div>
+                        </div>
+                        <button class="add-btn" style="background:#2563eb; width:100%; padding:10px; font-weight:700;" onclick="addSheetLineRow()">+ Line Jodein & Stock Adjust Karein</button>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="sheet-table">
+                            <thead>
+                                <tr style="background:#1e3a8a; color:white;">
+                                    <th>DATE</th><th>SAREE</th><th>SANCHA</th><th>TANI</th><th>WAZAN</th><th>NET BANA</th><th>NET ZARI</th><th>PAID</th><th>LOTT</th><th>RET.B</th><th>RET.Z</th><th>DEL</th>
+                                </tr>
+                            </thead>
+                            <tbody id="sheet-rows-body"></tbody>
+                            <tfoot>
+                                <tr>
+                                    <td>TOTAL</td><td id="tot-saree">0</td><td>-</td><td>-</td><td id="tot-tani-wazan">0</td><td id="tot-bana-net">0</td><td id="tot-zari-net">0</td><td id="tot-paid">0</td><td id="tot-lott">0</td><td id="tot-ret-bana">0</td><td id="tot-ret-zari">0</td><td>-</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+
+                    <div class="sheet-calculations-grid">
+                        <div class="calc-card" style="border-top:4px solid #8b5cf6;">
+                            <h4>💰 Mazdoori Hisab:</h4>
+                            <div class="calc-row"><span>Total Saree:</span><strong id="calc-tot-saree">0</strong></div>
+                            <div class="calc-row"><span>Lott:</span><strong id="calc-tot-lott">- 0</strong></div>
+                            <div class="calc-row"><span>Net Saree:</span><strong id="calc-net-saree">0</strong></div>
+                            <div class="calc-row"><span>Bani Rate:</span><strong id="calc-bani-rate">₹ 240</strong></div>
+                            <div class="calc-row"><span>Gross Bani:</span><strong id="calc-gross-bani">₹ 0</strong></div>
+                            <div class="calc-row"><span>Last Closing:</span><strong id="calc-last-tani-bani">+ ₹ 0</strong></div>
+                            <div class="calc-row"><span>Paid:</span><strong id="calc-tot-paid">- ₹ 0</strong></div>
+                            <div class="highlight-baki"><div class="calc-row" style="margin:0;"><span>REMAINING:</span><strong id="calc-remaining-amt" style="color:#dc2626; font-size:14px;">₹ 0</strong></div></div>
+                        </div>
+                        <div class="calc-card" style="border-top:4px solid #10b981;">
+                            <h4>🧶 Bana Hisab:</h4>
+                            <div class="calc-row"><span>Closing Last:</span><strong id="calc-last-tani-bana">0</strong></div>
+                            <div class="calc-row"><span>Net Diya:</span><strong id="calc-tot-bana">0</strong></div>
+                            <div class="calc-row"><span>Returning:</span><strong id="calc-ret-bana">- 0</strong></div>
+                            <div class="calc-row"><span>Khapat:</span><strong id="calc-bana-consumption">0</strong></div>
+                            <div class="highlight-baki" style="border-color:#10b981; background:#ecfdf5;"><div class="calc-row" style="margin:0;"><span>BACHA BANA:</span><strong id="calc-remaining-bana" style="color:#059669; font-size:14px;">0</strong></div></div>
+                        </div>
+                        <div class="calc-card" style="border-top:4px solid #f97316;">
+                            <h4>✨ Zari Hisab:</h4>
+                            <div class="calc-row"><span>Closing Last:</span><strong id="calc-last-tani-zari">0</strong></div>
+                            <div class="calc-row"><span>Net Diya:</span><strong id="calc-tot-zari">0</strong></div>
+                            <div class="calc-row"><span>Returning:</span><strong id="calc-ret-zari">- 0</strong></div>
+                            <div class="calc-row"><span>Khapat:</span><strong id="calc-zari-consumption">0</strong></div>
+                            <div class="highlight-baki" style="border-color:#f97316; background:#fff7ed;"><div class="calc-row" style="margin:0;"><span>BACHI ZARI:</span><strong id="calc-remaining-zari" style="color:#ea580c; font-size:14px;">0</strong></div></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MODULE: BANA -->
+            <div id="bana-section" class="module-section">
+                <div class="module-header">
+                    <button class="back-btn" onclick="backToDashboard()">← Dashboard Wapas</button>
+                    <h2 style="color:#059669; font-size:19px; font-weight:700;">🧶 Bana Stock (Live Sheet Sync)</h2>
+                    <button class="add-btn" onclick="toggleBanaForm()">+ Naya Stock (Aaya)</button>
+                </div>
+                <div class="filter-panel">
+                    <div class="filter-date-group">
+                        <label>From:</label><input type="date" id="bana-from-date">
+                        <label>To:</label><input type="date" id="bana-to-date">
+                        <button class="filter-btn" onclick="filterBana()">Filter</button>
+                        <button class="reset-btn" onclick="resetBanaFilter()">Reset</button>
+                    </div>
+                    <input type="text" id="search-bana-input" class="search-box" placeholder="🔍 Search Bana Name..." oninput="filterBana()">
+                </div>
+                <div id="add-bana-form" class="custom-form">
+                    <div class="form-row-3">
+                        <div class="input-group"><label>Date</label><input type="date" id="bana-date"></div>
+                        <div class="input-group"><label>Bana Name</label><input type="text" id="bana-name"></div>
+                        <div class="input-group"><label>Kitna Aaya (Qty)</label><input type="number" step="any" id="bana-aaya"></div>
+                    </div>
+                    <button class="add-btn" onclick="saveNewBana()">Save Entry</button>
+                </div>
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr style="background:#059669;"><th>Date</th><th>Bana Name</th><th>Kul Aaya</th><th>Sheets Gaya</th><th>Bacha Stock</th><th>Quick Diya</th><th style="text-align:center;">Passbook</th></tr>
+                        </thead>
+                        <tbody id="bana-table-body"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- MODULE: ZARI -->
+            <div id="zari-section" class="module-section">
+                <div class="module-header">
+                    <button class="back-btn" onclick="backToDashboard()">← Dashboard Wapas</button>
+                    <h2 style="color:#ea580c; font-size:19px; font-weight:700;">✨ Zari Stock (Live Sheet Sync)</h2>
+                    <button class="add-btn" style="background:#ea580c;" onclick="toggleZariForm()">+ Naya Stock (Aaya)</button>
+                </div>
+                <div class="filter-panel">
+                    <div class="filter-date-group">
+                        <label>From:</label><input type="date" id="zari-from-date">
+                        <label>To:</label><input type="date" id="zari-to-date">
+                        <button class="filter-btn" style="background:#ea580c;" onclick="filterZari()">Filter</button>
+                        <button class="reset-btn" onclick="resetZariFilter()">Reset</button>
+                    </div>
+                    <input type="text" id="search-zari-input" class="search-box" placeholder="🔍 Search Zari Name..." oninput="filterZari()">
+                </div>
+                <div id="add-zari-form" class="custom-form">
+                    <div class="form-row-3">
+                        <div class="input-group"><label>Date</label><input type="date" id="zari-date"></div>
+                        <div class="input-group"><label>Zari Name</label><input type="text" id="zari-name"></div>
+                        <div class="input-group"><label>Kitni Aayi (Qty)</label><input type="number" step="any" id="zari-aaya"></div>
+                    </div>
+                    <button class="add-btn" style="background:#ea580c;" onclick="saveNewZari()">Save Entry</button>
+                </div>
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr style="background:#ea580c;"><th>Date</th><th>Zari Name</th><th>Kul Aayi</th><th>Sheets Gayi</th><th>Bachi Stock</th><th>Quick Diya</th><th style="text-align:center;">Passbook</th></tr>
+                        </thead>
+                        <tbody id="zari-table-body"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- MODULE: SAREE -->
+            <div id="saree-section" class="module-section">
+                <div class="module-header">
+                    <button class="back-btn" onclick="backToDashboard()">← Dashboard Wapas</button>
+                    <h2 style="color:#2563eb; font-size:19px; font-weight:700;">🥻 Saree Stock Management</h2>
+                    <button class="add-btn" style="background:#2563eb;" onclick="toggleAddForm()">+ New Saree</button>
+                </div>
+                <div class="filter-panel">
+                    <div class="filter-date-group">
+                        <label>From:</label><input type="date" id="saree-from-date">
+                        <label>To:</label><input type="date" id="saree-to-date">
+                        <button class="filter-btn" onclick="filterSaree()">Filter</button>
+                        <button class="reset-btn" onclick="resetSareeFilter()">Reset</button>
+                    </div>
+                    <input type="text" id="search-saree-input" class="search-box" placeholder="🔍 Search Saree, Kariger..." oninput="filterSaree()">
+                </div>
+                <div id="add-saree-form" class="custom-form">
+                    <div class="form-row-4">
+                        <div class="input-group"><label>Tarikh</label><input type="date" id="saree-date"></div>
+                        <div class="input-group"><label>Saree Name</label><input type="text" id="saree-name"></div>
+                        <div class="input-group"><label>Kariger</label><input type="text" id="saree-kariger"></div>
+                        <div class="input-group"><label>Stock (Pcs)</label><input type="number" id="saree-pcs"></div>
+                    </div>
+                    <button class="add-btn" style="background:#2563eb;" onclick="saveNewSaree()">Save Saree</button>
+                </div>
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr style="background:#2563eb;">
+                                <th>Date</th><th>S.No.</th><th>Saree Ka Naam</th><th>Kariger</th><th>Bacha Stock (Pcs)</th><th>Out (Stock Nikalein)</th><th style="text-align:center;">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="saree-table-body"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- MODULE: PAYMENT -->
+            <div id="payment-section" class="module-section">
+                <div class="module-header">
+                    <button class="back-btn" onclick="backToDashboard()">← Dashboard Wapas</button>
+                    <h2 style="color:#7c3aed; font-size:19px; font-weight:700;">💳 Kariger Payment & Bakaya Hisab</h2>
+                    <button class="add-btn" style="background:#7c3aed;" onclick="renderPaymentTable()">🔄 Refresh Live Hisab</button>
+                </div>
+                <div class="summary-bar">
+                    <div class="summary-box" style="border-top:4px solid #059669;">
+                        <span>KUL DIYA GAYA (TOTAL PAID)</span>
+                        <h3 id="total-paid-display" style="color:#059669;">₹ 0</h3>
+                    </div>
+                    <div class="summary-box" style="border-top:4px solid #dc2626;">
+                        <span>KUL BAKAYA (TOTAL BAKI)</span>
+                        <h3 id="total-baki-display" style="color:#dc2626;">₹ 0</h3>
+                    </div>
+                </div>
+                <div class="filter-panel">
+                    <input type="text" id="search-payment-input" class="search-box" placeholder="🔍 Search Kariger, Saree..." oninput="filterPayment()">
+                </div>
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr style="background:#7c3aed; color:white;">
+                                <th>S.No.</th>
+                                <th>Kariger Ka Naam</th>
+                                <th>Saree Design</th>
+                                <th>Kul Mazdoori</th>
+                                <th>Kul Paid (Diya)</th>
+                                <th>Kul Bakaya (Baki)</th>
+                                <th style="text-align:center;">Quick Action</th>
+                                <th style="text-align:center;">Passbook</th>
+                            </tr>
+                        </thead>
+                        <tbody id="payment-table-body"></tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- MODAL 1: PROFILE MODAL -->
+    <div id="profile-modal" class="modal-overlay">
+        <div class="modal-card" style="max-width:520px;">
+            <div class="modal-header">
+                <div><h3 style="color:#1e3a8a; font-weight:800;">👤 User Profile & Settings</h3></div>
+                <button class="close-modal-btn" onclick="closeProfileModal()">X</button>
+            </div>
+            <div class="modal-body">
+                <div class="input-group"><label>Aapka Naam</label><input type="text" id="prof-name"></div>
+                <div class="input-group"><label>User ID</label><input type="text" id="prof-id" disabled style="background:#f1f5f9; font-weight:bold;"></div>
+                <div class="input-group"><label>Mobile</label><input type="tel" id="prof-mobile"></div>
+                <div style="background:#fff7ed; border:1px solid #fdba74; padding:14px; border-radius:10px; margin-bottom:15px;">
+                    <div style="font-size:12px; font-weight:800; color:#c2410c; margin-bottom:8px;">🔐 Security PIN & Password:</div>
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                        <div><label style="font-size:11px; font-weight:700; color:#c2410c;">🔒 4-Digit PIN</label><input type="password" maxlength="4" id="prof-pin" style="border-color:#fca5a5; font-size:15px; font-weight:bold; letter-spacing:2px;"></div>
+                        <div><label style="font-size:11px; font-weight:700; color:#1e3a8a;">🔑 Password</label><input type="text" id="prof-pass" style="border-color:#93c5fd; font-size:14px; font-weight:bold;"></div>
+                    </div>
+                </div>
+                <button class="btn" onclick="saveProfileSettings()">Save Settings</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 2: SANCHA DETAIL MODAL -->
+    <div id="sancha-detail-modal" class="modal-overlay">
+        <div class="modal-card">
+            <div class="modal-header">
+                <div><h3 id="sancha-modal-title" style="color:#0284c7; font-weight:800;">📦 Sancha Detail</h3></div>
+                <button class="close-modal-btn" onclick="closeSanchaDetailModal()">X</button>
+            </div>
+            <div class="modal-body">
+                <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:8px; margin-bottom:12px; background:#f0f9ff; padding:12px; border-radius:8px;">
+                    <div><label style="font-size:11px;">Date</label><input type="date" id="sancha-entry-date" style="width:100%; padding:6px; border:1px solid #cbd5e1; border-radius:6px;"></div>
+                    <div><label style="font-size:11px; font-weight:700;">Kitna Aaya</label><input type="number" step="any" id="sancha-entry-qty" style="width:100%; padding:6px; border:1px solid #cbd5e1; border-radius:6px;"></div>
+                    <div><label style="font-size:11px;">Note</label><input type="text" id="sancha-entry-note" style="width:100%; padding:6px; border:1px solid #cbd5e1; border-radius:6px;"></div>
+                    <div style="display:flex; align-items:flex-end;"><button class="add-btn" style="background:#0284c7; width:100%; padding:7px;" onclick="addSanchaStockEntry()">+ Add Stock</button></div>
+                </div>
+                <div class="table-responsive">
+                    <table>
+                        <thead><tr style="background:#0284c7; color:white;"><th>Tarikh</th><th>Len-Den</th><th>Kitna</th><th>Note</th><th style="text-align:center;">Action</th></tr></thead>
+                        <tbody id="sancha-detail-table-body"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 3: PASSBOOK HISTORY MODAL -->
+    <div id="item-modal" class="modal-overlay">
+        <div class="modal-card">
+            <div class="modal-header">
+                <div><h3 id="modal-item-title" style="color:#1e3a8a; font-weight:800;">📖 Passbook History</h3></div>
+                <button class="close-modal-btn" onclick="closeItemModal()">X</button>
+            </div>
+            <div class="modal-body">
+                <div class="table-responsive">
+                    <table>
+                        <thead><tr style="background:#334155; color:white;"><th>Tarikh</th><th>Kariger / Vivran</th><th>Qty / Rupaye</th><th style="text-align:center;">Action</th></tr></thead>
+                        <tbody id="modal-history-body"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT SCRIPTS (SAME FOLDER) -->
+    <script src="auth.js"></script>
+    <script src="kariger.js"></script>
+    <script src="stock.js"></script>
+    <script src="daybook.js"></script>
+</body>
+</html>
