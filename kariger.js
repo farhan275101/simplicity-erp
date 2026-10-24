@@ -666,6 +666,7 @@ function calculateSheetTotals(sheet) {
     };
 }
 
+// AUTO SEPARATE FRESH SAREE & LOTT SAREE
 function addSheetLineRow() {
     if (!activeKarigerId) return alert("Pehle koi Kariger chunein!");
 
@@ -755,22 +756,47 @@ function addSheetLineRow() {
     sheet.rows.push(row);
     saveKarigerSheets(activeKarigerId, sheets);
 
-    if (saree > 0) {
+    // 1. FRESH SAREE STOCK ENTRY (Net Pass Saree)
+    var netPassSaree = Math.max(0, saree - lott);
+    if (netPassSaree > 0) {
         var sStock = getStore("saree_stock");
         var item = sStock.find(function(s) {
             return s && s.name && s.kariger && s.name.toLowerCase() === karSaree.toLowerCase() && s.kariger.toLowerCase() === karName.toLowerCase();
         });
         if (item) {
-            item.pcs = (Number(item.pcs) || 0) + saree;
+            item.pcs = (Number(item.pcs) || 0) + netPassSaree;
             item.date = date;
         } else {
-            sStock.push({ id: Date.now(), date: date, name: karSaree, kariger: karName, pcs: saree });
+            sStock.push({ id: Date.now(), date: date, name: karSaree, kariger: karName, pcs: netPassSaree });
         }
         setStore("saree_stock", sStock);
 
         var sH = getStore("saree_history");
-        sH.push({ id: Date.now(), date: date, name: karSaree, kariger: karName, type: "In (Received)", pcs: saree, note: "Kariger se aayi (" + taniName + ")" });
+        sH.push({ id: Date.now(), date: date, name: karSaree, kariger: karName, type: "In (Received)", pcs: netPassSaree, note: "Kariger se aayi (" + taniName + ")" });
         setStore("saree_history", sH);
+    }
+
+    // 2. LOTT SAREE STOCK ENTRY (Kharab Saree alag jama hogi)
+    if (lott > 0) {
+        var lottStock = safeArray(getStore("lott_saree_stock"));
+        var lItem = lottStock.find(function(x) { return x && x.name && x.name.toLowerCase() === karSaree.toLowerCase(); });
+        if (lItem) {
+            lItem.pcs = (Number(lItem.pcs) || 0) + lott;
+            lItem.date = date;
+        } else {
+            lottStock.push({
+                id: "lott_" + Date.now(),
+                date: date,
+                name: karSaree,
+                source: karName + " (Loom Lott - " + taniName + ")",
+                pcs: lott
+            });
+        }
+        setStore("lott_saree_stock", lottStock);
+
+        var sH2 = getStore("saree_history");
+        sH2.push({ id: Date.now(), date: date, name: karSaree, kariger: karName, type: "Lott (Damage)", pcs: lott, note: "Kariger se Lott aayi (" + taniName + ")" });
+        setStore("saree_history", sH2);
     }
 
     document.getElementById("line-saree").value = "";
@@ -796,15 +822,29 @@ function reverseSheetRowStock(r, karName) {
     if (!r) return;
     karName = karName || "Kariger";
     var kSaree = r.sareeName || "Kariger Saree";
+    var rSaree = Number(r.saree) || 0;
+    var rLott = Number(r.lott) || 0;
+    var netPass = Math.max(0, rSaree - rLott);
 
-    if (r.saree > 0) {
+    // Reverse Fresh Saree Stock
+    if (netPass > 0) {
         var sStock = getStore("saree_stock");
         var sItem = sStock.find(function(s) {
             return s && s.name && s.kariger && s.name.toLowerCase() === kSaree.toLowerCase() && s.kariger.toLowerCase() === karName.toLowerCase();
         });
         if (sItem) {
-            sItem.pcs = Math.max(0, (Number(sItem.pcs) || 0) - Number(r.saree));
+            sItem.pcs = Math.max(0, (Number(sItem.pcs) || 0) - netPass);
             setStore("saree_stock", sStock);
+        }
+    }
+
+    // Reverse Lott Saree Stock
+    if (rLott > 0) {
+        var lottStock = safeArray(getStore("lott_saree_stock"));
+        var lItem = lottStock.find(function(x) { return x && x.name && x.name.toLowerCase() === kSaree.toLowerCase(); });
+        if (lItem) {
+            lItem.pcs = Math.max(0, (Number(lItem.pcs) || 0) - rLott);
+            setStore("lott_saree_stock", lottStock);
         }
     }
 }
@@ -968,10 +1008,9 @@ function shareSheetOnWhatsApp() {
     text += "━━━━━━━━━━━━━━━━━━━━━\n";
     text += "_Simplicity ERP • Developed by Farhan Jawed_";
 
-    // Direct Client Account Mobile Number
+    // Direct WhatsApp: Client Account Mobile
     var mobile = getClientMobileNumber();
 
-    // Fallback: Agar mobile account me nahi mila, tabhi prompt karega
     if (!mobile) {
         mobile = prompt("WhatsApp Mobile Number daalein (10-digit):");
         if (mobile === null) return;
