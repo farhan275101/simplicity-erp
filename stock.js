@@ -150,8 +150,7 @@ function renderBanaTable(flist) {
             "<td><span class='badge-red'>-" + Number(st.gaya).toFixed(2) + "</span></td>" +
             "<td><span class='badge-blue' style='font-size:12px; font-weight:800;'>" + Number(st.bacha).toFixed(2) + "</span></td>" +
             "<td><button class='quick-btn btn-out' onclick='giveBanaToKariger(" + idx + ")'>📤 Diya</button></td>" +
-            "<td style='text-align:center;'>" +
-                "<button class='detail-btn' onclick='viewBanaPassbook(\"" + b.name + "\")'>📖 Passbook</button> " +
+            "<td style='text-align:center;'><button class='detail-btn' onclick='viewBanaPassbook(\"" + b.name + "\")'>📖 Passbook</button> " +
                 "<button class='delete-btn' onclick='deleteBanaStock(" + idx + ")'>🗑️</button>" +
             "</td>" +
         "</tr>";
@@ -581,20 +580,78 @@ function viewZariPassbook(zariName) {
     setDisplay("item-modal", "flex");
 }
 
-// ================= 5. SANCHA STOCK ENGINE =================
+// ================= 5. SANCHA STOCK ENGINE (LIVE SAFE FIX) =================
 
 function getSanchaItems() {
     var items = getStore("sancha_items");
-    if (!Array.isArray(items) || !items.length) {
-        var today = getTodayDate();
-        items = [
-            { id: "sancha_1", name: "Chamak", date: today, aaya: 0, gaya: 0, totalQty: 0 },
-            { id: "sancha_2", name: "Zari", date: today, aaya: 0, gaya: 0, totalQty: 0 },
-            { id: "sancha_3", name: "Dull", date: today, aaya: 0, gaya: 0, totalQty: 0 }
-        ];
-        setStore("sancha_items", items);
-    }
+    // SAFE FIX: Kabhi bhi Firebase ko 0 default se overwrite nahi karega
+    if (!Array.isArray(items)) return [];
     return items;
+}
+
+// LIVE COMPUTATION: Purana stock aur sheets se live calculation
+function getSanchaItemStats(sanchaId, sanchaName) {
+    var idMatch = String(sanchaId || "").trim();
+    var nameLower = String(sanchaName || "").trim().toLowerCase();
+
+    var items = getSanchaItems();
+    var currentItem = items.find(function(x) {
+        return x && (String(x.id) === idMatch || (x.name && x.name.trim().toLowerCase() === nameLower));
+    });
+
+    var hist = getStore("sancha_history");
+    var histAaya = 0;
+    var manualGaya = 0;
+
+    // 1. History se Aaya aur Manual Gaya hisab
+    hist.forEach(function(h) {
+        if (!h) return;
+        var hIdMatch = (h.itemId && String(h.itemId) === idMatch);
+        var hNameMatch = (h.itemName && h.itemName.trim().toLowerCase() === nameLower);
+
+        if (hIdMatch || hNameMatch) {
+            var q = Number(h.qty) || 0;
+            if (String(h.type || "").indexOf("Aaya") !== -1) {
+                histAaya += q;
+            } else if (String(h.type || "").indexOf("Manual") !== -1) {
+                manualGaya += q;
+            }
+        }
+    });
+
+    // Backward compatibility: Agar purana item hai jiska stock item.aaya me tha par history me nahi
+    var itemRecordedAaya = currentItem ? (Number(currentItem.aaya) || Number(currentItem.totalQty) || 0) : 0;
+    var totalAaya = Math.max(itemRecordedAaya, histAaya);
+
+    // 2. Kariger sheets me se Tani Wazan live minus karo
+    var sheetGaya = 0;
+    var allKarigers = sanitizeKarigerList();
+
+    allKarigers.forEach(function(k) {
+        var sheets = getKarigerSheets(k.id);
+        sheets.forEach(function(sh) {
+            if (sh && sh.rows) {
+                var rows = safeArray(sh.rows);
+                rows.forEach(function(r) {
+                    if (!r) return;
+                    var rSancha = String(r.sancha || "").trim().toLowerCase();
+                    // Sirf tabhi deduct hoga jab Sancha ka naam exactly match kare
+                    if (rSancha && rSancha === nameLower) {
+                        sheetGaya += (Number(r.taniWazan) || 0);
+                    }
+                });
+            }
+        });
+    });
+
+    var totalGaya = sheetGaya + manualGaya;
+    var bacha = totalAaya - totalGaya;
+
+    return {
+        aaya: totalAaya,
+        gaya: totalGaya,
+        bacha: bacha
+    };
 }
 
 function openSanchaModule() {
@@ -618,17 +675,32 @@ function saveNewSanchaItem() {
     if (!n) return alert("Sancha item ka naam daalein!");
 
     var items = getSanchaItems();
+    var newId = "sancha_" + Date.now();
+
     var newItem = {
-        id: "sancha_" + Date.now(),
+        id: newId,
         name: n,
         date: d,
-        aaya: q,
-        gaya: 0,
-        totalQty: q
+        aaya: q
     };
 
     items.push(newItem);
     setStore("sancha_items", items);
+
+    // Initial stock ko history me Aaya daalein
+    if (q > 0) {
+        var hist = getStore("sancha_history");
+        hist.push({
+            id: Date.now(),
+            itemId: newId,
+            itemName: n,
+            date: d,
+            type: "Aaya (Starting)",
+            qty: q,
+            note: "Starting Stock Purchase"
+        });
+        setStore("sancha_history", hist);
+    }
 
     toggleAddSanchaItemForm();
     renderSanchaTable();
@@ -642,14 +714,21 @@ function renderSanchaTable() {
     if (!tbody) return;
     tbody.innerHTML = "";
 
+    if (!items.length) {
+        tbody.innerHTML = "<tr><td colspan='6' style='text-align:center; padding:20px; color:#888;'>Koi Sancha Item nahi mila. Naya item jodein.</td></tr>";
+        return;
+    }
+
     items.forEach(function(item) {
         if (!item) return;
+        var st = getSanchaItemStats(item.id, item.name);
+
         tbody.innerHTML += "<tr>" +
             "<td>" + formatDateDisplay(item.date) + "</td>" +
             "<td><strong style='color:#0284c7;'>⚙️ " + item.name + "</strong></td>" +
-            "<td><span class='badge-green'>+" + (Number(item.aaya) || Number(item.totalQty) || 0).toFixed(2) + "</span></td>" +
-            "<td><span class='badge-red'>-" + (Number(item.gaya) || 0).toFixed(2) + "</span></td>" +
-            "<td><span class='badge-blue'>" + Number(item.totalQty || 0).toFixed(2) + "</span></td>" +
+            "<td><span class='badge-green'>+" + st.aaya.toFixed(2) + "</span></td>" +
+            "<td><span class='badge-red'>-" + st.gaya.toFixed(2) + "</span></td>" +
+            "<td><span class='badge-blue'>" + st.bacha.toFixed(2) + "</span></td>" +
             "<td style='text-align:center;'><button class='detail-btn' style='background:#0284c7;' onclick='openSanchaDetailModal(\"" + item.id + "\")'>Detail</button> <button class='delete-btn' onclick='deleteSanchaItem(\"" + item.id + "\")'>🗑️</button></td>" +
         "</tr>";
     });
@@ -657,9 +736,10 @@ function renderSanchaTable() {
 
 function deleteSanchaItem(id) {
     if (!confirm("Kya aap is Sancha item ko delete karna chahte hain?")) return;
-    setStore("sancha_items", getSanchaItems().filter(function(i) {
+    var filtered = getSanchaItems().filter(function(i) {
         return i && String(i.id) !== String(id);
-    }));
+    });
+    setStore("sancha_items", filtered);
     renderSanchaTable();
     if (typeof updateDashboardBadgeTotals === "function") updateDashboardBadgeTotals();
 }
@@ -669,7 +749,8 @@ function openSanchaDetailModal(id) {
     if (!it) return;
 
     activeSanchaItemId = it.id;
-    document.getElementById("sancha-modal-title").innerHTML = "📦 " + it.name + " (Bacha: " + Number(it.totalQty).toFixed(2) + ")";
+    var st = getSanchaItemStats(it.id, it.name);
+    document.getElementById("sancha-modal-title").innerHTML = "📦 " + it.name + " (Bacha: " + st.bacha.toFixed(2) + ")";
     document.getElementById("sancha-entry-date").value = getTodayDate();
     document.getElementById("sancha-entry-qty").value = "";
     document.getElementById("sancha-entry-note").value = "";
@@ -698,19 +779,13 @@ function addSanchaStockEntry() {
     var item = items.find(function(i) { return i && String(i.id) === String(activeSanchaItemId); });
     if (!item) return;
 
-    item.aaya = (Number(item.aaya) || Number(item.totalQty) || 0) + q;
-    item.totalQty = item.aaya - (Number(item.gaya) || 0);
-    item.date = d;
-
-    setStore("sancha_items", items);
-
     var hist = getStore("sancha_history");
     hist.push({
         id: Date.now(),
         itemId: item.id,
         itemName: item.name,
         date: d,
-        type: "Aaya",
+        type: "Aaya (Stock In)",
         qty: q,
         note: note || "Naya Maal Aaya"
     });
@@ -718,6 +793,9 @@ function addSanchaStockEntry() {
 
     document.getElementById("sancha-entry-qty").value = "";
     document.getElementById("sancha-entry-note").value = "";
+
+    var st = getSanchaItemStats(item.id, item.name);
+    document.getElementById("sancha-modal-title").innerHTML = "📦 " + item.name + " (Bacha: " + st.bacha.toFixed(2) + ")";
 
     renderSanchaHistoryTable();
     renderSanchaTable();
@@ -731,45 +809,73 @@ function renderSanchaHistoryTable() {
     if (!tbody) return;
     tbody.innerHTML = "";
 
-    var count = 0;
+    var currentItem = getSanchaItems().find(function(i) { return i && String(i.id) === String(activeSanchaItemId); });
+    var currentItemName = currentItem ? currentItem.name.trim().toLowerCase() : "";
+
+    var entries = [];
+
+    // 1. History (Aaya & Manual)
     hist.forEach(function(h, idx) {
-        if (h && String(h.itemId) === String(activeSanchaItemId)) {
-            count++;
-            var isAaya = (h.type && h.type.includes("Aaya"));
-            tbody.innerHTML += "<tr>" +
-                "<td>" + formatDateDisplay(h.date) + "</td>" +
-                "<td><span class='badge-blue'>" + h.type + "</span></td>" +
-                "<td><strong style='color:" + (isAaya ? "#059669" : "#dc2626") + ";'>" + (isAaya ? "+" : "-") + Number(h.qty).toFixed(2) + "</strong></td>" +
-                "<td>" + (h.note || "-") + "</td>" +
-                "<td style='text-align:center;'><button class='delete-btn' onclick='deleteSanchaHistoryRow(" + idx + ")'>🗑️</button></td>" +
-            "</tr>";
+        if (!h) return;
+        var idMatch = (h.itemId && String(h.itemId) === String(activeSanchaItemId));
+        var nameMatch = (h.itemName && h.itemName.trim().toLowerCase() === currentItemName);
+        if (idMatch || nameMatch) {
+            entries.push({
+                idx: idx,
+                date: h.date,
+                type: h.type || "Aaya",
+                qty: Number(h.qty) || 0,
+                note: h.note || "-",
+                isSheet: false
+            });
         }
     });
 
-    if (!count) {
-        tbody.innerHTML = "<tr><td colspan='5' style='text-align:center; padding:15px; color:#888;'>Koi entry nahi hai.</td></tr>";
+    // 2. Kariger Sheets se auto-records (Tani Wazan)
+    sanitizeKarigerList().forEach(function(k) {
+        var sheets = getKarigerSheets(k.id);
+        sheets.forEach(function(sh) {
+            if (sh && sh.rows) {
+                var rows = safeArray(sh.rows);
+                rows.forEach(function(r) {
+                    if (r && r.sancha && r.sancha.trim().toLowerCase() === currentItemName && Number(r.taniWazan) > 0) {
+                        entries.push({
+                            date: r.date,
+                            type: "Gaya (Tani)",
+                            qty: Number(r.taniWazan),
+                            note: k.name + " (" + (r.taniName || sh.title) + ")",
+                            isSheet: true
+                        });
+                    }
+                });
+            }
+        });
+    });
+
+    if (!entries.length) {
+        tbody.innerHTML = "<tr><td colspan='5' style='text-align:center; padding:15px; color:#888;'>Koi entry nahi mili.</td></tr>";
+        return;
     }
+
+    entries.sort(function(a, b) { return (b.date > a.date) ? 1 : -1; });
+
+    entries.forEach(function(e) {
+        var isAaya = (String(e.type).indexOf("Aaya") !== -1);
+        var actBtn = e.isSheet ? "<span style='color:#64748b; font-size:11px;'>Sheet Entry</span>" : ("<button class='delete-btn' onclick='deleteSanchaHistoryRow(" + e.idx + ")'>🗑️</button>");
+
+        tbody.innerHTML += "<tr>" +
+            "<td>" + formatDateDisplay(e.date) + "</td>" +
+            "<td><span class='" + (isAaya ? "badge-green" : "badge-red") + "'>" + e.type + "</span></td>" +
+            "<td><strong style='color:" + (isAaya ? "#059669" : "#dc2626") + ";'>" + (isAaya ? "+" : "-") + e.qty.toFixed(2) + "</strong></td>" +
+            "<td>" + e.note + "</td>" +
+            "<td style='text-align:center;'><button class='delete-btn' onclick='deleteSanchaHistoryRow(" + e.idx + ")'>🗑️</button></td>" +
+        "</tr>";
+    });
 }
 
 function deleteSanchaHistoryRow(idx) {
     if (!confirm("Kya aap is entry ko delete karna chahte hain?")) return;
     var hist = getStore("sancha_history");
-    var e = hist[idx];
-    if (!e) return;
-
-    var items = getSanchaItems();
-    var item = items.find(function(i) { return i && String(i.id) === String(e.itemId); });
-
-    if (item) {
-        if (String(e.type || "").indexOf("Aaya") !== -1) {
-            item.aaya = Math.max(0, (Number(item.aaya) || 0) - Number(e.qty));
-        } else {
-            item.gaya = Math.max(0, (Number(item.gaya) || 0) - Number(e.qty));
-        }
-        item.totalQty = (Number(item.aaya) || 0) - (Number(item.gaya) || 0);
-        setStore("sancha_items", items);
-    }
-
     hist.splice(idx, 1);
     setStore("sancha_history", hist);
 
@@ -779,30 +885,8 @@ function deleteSanchaHistoryRow(idx) {
 }
 
 function autoDeductSanchaStock(wazan, date, karName, sanchaName, taniName) {
-    if (!wazan || wazan <= 0) return;
-    var items = getSanchaItems();
-    var target = (sanchaName && items.find(function(i) {
-        return i && i.name && i.name.toLowerCase() === sanchaName.toLowerCase();
-    })) || items[0];
-
-    if (target) {
-        target.gaya = (Number(target.gaya) || 0) + wazan;
-        target.totalQty = (Number(target.aaya) || 0) - target.gaya;
-        target.date = date;
-        setStore("sancha_items", items);
-
-        var hist = getStore("sancha_history");
-        hist.push({
-            id: Date.now(),
-            itemId: target.id,
-            itemName: target.name,
-            date: date,
-            type: "Gaya (Tani)",
-            qty: wazan,
-            note: karName + " (" + (taniName || "Tani") + ")"
-        });
-        setStore("sancha_history", hist);
-    }
+    // Live calculation engine sheets se sidha calculate karta hai
+    return true;
 }
 
 // ================= 6. SAREE STOCK MODULE =================
@@ -838,8 +922,7 @@ function renderSareeTable(flist) {
                     "<button class='quick-btn btn-out' onclick='outSareeCustomQty(" + idx + ")'>📤 Out</button>" +
                 "</div>" +
             "</td>" +
-            "<td style='text-align:center;'>" +
-                "<button class='detail-btn' onclick='viewPassbook(\"Saree: " + s.name + "\", \"saree_history\", \"" + s.name + "\")'>📖 Passbook</button> " +
+            "<td style='text-align:center;'><button class='detail-btn' onclick='viewPassbook(\"Saree: " + s.name + "\", \"saree_history\", \"" + s.name + "\")'>📖 Passbook</button> " +
                 "<button class='delete-btn' onclick='deleteSareeStock(" + idx + ")'>🗑️</button>" +
             "</td>" +
         "</tr>";
