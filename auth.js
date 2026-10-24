@@ -144,7 +144,8 @@ function getCurrentActiveSection() {
     var sections = [
         "dashboard-view", "admin-section", "info-section", 
         "kariger-section", "kariger-sheet-section", "bana-section", 
-        "zari-section", "saree-section", "payment-section", "sancha-section"
+        "zari-section", "saree-section", "payment-section", "sancha-section",
+        "jobwork-section"
     ];
     for (var i = 0; i < sections.length; i++) {
         var el = document.getElementById(sections[i]);
@@ -186,6 +187,8 @@ function initFirebaseLiveListeners() {
                     renderPaymentTable();
                 } else if (cur === "sancha-section" && typeof renderSanchaTable === "function") {
                     renderSanchaTable();
+                } else if (cur === "jobwork-section" && typeof renderJobWorkTable === "function") {
+                    renderJobWorkTable();
                 }
 
                 if (typeof updateDashboardBadgeTotals === "function") updateDashboardBadgeTotals();
@@ -211,13 +214,14 @@ function exportUserFullData() {
     var keys = [
         "karigers", "kariger_info_ledger", "bana_stock", "bana_history",
         "zari_stock", "zari_history", "saree_stock", "saree_history",
-        "sancha_items", "sancha_history"
+        "sancha_items", "sancha_history", "jobwork_workers"
     ];
     var obj = {
         userId: currentUserId,
         exportDate: new Date().toISOString(),
         data: {},
-        sheets: {}
+        sheets: {},
+        jobwork_sheets: {}
     };
 
     keys.forEach(function(k) { obj.data[k] = getStore(k); });
@@ -228,6 +232,15 @@ function exportUserFullData() {
             obj.sheets[k.id] = getKarigerSheets(k.id);
         }
     });
+
+    if (typeof getJobWorkers === "function" && typeof getJobWorkerSheets === "function") {
+        getJobWorkers().forEach(function(w) {
+            if (w && w.id) {
+                obj.jobwork_sheets[w.id] = getJobWorkerSheets(w.id);
+            }
+        });
+    }
+
     return obj;
 }
 
@@ -275,6 +288,11 @@ function restoreBackupFile(e) {
                 if (parsed.sheets) {
                     for (var sheetKarId in parsed.sheets) {
                         setStore("kariger_sheets_" + sheetKarId, parsed.sheets[sheetKarId]);
+                    }
+                }
+                if (parsed.jobwork_sheets) {
+                    for (var jwWorkerId in parsed.jobwork_sheets) {
+                        setStore("jobwork_sheets_" + jwWorkerId, parsed.jobwork_sheets[jwWorkerId]);
                     }
                 }
                 alert("✅ Data successfully restore ho gaya!");
@@ -491,7 +509,7 @@ function logout() {
     var err = document.getElementById("login-error");
 
     if (idInput) idInput.value = "";
-    if (passInput) passInput.value = "";
+    if (passInput) passInp.value = "";
     if (err) err.style.display = "none";
 
     setDisplay("desktop-screen", "none");
