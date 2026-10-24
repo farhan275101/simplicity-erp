@@ -1,7 +1,9 @@
 /* ========================================================
-   SIMPLICITY ERP - LIVE STOCK ENGINE (BANA, ZARI, SAREE, SANCHA)
+   SIMPLICITY ERP - LIVE STOCK ENGINE (BANA, ZARI, SAREE, LOTT, SANCHA)
    File 5 of 6 • Developed by Farhan Jawed
 ======================================================== */
+
+var currentSareeStockTab = "fresh"; // "fresh" ya "lott"
 
 // ================= 1. LIVE BANA COMPUTATION ENGINE =================
 
@@ -580,16 +582,14 @@ function viewZariPassbook(zariName) {
     setDisplay("item-modal", "flex");
 }
 
-// ================= 5. SANCHA STOCK ENGINE (LIVE SAFE FIX) =================
+// ================= 5. SANCHA STOCK ENGINE =================
 
 function getSanchaItems() {
     var items = getStore("sancha_items");
-    // SAFE FIX: Kabhi bhi Firebase ko 0 default se overwrite nahi karega
     if (!Array.isArray(items)) return [];
     return items;
 }
 
-// LIVE COMPUTATION: Purana stock aur sheets se live calculation
 function getSanchaItemStats(sanchaId, sanchaName) {
     var idMatch = String(sanchaId || "").trim();
     var nameLower = String(sanchaName || "").trim().toLowerCase();
@@ -603,7 +603,6 @@ function getSanchaItemStats(sanchaId, sanchaName) {
     var histAaya = 0;
     var manualGaya = 0;
 
-    // 1. History se Aaya aur Manual Gaya hisab
     hist.forEach(function(h) {
         if (!h) return;
         var hIdMatch = (h.itemId && String(h.itemId) === idMatch);
@@ -619,11 +618,9 @@ function getSanchaItemStats(sanchaId, sanchaName) {
         }
     });
 
-    // Backward compatibility: Agar purana item hai jiska stock item.aaya me tha par history me nahi
     var itemRecordedAaya = currentItem ? (Number(currentItem.aaya) || Number(currentItem.totalQty) || 0) : 0;
     var totalAaya = Math.max(itemRecordedAaya, histAaya);
 
-    // 2. Kariger sheets me se Tani Wazan live minus karo
     var sheetGaya = 0;
     var allKarigers = sanitizeKarigerList();
 
@@ -635,7 +632,6 @@ function getSanchaItemStats(sanchaId, sanchaName) {
                 rows.forEach(function(r) {
                     if (!r) return;
                     var rSancha = String(r.sancha || "").trim().toLowerCase();
-                    // Sirf tabhi deduct hoga jab Sancha ka naam exactly match kare
                     if (rSancha && rSancha === nameLower) {
                         sheetGaya += (Number(r.taniWazan) || 0);
                     }
@@ -687,7 +683,6 @@ function saveNewSanchaItem() {
     items.push(newItem);
     setStore("sancha_items", items);
 
-    // Initial stock ko history me Aaya daalein
     if (q > 0) {
         var hist = getStore("sancha_history");
         hist.push({
@@ -814,7 +809,6 @@ function renderSanchaHistoryTable() {
 
     var entries = [];
 
-    // 1. History (Aaya & Manual)
     hist.forEach(function(h, idx) {
         if (!h) return;
         var idMatch = (h.itemId && String(h.itemId) === String(activeSanchaItemId));
@@ -831,7 +825,6 @@ function renderSanchaHistoryTable() {
         }
     });
 
-    // 2. Kariger Sheets se auto-records (Tani Wazan)
     sanitizeKarigerList().forEach(function(k) {
         var sheets = getKarigerSheets(k.id);
         sheets.forEach(function(sh) {
@@ -868,7 +861,7 @@ function renderSanchaHistoryTable() {
             "<td><span class='" + (isAaya ? "badge-green" : "badge-red") + "'>" + e.type + "</span></td>" +
             "<td><strong style='color:" + (isAaya ? "#059669" : "#dc2626") + ";'>" + (isAaya ? "+" : "-") + e.qty.toFixed(2) + "</strong></td>" +
             "<td>" + e.note + "</td>" +
-            "<td style='text-align:center;'><button class='delete-btn' onclick='deleteSanchaHistoryRow(" + e.idx + ")'>🗑️</button></td>" +
+            "<td style='text-align:center;'>" + actBtn + "</td>" +
         "</tr>";
     });
 }
@@ -885,48 +878,156 @@ function deleteSanchaHistoryRow(idx) {
 }
 
 function autoDeductSanchaStock(wazan, date, karName, sanchaName, taniName) {
-    // Live calculation engine sheets se sidha calculate karta hai
     return true;
 }
 
-// ================= 6. SAREE STOCK MODULE =================
+// ================= 6. SAREE STOCK (FRESH SAREE vs LOTT SAREE TABS) =================
 
 function openSareeModule() {
     if (typeof hideAllSections === "function") hideAllSections();
     setDisplay("saree-section", "block");
+    ensureSareeStockSubTabs();
+    renderSareeTable();
+}
+
+function ensureSareeStockSubTabs() {
+    var existingBar = document.getElementById("saree-stock-subtabs-bar");
+    if (!existingBar) {
+        var filterPnl = document.querySelector("#saree-section .filter-panel");
+        if (filterPnl) {
+            var div = document.createElement("div");
+            div.id = "saree-stock-subtabs-bar";
+            div.className = "sheet-tabs-bar";
+            div.style.marginBottom = "15px";
+            div.innerHTML = "<div class='sheet-tabs-list'>" +
+                "<button class='sheet-tab active' id='btn-saree-tab-fresh' onclick='switchSareeStockTab(\"fresh\")'>🥻 Fresh Saree Stock</button>" +
+                "<button class='sheet-tab' id='btn-saree-tab-lott' onclick='switchSareeStockTab(\"lott\")'>⚠️ Lott / Damage Saree Stock</button>" +
+            "</div>";
+            filterPnl.parentNode.insertBefore(div, filterPnl);
+        }
+    }
+}
+
+function switchSareeStockTab(tab) {
+    currentSareeStockTab = tab;
+    var btnF = document.getElementById("btn-saree-tab-fresh");
+    var btnL = document.getElementById("btn-saree-tab-lott");
+
+    if (btnF && btnL) {
+        if (tab === "fresh") {
+            btnF.className = "sheet-tab active";
+            btnL.className = "sheet-tab";
+        } else {
+            btnL.className = "sheet-tab active";
+            btnF.className = "sheet-tab";
+        }
+    }
+
     renderSareeTable();
 }
 
 function renderSareeTable(flist) {
-    var list = flist || getStore("saree_stock");
+    var thead = document.querySelector("#saree-section table thead tr");
     var tbody = document.getElementById("saree-table-body");
-    if (!tbody) return;
+    if (!tbody || !thead) return;
     tbody.innerHTML = "";
 
-    if (!list.length) {
-        tbody.innerHTML = "<tr><td colspan='7' style='text-align:center; padding:20px; color:#888;'>Koi Saree Record nahi mila.</td></tr>";
-        return;
-    }
-
-    list.forEach(function(s, idx) {
-        if (!s) return;
-        tbody.innerHTML += "<tr>" +
-            "<td>" + formatDateDisplay(s.date) + "</td>" +
-            "<td>" + (idx + 1) + "</td>" +
-            "<td><strong>" + s.name + "</strong></td>" +
-            "<td>" + (s.kariger || "-") + "</td>" +
-            "<td><span class='badge-blue'>" + s.pcs + " pcs</span></td>" +
-            "<td>" +
-                "<div style='display:flex; gap:4px; align-items:center;'>" +
-                    "<input type='number' id='saree-out-input-" + idx + "' placeholder='Qty' style='width:60px; padding:4px; font-size:12px; border:1px solid #cbd5e1; border-radius:6px;' min='1'>" +
-                    "<button class='quick-btn btn-out' onclick='outSareeCustomQty(" + idx + ")'>📤 Out</button>" +
-                "</div>" +
-            "</td>" +
-            "<td style='text-align:center;'><button class='detail-btn' onclick='viewPassbook(\"Saree: " + s.name + "\", \"saree_history\", \"" + s.name + "\")'>📖 Passbook</button> " +
-                "<button class='delete-btn' onclick='deleteSareeStock(" + idx + ")'>🗑️</button>" +
-            "</td>" +
+    // 1. FRESH SAREE TAB
+    if (currentSareeStockTab === "fresh") {
+        thead.innerHTML = "<tr style='background:#2563eb; color:white;'>" +
+            "<th>Date</th><th>S.No.</th><th>Saree Ka Naam</th><th>Kariger</th><th>Fresh Stock (Pcs)</th><th>Out (Bikri)</th><th style='text-align:center;'>Action</th>" +
         "</tr>";
+
+        var list = flist || getStore("saree_stock");
+        if (!list.length) {
+            tbody.innerHTML = "<tr><td colspan='7' style='text-align:center; padding:20px; color:#888;'>Koi Fresh Saree Record nahi mila.</td></tr>";
+            return;
+        }
+
+        list.forEach(function(s, idx) {
+            if (!s) return;
+            tbody.innerHTML += "<tr>" +
+                "<td>" + formatDateDisplay(s.date) + "</td>" +
+                "<td>" + (idx + 1) + "</td>" +
+                "<td><strong>" + s.name + "</strong></td>" +
+                "<td>" + (s.kariger || "-") + "</td>" +
+                "<td><span class='badge-blue'>" + s.pcs + " pcs</span></td>" +
+                "<td>" +
+                    "<div style='display:flex; gap:4px; align-items:center;'>" +
+                        "<input type='number' id='saree-out-input-" + idx + "' placeholder='Qty' style='width:60px; padding:4px; font-size:12px; border:1px solid #cbd5e1; border-radius:6px;' min='1'>" +
+                        "<button class='quick-btn btn-out' onclick='outSareeCustomQty(" + idx + ")'>📤 Out</button>" +
+                    "</div>" +
+                "</td>" +
+                "<td style='text-align:center;'><button class='detail-btn' onclick='viewPassbook(\"Saree: " + s.name + "\", \"saree_history\", \"" + s.name + "\")'>📖 Passbook</button> <button class='delete-btn' onclick='deleteSareeStock(" + idx + ")'>🗑️</button></td>" +
+            "</tr>";
+        });
+
+    // 2. LOTT SAREE TAB
+    } else {
+        thead.innerHTML = "<tr style='background:#dc2626; color:white;'>" +
+            "<th>Date</th><th>S.No.</th><th>Saree Ka Naam</th><th>Kahan Se Aayi (Source)</th><th>Lott Stock (Pcs)</th><th>Saste Me Becha (Out)</th><th style='text-align:center;'>Action</th>" +
+        "</tr>";
+
+        var lottList = safeArray(getStore("lott_saree_stock"));
+        if (!lottList.length) {
+            tbody.innerHTML = "<tr><td colspan='7' style='text-align:center; padding:20px; color:#888;'>Karkhane me abhi koi Lott Saree nahi hai.</td></tr>";
+            return;
+        }
+
+        lottList.forEach(function(l, idx) {
+            if (!l) return;
+            tbody.innerHTML += "<tr>" +
+                "<td>" + formatDateDisplay(l.date) + "</td>" +
+                "<td>" + (idx + 1) + "</td>" +
+                "<td><strong>" + l.name + "</strong></td>" +
+                "<td>" + (l.source || "Loom / Job Work") + "</td>" +
+                "<td><span class='badge-red'>⚠️ " + (l.pcs || 0) + " pcs</span></td>" +
+                "<td>" +
+                    "<button class='quick-btn btn-out' style='background:#fef2f2; border:1px solid #fca5a5; font-size:11px;' onclick='outLottSareeCustomQty(" + idx + ")'>📤 Saste Me Becha</button>" +
+                "</td>" +
+                "<td style='text-align:center;'><button class='detail-btn' onclick='viewPassbook(\"Lott Saree: " + l.name + "\", \"saree_history\", \"" + l.name + "\")'>📖 Passbook</button> <button class='delete-btn' onclick='deleteLottSareeStock(" + idx + ")'>🗑️</button></td>" +
+            "</tr>";
+        });
+    }
+}
+
+function outLottSareeCustomQty(idx) {
+    var stock = safeArray(getStore("lott_saree_stock"));
+    var item = stock[idx];
+    if (!item) return;
+
+    var qty = parseInt(prompt("Saree: " + item.name + "\nLott Pcs Available: " + item.pcs + "\n\nKitne Pcs saste me beche (Out):", item.pcs));
+    if (!qty || isNaN(qty) || qty <= 0) return;
+
+    if (qty > item.pcs) return alert("Sirf " + item.pcs + " Pcs available hain!");
+
+    var note = prompt("Dukan Vivran / Saste Rate Ka Note:", "Lott Discount Sale") || "Lott Discount Sale";
+    item.pcs -= qty;
+    setStore("lott_saree_stock", stock);
+
+    var h = getStore("saree_history");
+    h.push({
+        id: Date.now(),
+        date: getTodayDate(),
+        name: item.name,
+        kariger: item.source || "Lott Saree",
+        type: "Out (Lott Sale)",
+        pcs: qty,
+        note: note
     });
+    setStore("saree_history", h);
+
+    renderSareeTable();
+    if (typeof updateDashboardBadgeTotals === "function") updateDashboardBadgeTotals();
+    alert("✅ " + qty + " Lott Saree saste me bech di gayi aur stock se out ho gayi!");
+}
+
+function deleteLottSareeStock(idx) {
+    if (!confirm("Kya aap is Lott Saree record ko delete karna chahte hain?")) return;
+    var stock = safeArray(getStore("lott_saree_stock"));
+    stock.splice(idx, 1);
+    setStore("lott_saree_stock", stock);
+    renderSareeTable();
 }
 
 function outSareeCustomQty(idx) {
