@@ -470,13 +470,19 @@ function updateDashboardBadgeTotals() {
         });
     }
     setT("btn-total-sancha", "Bacha: " + tsc.toFixed(2));
+
+    // Job Work Total Workers
+    if (typeof getJobWorkers === "function") {
+        setT("btn-total-jobwork", "Workers: " + getJobWorkers().length);
+    }
 }
 
 function hideAllSections() {
     [
         "dashboard-view", "admin-section", "info-section",
         "kariger-section", "kariger-sheet-section", "bana-section",
-        "zari-section", "saree-section", "payment-section", "sancha-section"
+        "zari-section", "saree-section", "payment-section", "sancha-section",
+        "jobwork-section"
     ].forEach(function(id) {
         setDisplay(id, "none");
     });
