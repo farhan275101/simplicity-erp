@@ -455,11 +455,18 @@ function updateDashboardBadgeTotals() {
     });
     setT("btn-total-payment", "Baki: ₹ " + totalBakiAll.toFixed(0));
 
-    // Sancha Total
+    // Sancha Total Live Fix
     var tsc = 0;
     if (typeof getSanchaItems === "function") {
         getSanchaItems().forEach(function(s) {
-            if (s) tsc += (Number(s.totalQty) || 0);
+            if (s) {
+                if (typeof getSanchaItemStats === "function") {
+                    var st = getSanchaItemStats(s.id, s.name);
+                    tsc += (Number(st.bacha) || 0);
+                } else {
+                    tsc += (Number(s.totalQty) || 0);
+                }
+            }
         });
     }
     setT("btn-total-sancha", "Bacha: " + tsc.toFixed(2));
@@ -492,7 +499,7 @@ function initApp() {
     syncUsersWithFirebase();
 }
 
-// STRICT CLEAN STARTUP (Prevents any auto-fill / pre-login leaks)
+// STRICT CLEAN STARTUP
 window.onload = function() {
     currentUserId = null;
     currentUserRole = null;
