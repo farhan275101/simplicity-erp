@@ -469,9 +469,14 @@ function updateLiveStockDisplay() {
         document.getElementById("live-zari-stock-badge").textContent = "Bacha: 0.00";
     }
 
-    if (typeof getSanchaItems === "function") {
+    if (typeof getSanchaItems === "function" && typeof getSanchaItemStats === "function") {
         var sI = getSanchaItems().find(function(s) { return s && s.name && s.name.toLowerCase() === sN; });
-        document.getElementById("live-sancha-stock-badge").textContent = "Bacha: " + (sI ? Number(sI.totalQty || 0).toFixed(2) : "0.00");
+        if (sI) {
+            var sStats = getSanchaItemStats(sI.id, sI.name);
+            document.getElementById("live-sancha-stock-badge").textContent = "Bacha: " + sStats.bacha.toFixed(2);
+        } else {
+            document.getElementById("live-sancha-stock-badge").textContent = "Bacha: 0.00";
+        }
     }
 }
 
@@ -768,10 +773,6 @@ function addSheetLineRow() {
         setStore("saree_history", sH);
     }
 
-    if (taniWazan > 0 && typeof autoDeductSanchaStock === "function") {
-        autoDeductSanchaStock(taniWazan, date, karName, sancha, taniName);
-    }
-
     document.getElementById("line-saree").value = "";
     document.getElementById("line-tani-wazan").value = "";
     document.getElementById("line-bana-cone").value = "";
@@ -804,16 +805,6 @@ function reverseSheetRowStock(r, karName) {
         if (sItem) {
             sItem.pcs = Math.max(0, (Number(sItem.pcs) || 0) - Number(r.saree));
             setStore("saree_stock", sStock);
-        }
-    }
-
-    if (r.taniWazan > 0 && typeof getSanchaItems === "function") {
-        var sItems = getSanchaItems();
-        var sTarget = (r.sancha && sItems.find(function(i) { return i && i.name && i.name.toLowerCase() === r.sancha.toLowerCase(); })) || sItems[0];
-        if (sTarget) {
-            sTarget.gaya = Math.max(0, (Number(sTarget.gaya) || 0) - Number(r.taniWazan));
-            sTarget.totalQty = (Number(sTarget.aaya) || 0) - sTarget.gaya;
-            setStore("sancha_items", sItems);
         }
     }
 }
@@ -910,6 +901,13 @@ function renderSheetRows(sheet) {
 
 // ================= 4. WHATSAPP PARCHI & RECEIPT =================
 
+function getClientMobileNumber() {
+    if (!currentUserId) return "";
+    var users = getUsersList();
+    var u = users.find(function(x) { return x.id === currentUserId; });
+    return (u && u.mobile) ? String(u.mobile).trim().replace(/[^0-9]/g, "") : "";
+}
+
 function shareSheetOnWhatsApp() {
     if (!activeKarigerId || !activeSheetId) {
         return alert("Kripya pehle kisi Kariger ki Khata Sheet kholein!");
@@ -970,10 +968,16 @@ function shareSheetOnWhatsApp() {
     text += "━━━━━━━━━━━━━━━━━━━━━\n";
     text += "_Simplicity ERP • Developed by Farhan Jawed_";
 
-    var mobile = prompt("Kariger ka 10-digit WhatsApp Mobile Number daalein:\n(Khaali chhodne par WhatsApp Web/App khulega)");
-    if (mobile === null) return;
+    // Direct Client Account Mobile Number
+    var mobile = getClientMobileNumber();
 
-    mobile = mobile.trim().replace(/[^0-9]/g, "");
+    // Fallback: Agar mobile account me nahi mila, tabhi prompt karega
+    if (!mobile) {
+        mobile = prompt("WhatsApp Mobile Number daalein (10-digit):");
+        if (mobile === null) return;
+        mobile = mobile.trim().replace(/[^0-9]/g, "");
+    }
+
     var targetUrl = "";
     if (mobile.length === 10) {
         targetUrl = "https://wa.me/91" + mobile + "?text=" + encodeURIComponent(text);
