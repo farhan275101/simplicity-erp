@@ -1,9 +1,10 @@
 /* ========================================================
-   SIMPLICITY ERP - LIVE STOCK ENGINE (BANA, ZARI, SAREE, LOTT, SANCHA)
+   SIMPLICITY ERP - LIVE STOCK ENGINE (BANA, ZARI, SAREE, LOTT, ACTUAL, SANCHA)
    File 5 of 7 • Developed by Farhan Jawed
 ======================================================== */
 
-var currentSareeStockTab = "fresh"; // "fresh" ya "lott"
+var currentSareeStockTab = "fresh"; // "fresh", "lott", ya "actual"
+var rawModalPassbookEntries = [];
 
 // ================= 1. LIVE BANA COMPUTATION ENGINE =================
 
@@ -12,7 +13,6 @@ function getBanaItemStats(itemName) {
     var bStock = getStore("bana_stock");
     var totalAaya = 0, manualGaya = 0, lastDate = "";
 
-    // Godam me kul kitna aaya
     bStock.forEach(function(b) {
         if (b && b.name && b.name.trim().toLowerCase() === nameLower) {
             totalAaya += (Number(b.aaya) || 0);
@@ -20,7 +20,6 @@ function getBanaItemStats(itemName) {
         }
     });
 
-    // Sabhi Karigers ki active sheets me kitna gaya aur wapas aaya
     var sheetGaya = 0;
     var allKarigers = sanitizeKarigerList();
 
@@ -44,7 +43,6 @@ function getBanaItemStats(itemName) {
         });
     });
 
-    // Manual Diya gaya
     var bHist = getStore("bana_history");
     bHist.forEach(function(h) {
         if (h && h.type === "Gaya (Manual)" && h.name && h.name.trim().toLowerCase() === nameLower) {
@@ -71,7 +69,6 @@ function getZariItemStats(itemName) {
     var zStock = getStore("zari_stock");
     var totalAaya = 0, manualGaya = 0, lastDate = "";
 
-    // Godam me kul kitni aayi
     zStock.forEach(function(z) {
         if (z && z.name && z.name.trim().toLowerCase() === nameLower) {
             totalAaya += (Number(z.aaya) || 0);
@@ -79,7 +76,6 @@ function getZariItemStats(itemName) {
         }
     });
 
-    // Sabhi Karigers ki sheets me kitni gayi aur wapas aayi
     var sheetGaya = 0;
     var allKarigers = sanitizeKarigerList();
 
@@ -103,7 +99,6 @@ function getZariItemStats(itemName) {
         });
     });
 
-    // Manual Diya gaya
     var zHist = getStore("zari_history");
     zHist.forEach(function(h) {
         if (h && h.type === "Gaya (Manual)" && h.name && h.name.trim().toLowerCase() === nameLower) {
@@ -151,10 +146,7 @@ function renderBanaTable(flist) {
             "<td><span class='badge-green'>+" + Number(st.aaya).toFixed(2) + "</span></td>" +
             "<td><span class='badge-red'>-" + Number(st.gaya).toFixed(2) + "</span></td>" +
             "<td><span class='badge-blue' style='font-size:12px; font-weight:800;'>" + Number(st.bacha).toFixed(2) + "</span></td>" +
-            "<td style='text-align:center;'>" +
-                "<button class='detail-btn' onclick='viewBanaPassbook(\"" + b.name + "\")'>📖 Passbook</button> " +
-                "<button class='delete-btn' onclick='deleteBanaStock(" + idx + ")'>🗑️</button>" +
-            "</td>" +
+            "<td style='text-align:center;'><button class='detail-btn' onclick='viewBanaPassbook(\"" + b.name + "\")'>📖 Passbook</button> <button class='delete-btn' onclick='deleteBanaStock(" + idx + ")'>🗑️</button></td>" +
         "</tr>";
     });
 }
@@ -222,68 +214,35 @@ function resetBanaFilter() {
 }
 
 function viewBanaPassbook(banaName) {
-    document.getElementById("modal-item-title").textContent = "📖 Bana Passbook: " + banaName;
-    var tbody = document.getElementById("modal-history-body");
-    if (!tbody) return;
-    tbody.innerHTML = "";
-
     var entries = [];
     var nameLower = (banaName || "").trim().toLowerCase();
 
-    // Godam In
     getStore("bana_stock").forEach(function(b) {
         if (b && b.name && b.name.trim().toLowerCase() === nameLower && Number(b.aaya) > 0) {
-            entries.push({ date: b.date || getTodayDate(), desc: "Godam Me Aaya (Stock In)", inQty: Number(b.aaya), outQty: 0 });
+            entries.push({ date: b.date || getTodayDate(), type: "Godam Me Aaya", qty: "+" + Number(b.aaya).toFixed(2), kariger: "Godam Stock In" });
         }
     });
 
-    // Kariger Sheets Out & Return
     var bStock = getStore("bana_stock");
     sanitizeKarigerList().forEach(function(k) {
         var sheets = getKarigerSheets(k.id);
         sheets.forEach(function(sh) {
             if (sh && sh.rows) {
-                var rows = safeArray(sh.rows);
-                rows.forEach(function(r) {
+                safeArray(sh.rows).forEach(function(r) {
                     if (!r) return;
                     var rowBanaName = (r.banaItemName || "").trim().toLowerCase();
                     var isMatch = (rowBanaName === nameLower) || (!rowBanaName && bStock.length > 0 && bStock[0].name.trim().toLowerCase() === nameLower);
 
                     if (isMatch) {
-                        if (Number(r.netBana) > 0) {
-                            entries.push({ date: r.date, desc: k.name + " (" + sh.title + ") - Net Diya", inQty: 0, outQty: Number(r.netBana) });
-                        }
-                        if (Number(r.retBana) > 0) {
-                            entries.push({ date: r.date, desc: k.name + " (" + sh.title + ") - Wapas Aaya (Return)", inQty: Number(r.retBana), outQty: 0 });
-                        }
+                        if (Number(r.netBana) > 0) entries.push({ date: r.date, type: "Net Diya", qty: "-" + Number(r.netBana).toFixed(2), kariger: k.name + " (" + sh.title + ")" });
+                        if (Number(r.retBana) > 0) entries.push({ date: r.date, type: "Wapas Aaya", qty: "+" + Number(r.retBana).toFixed(2), kariger: k.name + " (" + sh.title + ")" });
                     }
                 });
             }
         });
     });
 
-    // Manual History
-    getStore("bana_history").forEach(function(h) {
-        if (h && h.type === "Gaya (Manual)" && h.name && h.name.trim().toLowerCase() === nameLower) {
-            entries.push({ date: h.date, desc: "Manual Diya (" + (h.note || "General") + ")", inQty: 0, outQty: Number(h.qty) });
-        }
-    });
-
-    if (!entries.length) {
-        tbody.innerHTML = "<tr><td colspan='4' style='text-align:center; padding:15px; color:#888;'>Koi record nahi mila.</td></tr>";
-    } else {
-        entries.sort(function(a, b) { return (b.date > a.date) ? 1 : -1; });
-        entries.forEach(function(e) {
-            var qtyDisplay = (e.inQty > 0) ? ("<span style='color:#059669; font-weight:700;'>+" + e.inQty.toFixed(2) + " (Aaya)</span>") : ("<span style='color:#dc2626; font-weight:700;'>-" + e.outQty.toFixed(2) + " (Gaya)</span>");
-            tbody.innerHTML += "<tr>" +
-                "<td>" + formatDateDisplay(e.date) + "</td>" +
-                "<td>" + e.desc + "</td>" +
-                "<td>" + qtyDisplay + "</td>" +
-                "<td style='text-align:center;'>-</td>" +
-            "</tr>";
-        });
-    }
-    setDisplay("item-modal", "flex");
+    viewCustomDatePassbook("Bana Passbook: " + banaName, entries);
 }
 
 // ================= 4. ZARI STOCK MODULE (QUICK DIYA REMOVED) =================
@@ -314,9 +273,7 @@ function renderZariTable(flist) {
             "<td><span class='badge-green'>+" + Number(st.aaya).toFixed(2) + "</span></td>" +
             "<td><span class='badge-red'>-" + Number(st.gaya).toFixed(2) + "</span></td>" +
             "<td><span class='badge-blue' style='font-size:12px; font-weight:800;'>" + Number(st.bacha).toFixed(2) + "</span></td>" +
-            "<td style='text-align:center;'><button class='detail-btn' onclick='viewZariPassbook(\"" + z.name + "\")'>📖 Passbook</button> " +
-                "<button class='delete-btn' onclick='deleteZariStock(" + idx + ")'>🗑️</button>" +
-            "</td>" +
+            "<td style='text-align:center;'><button class='detail-btn' onclick='viewZariPassbook(\"" + z.name + "\")'>📖 Passbook</button> <button class='delete-btn' onclick='deleteZariStock(" + idx + ")'>🗑️</button></td>" +
         "</tr>";
     });
 }
@@ -384,68 +341,35 @@ function resetZariFilter() {
 }
 
 function viewZariPassbook(zariName) {
-    document.getElementById("modal-item-title").textContent = "📖 Zari Passbook: " + zariName;
-    var tbody = document.getElementById("modal-history-body");
-    if (!tbody) return;
-    tbody.innerHTML = "";
-
     var entries = [];
     var nameLower = (zariName || "").trim().toLowerCase();
 
-    // Godam In
     getStore("zari_stock").forEach(function(z) {
         if (z && z.name && z.name.trim().toLowerCase() === nameLower && Number(z.aaya) > 0) {
-            entries.push({ date: z.date || getTodayDate(), desc: "Godam Me Aayi (Stock In)", inQty: Number(z.aaya), outQty: 0 });
+            entries.push({ date: z.date || getTodayDate(), type: "Godam Me Aayi", qty: "+" + Number(z.aaya).toFixed(2), kariger: "Godam Stock In" });
         }
     });
 
-    // Kariger Sheets Out & Return
     var zStock = getStore("zari_stock");
     sanitizeKarigerList().forEach(function(k) {
         var sheets = getKarigerSheets(k.id);
         sheets.forEach(function(sh) {
             if (sh && sh.rows) {
-                var rows = safeArray(sh.rows);
-                rows.forEach(function(r) {
+                safeArray(sh.rows).forEach(function(r) {
                     if (!r) return;
                     var rowZariName = (r.zariItemName || "").trim().toLowerCase();
                     var isMatch = (rowZariName === nameLower) || (!rowZariName && zStock.length > 0 && zStock[0].name.trim().toLowerCase() === nameLower);
 
                     if (isMatch) {
-                        if (Number(r.netZari) > 0) {
-                            entries.push({ date: r.date, desc: k.name + " (" + sh.title + ") - Net Diya", inQty: 0, outQty: Number(r.netZari) });
-                        }
-                        if (Number(r.retZari) > 0) {
-                            entries.push({ date: r.date, desc: k.name + " (" + sh.title + ") - Wapas Aayi (Return)", inQty: Number(r.retZari), outQty: 0 });
-                        }
+                        if (Number(r.netZari) > 0) entries.push({ date: r.date, type: "Net Diya", qty: "-" + Number(r.netZari).toFixed(2), kariger: k.name + " (" + sh.title + ")" });
+                        if (Number(r.retZari) > 0) entries.push({ date: r.date, type: "Wapas Aayi", qty: "+" + Number(r.retZari).toFixed(2), kariger: k.name + " (" + sh.title + ")" });
                     }
                 });
             }
         });
     });
 
-    // Manual History
-    getStore("zari_history").forEach(function(h) {
-        if (h && h.type === "Gaya (Manual)" && h.name && h.name.trim().toLowerCase() === nameLower) {
-            entries.push({ date: h.date, desc: "Manual Diya (" + (h.note || "General") + ")", inQty: 0, outQty: Number(h.qty) });
-        }
-    });
-
-    if (!entries.length) {
-        tbody.innerHTML = "<tr><td colspan='4' style='text-align:center; padding:15px; color:#888;'>Koi record nahi mila.</td></tr>";
-    } else {
-        entries.sort(function(a, b) { return (b.date > a.date) ? 1 : -1; });
-        entries.forEach(function(e) {
-            var qtyDisplay = (e.inQty > 0) ? ("<span style='color:#059669; font-weight:700;'>+" + e.inQty.toFixed(2) + " (Aaya)</span>") : ("<span style='color:#dc2626; font-weight:700;'>-" + e.outQty.toFixed(2) + " (Gaya)</span>");
-            tbody.innerHTML += "<tr>" +
-                "<td>" + formatDateDisplay(e.date) + "</td>" +
-                "<td>" + e.desc + "</td>" +
-                "<td>" + qtyDisplay + "</td>" +
-                "<td style='text-align:center;'>-</td>" +
-            "</tr>";
-        });
-    }
-    setDisplay("item-modal", "flex");
+    viewCustomDatePassbook("Zari Passbook: " + zariName, entries);
 }
 
 // ================= 5. SANCHA STOCK ENGINE =================
@@ -466,8 +390,7 @@ function getSanchaItemStats(sanchaId, sanchaName) {
     });
 
     var hist = getStore("sancha_history");
-    var histAaya = 0;
-    var manualGaya = 0;
+    var histAaya = 0, manualGaya = 0;
 
     hist.forEach(function(h) {
         if (!h) return;
@@ -476,11 +399,8 @@ function getSanchaItemStats(sanchaId, sanchaName) {
 
         if (hIdMatch || hNameMatch) {
             var q = Number(h.qty) || 0;
-            if (String(h.type || "").indexOf("Aaya") !== -1) {
-                histAaya += q;
-            } else if (String(h.type || "").indexOf("Manual") !== -1) {
-                manualGaya += q;
-            }
+            if (String(h.type || "").indexOf("Aaya") !== -1) histAaya += q;
+            else if (String(h.type || "").indexOf("Manual") !== -1) manualGaya += q;
         }
     });
 
@@ -489,16 +409,12 @@ function getSanchaItemStats(sanchaId, sanchaName) {
 
     var sheetGaya = 0;
     var allKarigers = sanitizeKarigerList();
-
     allKarigers.forEach(function(k) {
         var sheets = getKarigerSheets(k.id);
         sheets.forEach(function(sh) {
             if (sh && sh.rows) {
-                var rows = safeArray(sh.rows);
-                rows.forEach(function(r) {
-                    if (!r) return;
-                    var rSancha = String(r.sancha || "").trim().toLowerCase();
-                    if (rSancha && rSancha === nameLower) {
+                safeArray(sh.rows).forEach(function(r) {
+                    if (r && r.sancha && r.sancha.trim().toLowerCase() === nameLower) {
                         sheetGaya += (Number(r.taniWazan) || 0);
                     }
                 });
@@ -507,13 +423,7 @@ function getSanchaItemStats(sanchaId, sanchaName) {
     });
 
     var totalGaya = sheetGaya + manualGaya;
-    var bacha = totalAaya - totalGaya;
-
-    return {
-        aaya: totalAaya,
-        gaya: totalGaya,
-        bacha: bacha
-    };
+    return { aaya: totalAaya, gaya: totalGaya, bacha: totalAaya - totalGaya };
 }
 
 function openSanchaModule() {
@@ -538,28 +448,12 @@ function saveNewSanchaItem() {
 
     var items = getSanchaItems();
     var newId = "sancha_" + Date.now();
-
-    var newItem = {
-        id: newId,
-        name: n,
-        date: d,
-        aaya: q
-    };
-
-    items.push(newItem);
+    items.push({ id: newId, name: n, date: d, aaya: q });
     setStore("sancha_items", items);
 
     if (q > 0) {
         var hist = getStore("sancha_history");
-        hist.push({
-            id: Date.now(),
-            itemId: newId,
-            itemName: n,
-            date: d,
-            type: "Aaya (Starting)",
-            qty: q,
-            note: "Starting Stock Purchase"
-        });
+        hist.push({ id: Date.now(), itemId: newId, itemName: n, date: d, type: "Aaya (Starting)", qty: q, note: "Starting Stock Purchase" });
         setStore("sancha_history", hist);
     }
 
@@ -583,7 +477,6 @@ function renderSanchaTable() {
     items.forEach(function(item) {
         if (!item) return;
         var st = getSanchaItemStats(item.id, item.name);
-
         tbody.innerHTML += "<tr>" +
             "<td>" + formatDateDisplay(item.date) + "</td>" +
             "<td><strong style='color:#0284c7;'>⚙️ " + item.name + "</strong></td>" +
@@ -597,10 +490,7 @@ function renderSanchaTable() {
 
 function deleteSanchaItem(id) {
     if (!confirm("Kya aap is Sancha item ko delete karna chahte hain?")) return;
-    var filtered = getSanchaItems().filter(function(i) {
-        return i && String(i.id) !== String(id);
-    });
-    setStore("sancha_items", filtered);
+    setStore("sancha_items", getSanchaItems().filter(function(i) { return i && String(i.id) !== String(id); }));
     renderSanchaTable();
     if (typeof updateDashboardBadgeTotals === "function") updateDashboardBadgeTotals();
 }
@@ -629,7 +519,6 @@ function closeSanchaDetailModal() {
 
 function addSanchaStockEntry() {
     if (!activeSanchaItemId) return;
-
     var d = document.getElementById("sancha-entry-date").value || getTodayDate();
     var q = parseFloat(document.getElementById("sancha-entry-qty").value) || 0;
     var note = (document.getElementById("sancha-entry-note").value || "").trim();
@@ -641,15 +530,7 @@ function addSanchaStockEntry() {
     if (!item) return;
 
     var hist = getStore("sancha_history");
-    hist.push({
-        id: Date.now(),
-        itemId: item.id,
-        itemName: item.name,
-        date: d,
-        type: "Aaya (Stock In)",
-        qty: q,
-        note: note || "Naya Maal Aaya"
-    });
+    hist.push({ id: Date.now(), itemId: item.id, itemName: item.name, date: d, type: "Aaya (Stock In)", qty: q, note: note || "Naya Maal Aaya" });
     setStore("sancha_history", hist);
 
     document.getElementById("sancha-entry-qty").value = "";
@@ -657,7 +538,6 @@ function addSanchaStockEntry() {
 
     var st = getSanchaItemStats(item.id, item.name);
     document.getElementById("sancha-modal-title").innerHTML = "📦 " + item.name + " (Bacha: " + st.bacha.toFixed(2) + ")";
-
     renderSanchaHistoryTable();
     renderSanchaTable();
     if (typeof updateDashboardBadgeTotals === "function") updateDashboardBadgeTotals();
@@ -672,7 +552,6 @@ function renderSanchaHistoryTable() {
 
     var currentItem = getSanchaItems().find(function(i) { return i && String(i.id) === String(activeSanchaItemId); });
     var currentItemName = currentItem ? currentItem.name.trim().toLowerCase() : "";
-
     var entries = [];
 
     hist.forEach(function(h, idx) {
@@ -680,14 +559,7 @@ function renderSanchaHistoryTable() {
         var idMatch = (h.itemId && String(h.itemId) === String(activeSanchaItemId));
         var nameMatch = (h.itemName && h.itemName.trim().toLowerCase() === currentItemName);
         if (idMatch || nameMatch) {
-            entries.push({
-                idx: idx,
-                date: h.date,
-                type: h.type || "Aaya",
-                qty: Number(h.qty) || 0,
-                note: h.note || "-",
-                isSheet: false
-            });
+            entries.push({ idx: idx, date: h.date, type: h.type || "Aaya", qty: Number(h.qty) || 0, note: h.note || "-", isSheet: false });
         }
     });
 
@@ -695,16 +567,9 @@ function renderSanchaHistoryTable() {
         var sheets = getKarigerSheets(k.id);
         sheets.forEach(function(sh) {
             if (sh && sh.rows) {
-                var rows = safeArray(sh.rows);
-                rows.forEach(function(r) {
+                safeArray(sh.rows).forEach(function(r) {
                     if (r && r.sancha && r.sancha.trim().toLowerCase() === currentItemName && Number(r.taniWazan) > 0) {
-                        entries.push({
-                            date: r.date,
-                            type: "Gaya (Tani)",
-                            qty: Number(r.taniWazan),
-                            note: k.name + " (" + (r.taniName || sh.title) + ")",
-                            isSheet: true
-                        });
+                        entries.push({ date: r.date, type: "Gaya (Tani)", qty: Number(r.taniWazan), note: k.name + " (" + (r.taniName || sh.title) + ")", isSheet: true });
                     }
                 });
             }
@@ -717,7 +582,6 @@ function renderSanchaHistoryTable() {
     }
 
     entries.sort(function(a, b) { return (b.date > a.date) ? 1 : -1; });
-
     entries.forEach(function(e) {
         var isAaya = (String(e.type).indexOf("Aaya") !== -1);
         var actBtn = e.isSheet ? "<span style='color:#64748b; font-size:11px;'>Sheet Entry</span>" : ("<button class='delete-btn' onclick='deleteSanchaHistoryRow(" + e.idx + ")'>🗑️</button>");
@@ -737,7 +601,6 @@ function deleteSanchaHistoryRow(idx) {
     var hist = getStore("sancha_history");
     hist.splice(idx, 1);
     setStore("sancha_history", hist);
-
     renderSanchaHistoryTable();
     renderSanchaTable();
     if (typeof updateDashboardBadgeTotals === "function") updateDashboardBadgeTotals();
@@ -747,49 +610,59 @@ function autoDeductSanchaStock(wazan, date, karName, sanchaName, taniName) {
     return true;
 }
 
-// ================= 6. SAREE STOCK (FRESH vs LOTT TABS, FIXED SEARCH & PASSBOOK) =================
+// ================= 6. SAREE STOCK: 3 TABS (FRESH, LOTT, ACTUAL STOCK) =================
 
 function openSareeModule() {
     if (typeof hideAllSections === "function") hideAllSections();
     setDisplay("saree-section", "block");
-    ensureSareeStockSubTabs();
     renderSareeTable();
-}
-
-function ensureSareeStockSubTabs() {
-    var existingBar = document.getElementById("saree-stock-subtabs-bar");
-    if (!existingBar) {
-        var filterPnl = document.querySelector("#saree-section .filter-panel");
-        if (filterPnl) {
-            var div = document.createElement("div");
-            div.id = "saree-stock-subtabs-bar";
-            div.className = "sheet-tabs-bar";
-            div.style.marginBottom = "15px";
-            div.innerHTML = "<div class='sheet-tabs-list'>" +
-                "<button class='sheet-tab active' id='btn-saree-tab-fresh' onclick='switchSareeStockTab(\"fresh\")'>🥻 Fresh Saree Stock</button>" +
-                "<button class='sheet-tab' id='btn-saree-tab-lott' onclick='switchSareeStockTab(\"lott\")'>⚠️ Lott / Damage Saree Stock</button>" +
-            "</div>";
-            filterPnl.parentNode.insertBefore(div, filterPnl);
-        }
-    }
 }
 
 function switchSareeStockTab(tab) {
     currentSareeStockTab = tab;
-    var btnF = document.getElementById("btn-saree-tab-fresh");
-    var btnL = document.getElementById("btn-saree-tab-lott");
-
-    if (btnF && btnL) {
-        if (tab === "fresh") {
-            btnF.className = "sheet-tab active";
-            btnL.className = "sheet-tab";
-        } else {
-            btnL.className = "sheet-tab active";
-            btnF.className = "sheet-tab";
+    ["fresh", "lott", "actual"].forEach(function(t) {
+        var btn = document.getElementById("btn-saree-tab-" + t);
+        if (btn) {
+            if (t === tab) btn.className = "sheet-tab active";
+            else btn.className = "sheet-tab";
         }
-    }
+    });
 
     renderSareeTable();
+}
+
+// POINT 4: ACTUAL STOCK = MAIN STOCK (FRESH) + CALENDER SE TAYAAR AAYI SAREE
+function calculateActualSareeStock() {
+    var freshStock = getStore("saree_stock");
+    var actualMap = {};
+
+    // 1. Fresh Saree Stock add karo
+    freshStock.forEach(function(s) {
+        if (!s) return;
+        var n = (s.name || "Saree").trim();
+        actualMap[n] = (actualMap[n] || 0) + (Number(s.pcs) || 0);
+    });
+
+    // 2. Calender se wapas aayi saree add karo (minus dukan sent)
+    var allWorkers = (typeof getJobWorkers === "function") ? getJobWorkers().filter(function(w) { return w && w.type === "calender"; }) : [];
+    allWorkers.forEach(function(w) {
+        var sheets = (typeof getJobWorkerSheets === "function") ? getJobWorkerSheets(w.id) : [];
+        sheets.forEach(function(sh) {
+            safeArray(sh.rows).forEach(function(r) {
+                if (r && Number(r.aayiQty) > 0) {
+                    var n = (r.sareeName && r.sareeName !== "-") ? r.sareeName.trim() : "Calender Finished";
+                    var netCalenderReady = Math.max(0, (Number(r.aayiQty) || 0) - (Number(r.dukanSentQty) || 0));
+                    actualMap[n] = (actualMap[n] || 0) + netCalenderReady;
+                }
+            });
+        });
+    });
+
+    var arr = [];
+    for (var k in actualMap) {
+        arr.push({ name: k, totalPcs: actualMap[k] });
+    }
+    return arr;
 }
 
 function renderSareeTable(flist) {
@@ -828,8 +701,8 @@ function renderSareeTable(flist) {
             "</tr>";
         });
 
-    // 2. LOTT SAREE TAB (POINT 4: S.No REMOVED, BUTTON ONLY SAYS "Out")
-    } else {
+    // 2. LOTT SAREE TAB (POINT 4: S.No HATA DIYA, BUTTON SIRF "Out")
+    } else if (currentSareeStockTab === "lott") {
         thead.innerHTML = "<tr style='background:#dc2626; color:white;'>" +
             "<th>Date</th><th>Saree Ka Naam</th><th>Kahan Se Aayi (Source)</th><th>Lott Stock (Pcs)</th><th>Out</th><th style='text-align:center;'>Action</th>" +
         "</tr>";
@@ -853,10 +726,33 @@ function renderSareeTable(flist) {
                 "<td style='text-align:center;'><button class='detail-btn' onclick='viewLottSareePassbook(\"" + l.name + "\")'>📖 Passbook</button> <button class='delete-btn' onclick='deleteLottSareeStock(" + idx + ")'>🗑️</button></td>" +
             "</tr>";
         });
+
+    // 3. ACTUAL STOCK TAB (POINT 4: MAIN STOCK + CALENDER FINISHED)
+    } else if (currentSareeStockTab === "actual") {
+        thead.innerHTML = "<tr style='background:#0d9488; color:white;'>" +
+            "<th>S.No.</th><th>Saree Ka Naam</th><th>Karkhane Me Kul Tayaar (Actual Stock)</th><th style='text-align:center;'>Status</th>" +
+        "</tr>";
+
+        var actualList = calculateActualSareeStock();
+        if (flist) actualList = flist;
+
+        if (!actualList.length) {
+            tbody.innerHTML = "<tr><td colspan='4' style='text-align:center; padding:20px; color:#888;'>Karkhane me abhi koi Actual Stock nahi hai.</td></tr>";
+            return;
+        }
+
+        actualList.forEach(function(a, idx) {
+            tbody.innerHTML += "<tr>" +
+                "<td>" + (idx + 1) + "</td>" +
+                "<td><strong>" + a.name + "</strong></td>" +
+                "<td><strong style='color:#0d9488; font-size:14px;'>" + a.totalPcs + " Pcs</strong></td>" +
+                "<td style='text-align:center;'><span class='badge-green'>✅ Available (Main + Calender)</span></td>" +
+            "</tr>";
+        });
     }
 }
 
-// POINT 5: FIXED SEARCH BAR (FILTERS BOTH FRESH & LOTT TABS)
+// POINT 5: FIXED SEARCH BAR (TEENO TABS PAR KAAM KAREGA)
 function filterSaree() {
     var txt = (document.getElementById("search-saree-input").value || "").toLowerCase().trim();
     var fD = document.getElementById("saree-from-date").value;
@@ -867,12 +763,17 @@ function filterSaree() {
             return s && (String(s.name || "") + " " + String(s.kariger || "") + " " + formatDateDisplay(s.date)).toLowerCase().indexOf(txt) !== -1 && isDateInRange(s.date, fD, tD);
         });
         renderSareeTable(filteredFresh);
-    } else {
+    } else if (currentSareeStockTab === "lott") {
         var lottList = safeArray(getStore("lott_saree_stock"));
         var filteredLott = lottList.filter(function(l) {
             return l && (String(l.name || "") + " " + String(l.source || "") + " " + formatDateDisplay(l.date)).toLowerCase().indexOf(txt) !== -1 && isDateInRange(l.date, fD, tD);
         });
         renderSareeTable(filteredLott);
+    } else if (currentSareeStockTab === "actual") {
+        var filteredActual = calculateActualSareeStock().filter(function(a) {
+            return a && String(a.name || "").toLowerCase().indexOf(txt) !== -1;
+        });
+        renderSareeTable(filteredActual);
     }
 }
 
@@ -890,7 +791,6 @@ function outLottSareeCustomQty(idx) {
 
     var qty = parseInt(prompt("Saree: " + item.name + "\nLott Pcs Available: " + item.pcs + "\n\nKitne Pcs Out karne hain:", item.pcs));
     if (!qty || isNaN(qty) || qty <= 0) return;
-
     if (qty > item.pcs) return alert("Sirf " + item.pcs + " Pcs available hain!");
 
     var note = prompt("Out Note / Vivran:", "Lott Saree Out") || "Lott Saree Out";
@@ -911,7 +811,7 @@ function outLottSareeCustomQty(idx) {
 
     renderSareeTable();
     if (typeof updateDashboardBadgeTotals === "function") updateDashboardBadgeTotals();
-    alert("✅ " + qty + " Lott Saree stock se Out ho gayi!");
+    alert("✅ " + qty + " Lott Saree Out ho gayi!");
 }
 
 function deleteLottSareeStock(idx) {
@@ -966,66 +866,82 @@ function deleteSareeStock(idx) {
     if (typeof updateDashboardBadgeTotals === "function") updateDashboardBadgeTotals();
 }
 
-// ================= 7. PASSBOOK MODAL (POINT 6: SEPARATE FRESH vs LOTT PASSBOOKS) =================
+// ================= 7. PASSBOOK WITH DATE RANGE FILTER (POINT 6 & UNIVERSAL) =================
 
 function viewFreshSareePassbook(sareeName) {
-    viewPassbook("Fresh Saree: " + sareeName, "saree_history", sareeName, "fresh");
+    var entries = [];
+    var hist = getStore("saree_history");
+    hist.forEach(function(it) {
+        if (!it) return;
+        var nMatch = (it.name && it.name.toLowerCase() === String(sareeName || "").toLowerCase());
+        var isFresh = !String(it.type || "").toLowerCase().includes("lott");
+        if (nMatch && isFresh) {
+            entries.push({ date: it.date, type: it.type || "-", qty: it.pcs || it.qty || 0, kariger: it.kariger || "-" });
+        }
+    });
+    viewCustomDatePassbook("Fresh Saree Passbook: " + sareeName, entries);
 }
 
 function viewLottSareePassbook(sareeName) {
-    viewPassbook("Lott Saree: " + sareeName, "saree_history", sareeName, "lott");
+    var entries = [];
+    var hist = getStore("saree_history");
+    hist.forEach(function(it) {
+        if (!it) return;
+        var nMatch = (it.name && it.name.toLowerCase() === String(sareeName || "").toLowerCase());
+        var isLott = String(it.type || "").toLowerCase().includes("lott");
+        if (nMatch && isLott) {
+            entries.push({ date: it.date, type: it.type || "Lott", qty: it.pcs || it.qty || 0, kariger: it.kariger || "Lott" });
+        }
+    });
+    viewCustomDatePassbook("Lott Saree Passbook: " + sareeName, entries);
 }
 
-function viewPassbook(title, storageKey, matchName, filterMode) {
-    currentPassbookContext = { title: title, storageKey: storageKey, matchName: matchName, filterMode: filterMode };
+function viewCustomDatePassbook(title, entriesArray) {
+    rawModalPassbookEntries = safeArray(entriesArray);
     document.getElementById("modal-item-title").textContent = "📖 " + title;
-    var hist = getStore(storageKey);
+    if (document.getElementById("modal-from-date")) document.getElementById("modal-from-date").value = "";
+    if (document.getElementById("modal-to-date")) document.getElementById("modal-to-date").value = "";
+    renderModalPassbookRows(rawModalPassbookEntries);
+    setDisplay("item-modal", "flex");
+}
+
+function filterModalPassbook() {
+    var fD = document.getElementById("modal-from-date") ? document.getElementById("modal-from-date").value : "";
+    var tD = document.getElementById("modal-to-date") ? document.getElementById("modal-to-date").value : "";
+    var filtered = rawModalPassbookEntries.filter(function(e) {
+        return e && isDateInRange(e.date, fD, tD);
+    });
+    renderModalPassbookRows(filtered);
+}
+
+function resetModalPassbook() {
+    if (document.getElementById("modal-from-date")) document.getElementById("modal-from-date").value = "";
+    if (document.getElementById("modal-to-date")) document.getElementById("modal-to-date").value = "";
+    renderModalPassbookRows(rawModalPassbookEntries);
+}
+
+function renderModalPassbookRows(list) {
     var tbody = document.getElementById("modal-history-body");
     if (!tbody) return;
     tbody.innerHTML = "";
 
-    var count = 0;
-    hist.forEach(function(it, idx) {
-        if (!it) return;
-        var nMatch = (it.name && it.name.toLowerCase() === String(matchName || "").toLowerCase());
-        var kMatch = (it.kariger && it.kariger.toLowerCase() === String(matchName || "").toLowerCase());
-
-        var modeMatch = true;
-        if (filterMode === "fresh") {
-            modeMatch = !String(it.type || "").toLowerCase().includes("lott");
-        } else if (filterMode === "lott") {
-            modeMatch = String(it.type || "").toLowerCase().includes("lott");
-        }
-
-        if ((nMatch || kMatch) && modeMatch) {
-            count++;
-            tbody.innerHTML += "<tr>" +
-                "<td>" + formatDateDisplay(it.date) + "</td>" +
-                "<td>" + (it.type || "-") + "</td>" +
-                "<td><strong>" + (it.qty || it.amount || it.pcs || 0) + "</strong></td>" +
-                "<td style='text-align:center;'><button class='delete-btn' onclick='deletePassbookRow(" + idx + ")'>🗑️</button></td>" +
-            "</tr>";
-        }
-    });
-
-    if (!count) {
-        tbody.innerHTML = "<tr><td colspan='4' style='text-align:center; padding:15px; color:#888;'>Koi record nahi mila.</td></tr>";
+    if (!list || !list.length) {
+        tbody.innerHTML = "<tr><td colspan='4' style='text-align:center; padding:15px; color:#888;'>Is tareekh me koi record nahi mila.</td></tr>";
+        return;
     }
-    setDisplay("item-modal", "flex");
-}
 
-function deletePassbookRow(idx) {
-    if (!currentPassbookContext || !confirm("Entry delete karna chahte hain?")) return;
-    var hist = getStore(currentPassbookContext.storageKey);
-    hist.splice(idx, 1);
-    setStore(currentPassbookContext.storageKey, hist);
-
-    viewPassbook(currentPassbookContext.title, currentPassbookContext.storageKey, currentPassbookContext.matchName, currentPassbookContext.filterMode);
-    if (typeof updateDashboardBadgeTotals === "function") updateDashboardBadgeTotals();
-    if (typeof renderDashboardDayBook === "function") renderDashboardDayBook();
+    list.sort(function(a, b) { return (b.date > a.date) ? 1 : -1; });
+    list.forEach(function(it) {
+        tbody.innerHTML += "<tr>" +
+            "<td>" + formatDateDisplay(it.date) + "</td>" +
+            "<td>" + (it.kariger || it.desc || "-") + " (" + (it.type || "-") + ")</td>" +
+            "<td><strong>" + (it.qty || it.amount || 0) + "</strong></td>" +
+            "<td style='text-align:center;'>-</td>" +
+        "</tr>";
+    });
 }
 
 function closeItemModal() {
     setDisplay("item-modal", "none");
-    currentPassbookContext = null;
+    rawModalPassbookEntries = [];
 }
