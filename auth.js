@@ -1,6 +1,6 @@
 /* ========================================================
    SIMPLICITY ERP - FIREBASE, STORAGE, AUTH & ADMIN ENGINE
-   File 3 of 6 • Developed by Farhan Jawed
+   File 3 of 7 • Developed by Farhan Jawed
 ======================================================== */
 
 // 1. FIREBASE CONFIGURATION & INITIALIZATION
@@ -187,8 +187,9 @@ function initFirebaseLiveListeners() {
                     renderPaymentTable();
                 } else if (cur === "sancha-section" && typeof renderSanchaTable === "function") {
                     renderSanchaTable();
-                } else if (cur === "jobwork-section" && typeof renderJobWorkTable === "function") {
-                    renderJobWorkTable();
+                } else if (cur === "jobwork-section") {
+                    if (typeof renderJobWorkWorkersTable === "function") renderJobWorkWorkersTable();
+                    if (typeof updateJobWorkHubBadges === "function") updateJobWorkHubBadges();
                 }
 
                 if (typeof updateDashboardBadgeTotals === "function") updateDashboardBadgeTotals();
@@ -213,8 +214,8 @@ function sanitizeKarigerList() {
 function exportUserFullData() {
     var keys = [
         "karigers", "kariger_info_ledger", "bana_stock", "bana_history",
-        "zari_stock", "zari_history", "saree_stock", "saree_history",
-        "sancha_items", "sancha_history", "jobwork_workers"
+        "zari_stock", "zari_history", "saree_stock", "lott_saree_stock", "saree_history",
+        "sancha_items", "sancha_history", "jobwork_workers", "dukan_transfer_history"
     ];
     var obj = {
         userId: currentUserId,
@@ -498,6 +499,7 @@ function handleLogin() {
     }
 }
 
+// LOGOUT BUG FIXED (passInput exact match)
 function logout() {
     currentUserId = null;
     currentUserRole = null;
@@ -509,7 +511,7 @@ function logout() {
     var err = document.getElementById("login-error");
 
     if (idInput) idInput.value = "";
-    if (passInput) passInp.value = "";
+    if (passInput) passInput.value = ""; // FIXED TYPO
     if (err) err.style.display = "none";
 
     setDisplay("desktop-screen", "none");
@@ -617,7 +619,7 @@ function renderAdminUsersTable() {
             "<td>" + formatDateDisplay(u.date) + "</td>" +
             "<td>" + (isA ? "Lifetime" : ("<input type='date' value='" + (u.expiryDate || "") + "' onchange='updateUserExpiryDate(\"" + u.id + "\", this.value)' style='padding:2px 4px;font-size:11px;border-radius:4px;border:1px solid #cbd5e1;'> " + formatDateDisplay(u.expiryDate) + " <button onclick='extendValidity(\"" + u.id + "\", 30)' style='padding:2px 6px;font-size:10px;border-radius:4px;border:none;background:#2563eb;color:white;cursor:pointer;'>+30D</button>")) + "</td>" +
             "<td>" + stBadge + "</td>" +
-            "<td style='text-align:center;'>" + (isA ? "-" : ("<button class='quick-btn " + (isB ? "btn-in" : "btn-out") + "' onclick='toggleUserBlockStatus(\"" + u.id + "\")'>" + (isB ? "Unblock" : "Block") + "</button> <button class='edit-btn' onclick='resetUserPasswordByAdmin(\"" + u.id + "\")'>🔑 Pass</button> <button class='delete-btn' onclick='deleteUserByAdmin(\"" + u.id + "\")'>🗑️</button>")) + "</td>" +
+            "<td style='text-align:center;'><button class='quick-btn " + (isB ? "btn-in" : "btn-out") + "' onclick='toggleUserBlockStatus(\"" + u.id + "\")'>" + (isB ? "Unblock" : "Block") + "</button> <button class='edit-btn' onclick='resetUserPasswordByAdmin(\"" + u.id + "\")'>🔑 Pass</button> <button class='delete-btn' onclick='deleteUserByAdmin(\"" + u.id + "\")'>🗑️</button></td>" +
         "</tr>";
     });
 
