@@ -547,13 +547,23 @@
                 </div>
             </div>
 
-            <!-- MODULE: SAREE (NEW SAREE BUTTON REMOVED AS REQUESTED) -->
+            <!-- MODULE: SAREE (3 TABS: FRESH, LOTT, ACTUAL STOCK) -->
             <div id="saree-section" class="module-section">
                 <div class="module-header">
                     <button class="back-btn" onclick="backToDashboard()">← Dashboard Wapas</button>
                     <h2 style="color:#2563eb; font-size:19px; font-weight:700;">🥻 Saree Stock Management</h2>
                     <div></div>
                 </div>
+
+                <!-- 3 TABS (POINT 4) -->
+                <div class="sheet-tabs-bar" style="margin-bottom:15px;">
+                    <div class="sheet-tabs-list">
+                        <button class="sheet-tab active" id="btn-saree-tab-fresh" onclick="switchSareeStockTab('fresh')">🥻 Fresh Saree</button>
+                        <button class="sheet-tab" id="btn-saree-tab-lott" onclick="switchSareeStockTab('lott')">⚠️ Lott / Damage Saree</button>
+                        <button class="sheet-tab" id="btn-saree-tab-actual" onclick="switchSareeStockTab('actual')">📦 Actual Stock</button>
+                    </div>
+                </div>
+
                 <div class="filter-panel">
                     <div class="filter-date-group">
                         <label>From:</label><input type="date" id="saree-from-date">
@@ -706,24 +716,24 @@
                         </table>
                     </div>
 
-                    <!-- 3 COLORFUL SUMMARY BOXES (LIVE FROM SHEETS) -->
+                    <!-- 3 COLORFUL SUMMARY BOXES (CLICKABLE PASSBOOK - POINTS 1, 2, 3) -->
                     <div class="summary-bar" style="margin-top:20px;">
-                        <div class="summary-box" style="border-top:4px solid #dc2626; background:#fef2f2;">
-                            <span style="color:#991b1b; font-size:12px; font-weight:700;">🔴 KUL SAREE GAYI</span>
+                        <div class="summary-box" style="border-top:4px solid #dc2626; background:#fef2f2; cursor:pointer;" onclick="viewJobWorkSummaryPassbook('gayi')" title="Passbook dekhne ke liye click karein">
+                            <span style="color:#991b1b; font-size:12px; font-weight:700;">🔴 KUL SAREE GAYI (📖 Passbook)</span>
                             <h3 id="jw-stat-total-gayi" style="color:#dc2626; font-size:24px;">0 Pcs</h3>
                         </div>
-                        <div class="summary-box" style="border-top:4px solid #059669; background:#ecfdf5;">
-                            <span style="color:#065f46; font-size:12px; font-weight:700;">🟢 KUL SAREE WAPAS AAYI</span>
+                        <div class="summary-box" style="border-top:4px solid #059669; background:#ecfdf5; cursor:pointer;" onclick="viewJobWorkSummaryPassbook('aayi')" title="Passbook dekhne ke liye click karein">
+                            <span style="color:#065f46; font-size:12px; font-weight:700;">🟢 KUL SAREE WAPAS AAYI (📖 Passbook)</span>
                             <h3 id="jw-stat-total-aayi" style="color:#059669; font-size:24px;">0 Pcs</h3>
                         </div>
-                        <div class="summary-box" style="border-top:4px solid #ea580c; background:#fff7ed;">
-                            <span style="color:#c2410c; font-size:12px; font-weight:700;">🟠 KUL SAREE DAMAGE HUI</span>
+                        <div class="summary-box" style="border-top:4px solid #ea580c; background:#fff7ed; cursor:pointer;" onclick="viewJobWorkSummaryPassbook('damage')" title="Passbook dekhne ke liye click karein">
+                            <span style="color:#c2410c; font-size:12px; font-weight:700;">🟠 KUL SAREE DAMAGE HUI (📖 Passbook)</span>
                             <h3 id="jw-stat-total-damage" style="color:#ea580c; font-size:24px;">0 Pcs</h3>
                         </div>
                     </div>
                 </div>
 
-                <!-- VIEW 3: WORKER KHATA SHEET (USER'S EXACT DRAWING LAYOUT) -->
+                <!-- VIEW 3: WORKER KHATA SHEET (USER DRAWING EXACT LAYOUT) -->
                 <div id="jw-sheet-view" style="display:none;">
                     <div class="module-header">
                         <div style="display:flex; gap:10px; align-items:center;">
@@ -761,13 +771,13 @@
                             </div>
                         </div>
 
-                        <!-- 3-LINE INPUT FORM (POINT 12: NO SAREE NAME! EXACT DRAWING MATCH) -->
+                        <!-- 3 CLEAN EQUAL LINES FORM (USER'S DRAWING) -->
                         <div id="add-jw-unified-form" style="background:#f8fafc; border:1px solid #cbd5e1; padding:15px; border-radius:10px; margin-bottom:15px;">
                             
                             <!-- LINE 1: SAREE DIYA -->
                             <div style="background:#fff1f2; border:1px solid #fecdd3; border-radius:8px; padding:10px; margin-bottom:10px;">
                                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; flex-wrap:wrap; gap:6px;">
-                                    <strong style="color:#e11d48; font-size:12px;">📤 LINE 1: SAREE DIYA (BHEJA)</strong>
+                                    <strong style="color:#e11d48; font-size:12px;">📤 SAREE DIYA</strong>
                                     <!-- CALENDER ONLY STOCK SELECTOR -->
                                     <div id="jw-calender-stock-source-wrap" style="display:none; gap:12px; font-size:12px; font-weight:700;">
                                         <label style="color:#0284c7; cursor:pointer;"><input type="radio" name="jw-source-rad" id="jw-source-cutting"> ✂️ Cutting Stock</label>
@@ -775,33 +785,33 @@
                                     </div>
                                 </div>
                                 <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px;">
-                                    <div><label style="font-size:10px; font-weight:700;">Date</label><input type="date" id="jw-form-diya-date" style="width:100%; padding:6px; font-size:12px; border:1px solid #cbd5e1; border-radius:6px;"></div>
-                                    <div><label style="font-size:10px; font-weight:700; color:#e11d48;">Gayi QTY (Pcs)</label><input type="number" id="jw-form-diya-qty" placeholder="0" style="width:100%; padding:6px; font-size:12px; border:1px solid #fca5a5; border-radius:6px; font-weight:bold;"></div>
-                                    <div><label style="font-size:10px; font-weight:700;">RATE (₹)</label><input type="number" step="any" id="jw-form-diya-rate" placeholder="0" style="width:100%; padding:6px; font-size:12px; border:1px solid #cbd5e1; border-radius:6px;"></div>
+                                    <div><label style="font-size:11px; font-weight:700;">Date</label><input type="date" id="jw-form-diya-date" style="width:100%; padding:6px; font-size:12px; border:1px solid #cbd5e1; border-radius:6px;"></div>
+                                    <div><label style="font-size:11px; font-weight:700; color:#e11d48;">QTY</label><input type="number" id="jw-form-diya-qty" placeholder="0" style="width:100%; padding:6px; font-size:12px; border:1px solid #fca5a5; border-radius:6px; font-weight:bold;"></div>
+                                    <div><label style="font-size:11px; font-weight:700;">RATE</label><input type="number" step="any" id="jw-form-diya-rate" placeholder="0" style="width:100%; padding:6px; font-size:12px; border:1px solid #cbd5e1; border-radius:6px;"></div>
                                 </div>
                             </div>
 
-                            <!-- LINE 2: SAREE WAPAS AAYI -->
+                            <!-- LINE 2: SAREE WAPAS AAI -->
                             <div style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:8px; padding:10px; margin-bottom:10px;">
-                                <strong style="color:#15803d; font-size:12px; display:block; margin-bottom:6px;">📥 LINE 2: SAREE WAPAS AAYI</strong>
+                                <strong style="color:#15803d; font-size:12px; display:block; margin-bottom:6px;">📥 SAREE WAPAS AAI</strong>
                                 <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px;">
-                                    <div><label style="font-size:10px; font-weight:700;">Date</label><input type="date" id="jw-form-aayi-date" style="width:100%; padding:6px; font-size:12px; border:1px solid #cbd5e1; border-radius:6px;"></div>
-                                    <div><label style="font-size:10px; font-weight:700; color:#15803d;">Wapas Aayi QTY (Pcs)</label><input type="number" id="jw-form-aayi-qty" placeholder="0" style="width:100%; padding:6px; font-size:12px; border:1px solid #86efac; border-radius:6px; font-weight:bold;"></div>
-                                    <div><label style="font-size:10px; font-weight:700;">RATE (₹)</label><input type="number" step="any" id="jw-form-aayi-rate" placeholder="0" style="width:100%; padding:6px; font-size:12px; border:1px solid #cbd5e1; border-radius:6px;"></div>
+                                    <div><label style="font-size:11px; font-weight:700;">Date</label><input type="date" id="jw-form-aayi-date" style="width:100%; padding:6px; font-size:12px; border:1px solid #cbd5e1; border-radius:6px;"></div>
+                                    <div><label style="font-size:11px; font-weight:700; color:#15803d;">QTY</label><input type="number" id="jw-form-aayi-qty" placeholder="0" style="width:100%; padding:6px; font-size:12px; border:1px solid #86efac; border-radius:6px; font-weight:bold;"></div>
+                                    <div><label style="font-size:11px; font-weight:700;">RATE</label><input type="number" step="any" id="jw-form-aayi-rate" placeholder="0" style="width:100%; padding:6px; font-size:12px; border:1px solid #cbd5e1; border-radius:6px;"></div>
                                 </div>
                             </div>
 
                             <!-- LINE 3: PAYMENT & DAMAGE -->
                             <div style="background:#faf5ff; border:1px solid #e9d5ff; border-radius:8px; padding:10px; margin-bottom:12px;">
-                                <strong style="color:#7e22ce; font-size:12px; display:block; margin-bottom:6px;">💳 LINE 3: PAYMENT & DAMAGE KATAUTI</strong>
+                                <strong style="color:#7e22ce; font-size:12px; display:block; margin-bottom:6px;">💳 PAYMENT & DAMAGE</strong>
                                 <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px;">
-                                    <div><label style="font-size:10px; font-weight:700; color:#059669;">Payment (₹ Diya)</label><input type="number" step="any" id="jw-form-payment" placeholder="0" style="width:100%; padding:6px; font-size:12px; border:1px solid #86efac; border-radius:6px;"></div>
-                                    <div><label style="font-size:10px; font-weight:700; color:#dc2626;">Damage Saree Pcs</label><input type="number" id="jw-form-damage-pcs" placeholder="0" style="width:100%; padding:6px; font-size:12px; border:1px solid #fca5a5; border-radius:6px;"></div>
-                                    <div><label style="font-size:10px; font-weight:700; color:#dc2626;">Damage (₹ Katauti)</label><input type="number" step="any" id="jw-form-damage-amt" placeholder="0" style="width:100%; padding:6px; font-size:12px; border:1px solid #fca5a5; border-radius:6px;"></div>
+                                    <div><label style="font-size:11px; font-weight:700; color:#059669;">Payment(₹)</label><input type="number" step="any" id="jw-form-payment" placeholder="0" style="width:100%; padding:6px; font-size:12px; border:1px solid #86efac; border-radius:6px;"></div>
+                                    <div><label style="font-size:11px; font-weight:700; color:#dc2626;">Damage(Pcs)</label><input type="number" id="jw-form-damage-pcs" placeholder="0" style="width:100%; padding:6px; font-size:12px; border:1px solid #fca5a5; border-radius:6px;"></div>
+                                    <div><label style="font-size:11px; font-weight:700; color:#dc2626;">Katuti(₹)</label><input type="number" step="any" id="jw-form-damage-amt" placeholder="0" style="width:100%; padding:6px; font-size:12px; border:1px solid #fca5a5; border-radius:6px;"></div>
                                 </div>
                             </div>
 
-                            <button class="add-btn" style="background:#0d9488; width:100%; padding:10px; font-size:14px; font-weight:800;" onclick="addJobWorkUnifiedRow()">+ Line Jodein & Save Karein</button>
+                            <button class="add-btn" style="background:#0d9488; width:100%; padding:10px; font-size:14px; font-weight:800;" onclick="addJobWorkUnifiedRow()">Line Jode & Save Kare</button>
                         </div>
 
                         <!-- 1 SINGLE UNIFIED TABLE (DRAWING LAYOUT) -->
@@ -824,24 +834,20 @@
                             </table>
                         </div>
 
-                        <!-- 4 DYNAMIC SUMMARY CARDS (USER DRAWING PHOTO) -->
+                        <!-- 4 DYNAMIC SUMMARY CARDS (USER DRAWING EXACT) -->
                         <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(130px, 1fr)); gap:10px; margin-top:15px; margin-bottom:15px;">
-                            <!-- CARD 1 -->
                             <div class="calc-card" style="border-top:4px solid #dc2626; text-align:center; padding:12px 8px;">
                                 <div style="font-size:11px; font-weight:700; color:#991b1b;">SAREE TOTAL GAYI</div>
                                 <h3 id="jw-card-total-gayi" style="color:#dc2626; font-size:18px; margin-top:4px;">0 Pcs</h3>
                             </div>
-                            <!-- CARD 2 -->
                             <div class="calc-card" style="border-top:4px solid #059669; text-align:center; padding:12px 8px;">
-                                <div style="font-size:11px; font-weight:700; color:#065f46;">SAREE TOTAL AAYI</div>
+                                <div style="font-size:11px; font-weight:700; color:#065f46;">SAREE TOTAL AAI</div>
                                 <h3 id="jw-card-total-aayi" style="color:#059669; font-size:18px; margin-top:4px;">0 Pcs</h3>
                             </div>
-                            <!-- CARD 3 -->
                             <div class="calc-card" style="border-top:4px solid #7e22ce; text-align:center; padding:12px 8px;">
                                 <div style="font-size:11px; font-weight:700; color:#6b21a8;">PAYMENT TOTAL DIYA</div>
                                 <h3 id="jw-card-total-diya-pay" style="color:#7e22ce; font-size:18px; margin-top:4px;">₹ 0</h3>
                             </div>
-                            <!-- CARD 4 -->
                             <div class="calc-card" style="border-top:4px solid #ea580c; text-align:center; padding:12px 8px;">
                                 <div style="font-size:11px; font-weight:700; color:#c2410c;">LOTT TOTAL</div>
                                 <h3 id="jw-card-total-lott" style="color:#ea580c; font-size:18px; margin-top:4px;">0 Pcs</h3>
@@ -863,7 +869,7 @@
                     </div>
                 </div>
 
-                <!-- VIEW 4: 🏪 DUKAN BHEJA (FINAL STOCK OUT REGISTER WITH DATE FILTER) -->
+                <!-- VIEW 4: 🏪 DUKAN BHEJA (FINAL STOCK OUT REGISTER WITH DATE RANGE FILTER) -->
                 <div id="jw-dukan-view" style="display:none;">
                     <div class="module-header">
                         <button class="back-btn" onclick="showJobWorkHub()">← Wapas Hub</button>
@@ -887,7 +893,7 @@
                         </div>
                     </div>
 
-                    <!-- DATE RANGE FILTER PANEL (POINT 9) -->
+                    <!-- DATE RANGE FILTER PANEL -->
                     <div class="filter-panel" style="background:#f0fdf4; border-color:#bbf7d0;">
                         <div class="filter-date-group">
                             <label>From Date:</label><input type="date" id="jw-dukan-from-date">
@@ -977,7 +983,7 @@
         </div>
     </div>
 
-    <!-- MODAL 3: PASSBOOK HISTORY MODAL -->
+    <!-- MODAL 3: PASSBOOK HISTORY MODAL (WITH DATE RANGE FILTER) -->
     <div id="item-modal" class="modal-overlay">
         <div class="modal-card">
             <div class="modal-header">
@@ -985,6 +991,16 @@
                 <button class="close-modal-btn" onclick="closeItemModal()">X</button>
             </div>
             <div class="modal-body">
+                <!-- PASSBOOK DATE FILTER BAR -->
+                <div class="filter-panel" style="margin-bottom:12px; padding:8px 12px; gap:8px;">
+                    <div class="filter-date-group">
+                        <label style="font-size:11px;">From:</label><input type="date" id="modal-from-date" style="padding:4px 8px; font-size:12px;">
+                        <label style="font-size:11px;">To:</label><input type="date" id="modal-to-date" style="padding:4px 8px; font-size:12px;">
+                        <button class="filter-btn" style="padding:5px 12px; font-size:11px;" onclick="filterModalPassbook()">Filter</button>
+                        <button class="reset-btn" style="padding:5px 10px; font-size:11px;" onclick="resetModalPassbook()">Reset</button>
+                    </div>
+                </div>
+
                 <div class="table-responsive">
                     <table>
                         <thead><tr style="background:#334155; color:white;"><th>Tarikh</th><th>Kariger / Vivran</th><th>Qty / Rupaye</th><th style="text-align:center;">Action</th></tr></thead>
