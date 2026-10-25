@@ -1,6 +1,6 @@
 /* ========================================================
    SIMPLICITY ERP - LIVE STOCK ENGINE (BANA, ZARI, SAREE, LOTT, SANCHA)
-   File 5 of 6 • Developed by Farhan Jawed
+   File 5 of 7 • Developed by Farhan Jawed
 ======================================================== */
 
 var currentSareeStockTab = "fresh"; // "fresh" ya "lott"
@@ -861,7 +861,7 @@ function renderSanchaHistoryTable() {
             "<td><span class='" + (isAaya ? "badge-green" : "badge-red") + "'>" + e.type + "</span></td>" +
             "<td><strong style='color:" + (isAaya ? "#059669" : "#dc2626") + ";'>" + (isAaya ? "+" : "-") + e.qty.toFixed(2) + "</strong></td>" +
             "<td>" + e.note + "</td>" +
-            "<td style='text-align:center;'>" + actBtn + "</td>" +
+            "<td style='text-align:center;'><button class='delete-btn' onclick='deleteSanchaHistoryRow(" + e.idx + ")'>🗑️</button></td>" +
         "</tr>";
     });
 }
