@@ -438,7 +438,7 @@ function updateDashboardBadgeTotals() {
     });
     setT("btn-total-zari", "Bacha: " + tz.toFixed(2));
 
-    // Saree Stock Total
+    // Saree Stock Total (Fresh)
     var ts = 0;
     getStore("saree_stock").forEach(function(s) {
         if (s) ts += (Number(s.pcs) || 0);
