@@ -123,7 +123,7 @@ function getZariItemStats(itemName) {
     };
 }
 
-// ================= 3. BANA STOCK MODULE =================
+// ================= 3. BANA STOCK MODULE (QUICK DIYA REMOVED) =================
 
 function openBanaModule() {
     if (typeof hideAllSections === "function") hideAllSections();
@@ -138,7 +138,7 @@ function renderBanaTable(flist) {
     tbody.innerHTML = "";
 
     if (!list.length) {
-        tbody.innerHTML = "<tr><td colspan='7' style='text-align:center; padding:20px; color:#888;'>Koi Bana Stock nahi mila.</td></tr>";
+        tbody.innerHTML = "<tr><td colspan='6' style='text-align:center; padding:20px; color:#888;'>Koi Bana Stock nahi mila.</td></tr>";
         return;
     }
 
@@ -151,8 +151,8 @@ function renderBanaTable(flist) {
             "<td><span class='badge-green'>+" + Number(st.aaya).toFixed(2) + "</span></td>" +
             "<td><span class='badge-red'>-" + Number(st.gaya).toFixed(2) + "</span></td>" +
             "<td><span class='badge-blue' style='font-size:12px; font-weight:800;'>" + Number(st.bacha).toFixed(2) + "</span></td>" +
-            "<td><button class='quick-btn btn-out' onclick='giveBanaToKariger(" + idx + ")'>📤 Diya</button></td>" +
-            "<td style='text-align:center;'><button class='detail-btn' onclick='viewBanaPassbook(\"" + b.name + "\")'>📖 Passbook</button> " +
+            "<td style='text-align:center;'>" +
+                "<button class='detail-btn' onclick='viewBanaPassbook(\"" + b.name + "\")'>📖 Passbook</button> " +
                 "<button class='delete-btn' onclick='deleteBanaStock(" + idx + ")'>🗑️</button>" +
             "</td>" +
         "</tr>";
@@ -193,74 +193,6 @@ function saveNewBana() {
     if (typeof updateDashboardBadgeTotals === "function") updateDashboardBadgeTotals();
     if (typeof renderDashboardDayBook === "function") renderDashboardDayBook();
     alert("✅ " + q + " " + n + " Bana stock me jud gaya!");
-}
-
-function giveBanaToKariger(idx) {
-    var stock = getStore("bana_stock");
-    var it = stock[idx];
-    if (!it) return;
-
-    var st = getBanaItemStats(it.name);
-    var q = parseFloat(prompt("Kitna " + it.name + " Bana diya (Qty)?\n(Bacha Stock: " + st.bacha.toFixed(2) + "):"));
-    if (!q || isNaN(q) || q <= 0) return;
-
-    var karList = sanitizeKarigerList();
-    var karNames = karList.map(function(k, i) { return (i + 1) + ". " + k.name; }).join("\n");
-    var promptMsg = "Kis Kariger ko diya? Kariger ka number ya naam daalein:\n" + (karNames || "Koi Kariger maujood nahi hai");
-    var karChoice = prompt(promptMsg);
-    if (!karChoice || !karChoice.trim()) return;
-
-    karChoice = karChoice.trim();
-    var selectedKar = null;
-    var choiceNum = parseInt(karChoice);
-
-    if (!isNaN(choiceNum) && choiceNum >= 1 && choiceNum <= karList.length) {
-        selectedKar = karList[choiceNum - 1];
-    } else {
-        selectedKar = karList.find(function(k) { return k.name.toLowerCase() === karChoice.toLowerCase(); });
-    }
-
-    var payDate = prompt("Tarikh (YYYY-MM-DD):", getTodayDate()) || getTodayDate();
-
-    if (selectedKar) {
-        var sheets = getKarigerSheets(selectedKar.id);
-        if (!sheets || !sheets.length) {
-            sheets = [{ id: "tani_1", title: "Tani 1", banaRate: 0.311, zariRate: 0.110, baniRate: 240, closingBana: 0, closingZari: 0, closingBani: 0, note: "", rows: [] }];
-        }
-        var targetSheet = sheets[sheets.length - 1];
-        targetSheet.rows = safeArray(targetSheet.rows);
-
-        var newRow = {
-            id: "row_" + Date.now(),
-            date: payDate,
-            saree: 0,
-            sareeName: selectedKar.saree || "-",
-            sancha: "",
-            taniName: targetSheet.title,
-            taniWazan: 0,
-            banaCone: q,
-            banaTp: 0,
-            banaLess: 0,
-            netBana: q,
-            zariQty: 0, zariTp: 0, zariTopi: 0, netZari: 0,
-            paid: 0, lott: 0, retBana: 0, retZari: 0,
-            banaItemName: it.name,
-            zariItemName: ""
-        };
-
-        targetSheet.rows.push(newRow);
-        saveKarigerSheets(selectedKar.id, sheets);
-        alert("✅ " + q + " " + it.name + " Bana kariger " + selectedKar.name + " ki sheet me jud gaya aur live stock se minus ho gaya!");
-    } else {
-        var bH = getStore("bana_history");
-        bH.push({ id: Date.now(), date: payDate, type: "Gaya (Manual)", name: it.name, qty: q, note: karChoice });
-        setStore("bana_history", bH);
-        alert("✅ " + q + " " + it.name + " Bana stock se minus ho gaya!");
-    }
-
-    renderBanaTable();
-    if (typeof updateDashboardBadgeTotals === "function") updateDashboardBadgeTotals();
-    if (typeof renderDashboardDayBook === "function") renderDashboardDayBook();
 }
 
 function deleteBanaStock(idx) {
@@ -354,7 +286,7 @@ function viewBanaPassbook(banaName) {
     setDisplay("item-modal", "flex");
 }
 
-// ================= 4. ZARI STOCK MODULE =================
+// ================= 4. ZARI STOCK MODULE (QUICK DIYA REMOVED) =================
 
 function openZariModule() {
     if (typeof hideAllSections === "function") hideAllSections();
@@ -369,7 +301,7 @@ function renderZariTable(flist) {
     tbody.innerHTML = "";
 
     if (!list.length) {
-        tbody.innerHTML = "<tr><td colspan='7' style='text-align:center; padding:20px; color:#888;'>Koi Zari Stock nahi mila.</td></tr>";
+        tbody.innerHTML = "<tr><td colspan='6' style='text-align:center; padding:20px; color:#888;'>Koi Zari Stock nahi mila.</td></tr>";
         return;
     }
 
@@ -382,7 +314,6 @@ function renderZariTable(flist) {
             "<td><span class='badge-green'>+" + Number(st.aaya).toFixed(2) + "</span></td>" +
             "<td><span class='badge-red'>-" + Number(st.gaya).toFixed(2) + "</span></td>" +
             "<td><span class='badge-blue' style='font-size:12px; font-weight:800;'>" + Number(st.bacha).toFixed(2) + "</span></td>" +
-            "<td><button class='quick-btn btn-out' onclick='giveZariToKariger(" + idx + ")'>📤 Diya</button></td>" +
             "<td style='text-align:center;'><button class='detail-btn' onclick='viewZariPassbook(\"" + z.name + "\")'>📖 Passbook</button> " +
                 "<button class='delete-btn' onclick='deleteZariStock(" + idx + ")'>🗑️</button>" +
             "</td>" +
@@ -424,71 +355,6 @@ function saveNewZari() {
     if (typeof updateDashboardBadgeTotals === "function") updateDashboardBadgeTotals();
     if (typeof renderDashboardDayBook === "function") renderDashboardDayBook();
     alert("✅ " + q + " " + n + " Zari stock me jud gayi!");
-}
-
-function giveZariToKariger(idx) {
-    var stock = getStore("zari_stock");
-    var it = stock[idx];
-    if (!it) return;
-
-    var st = getZariItemStats(it.name);
-    var q = parseFloat(prompt("Kitni " + it.name + " Zari di (Qty)?\n(Bachi Stock: " + st.bacha.toFixed(2) + "):"));
-    if (!q || isNaN(q) || q <= 0) return;
-
-    var karList = sanitizeKarigerList();
-    var karNames = karList.map(function(k, i) { return (i + 1) + ". " + k.name; }).join("\n");
-    var promptMsg = "Kis Kariger ko di? Kariger ka number ya naam daalein:\n" + (karNames || "Koi Kariger maujood nahi hai");
-    var karChoice = prompt(promptMsg);
-    if (!karChoice || !karChoice.trim()) return;
-
-    karChoice = karChoice.trim();
-    var selectedKar = null;
-    var choiceNum = parseInt(karChoice);
-
-    if (!isNaN(choiceNum) && choiceNum >= 1 && choiceNum <= karList.length) {
-        selectedKar = karList[choiceNum - 1];
-    } else {
-        selectedKar = karList.find(function(k) { return k.name.toLowerCase() === karChoice.toLowerCase(); });
-    }
-
-    var payDate = prompt("Tarikh (YYYY-MM-DD):", getTodayDate()) || getTodayDate();
-
-    if (selectedKar) {
-        var sheets = getKarigerSheets(selectedKar.id);
-        if (!sheets || !sheets.length) {
-            sheets = [{ id: "tani_1", title: "Tani 1", banaRate: 0.311, zariRate: 0.110, baniRate: 240, closingBana: 0, closingZari: 0, closingBani: 0, note: "", rows: [] }];
-        }
-        var targetSheet = sheets[sheets.length - 1];
-        targetSheet.rows = safeArray(targetSheet.rows);
-
-        var newRow = {
-            id: "row_" + Date.now(),
-            date: payDate,
-            saree: 0,
-            sareeName: selectedKar.saree || "-",
-            sancha: "",
-            taniName: targetSheet.title,
-            taniWazan: 0,
-            banaCone: 0, banaTp: 0, banaLess: 0, netBana: 0,
-            zariQty: q, zariTp: 0, zariTopi: 0, netZari: q,
-            paid: 0, lott: 0, retBana: 0, retZari: 0,
-            banaItemName: "",
-            zariItemName: it.name
-        };
-
-        targetSheet.rows.push(newRow);
-        saveKarigerSheets(selectedKar.id, sheets);
-        alert("✅ " + q + " " + it.name + " Zari kariger " + selectedKar.name + " ki sheet me jud gayi aur live stock se minus ho gayi!");
-    } else {
-        var zH = getStore("zari_history");
-        zH.push({ id: Date.now(), date: payDate, type: "Gaya (Manual)", name: it.name, qty: q, note: karChoice });
-        setStore("zari_history", zH);
-        alert("✅ " + q + " " + it.name + " Zari stock se minus ho gayi!");
-    }
-
-    renderZariTable();
-    if (typeof updateDashboardBadgeTotals === "function") updateDashboardBadgeTotals();
-    if (typeof renderDashboardDayBook === "function") renderDashboardDayBook();
 }
 
 function deleteZariStock(idx) {
@@ -881,7 +747,7 @@ function autoDeductSanchaStock(wazan, date, karName, sanchaName, taniName) {
     return true;
 }
 
-// ================= 6. SAREE STOCK (FRESH SAREE vs LOTT SAREE TABS) =================
+// ================= 6. SAREE STOCK (FRESH vs LOTT TABS, FIXED SEARCH & PASSBOOK) =================
 
 function openSareeModule() {
     if (typeof hideAllSections === "function") hideAllSections();
@@ -958,19 +824,19 @@ function renderSareeTable(flist) {
                         "<button class='quick-btn btn-out' onclick='outSareeCustomQty(" + idx + ")'>📤 Out</button>" +
                     "</div>" +
                 "</td>" +
-                "<td style='text-align:center;'><button class='detail-btn' onclick='viewPassbook(\"Saree: " + s.name + "\", \"saree_history\", \"" + s.name + "\")'>📖 Passbook</button> <button class='delete-btn' onclick='deleteSareeStock(" + idx + ")'>🗑️</button></td>" +
+                "<td style='text-align:center;'><button class='detail-btn' onclick='viewFreshSareePassbook(\"" + s.name + "\")'>📖 Passbook</button> <button class='delete-btn' onclick='deleteSareeStock(" + idx + ")'>🗑️</button></td>" +
             "</tr>";
         });
 
-    // 2. LOTT SAREE TAB
+    // 2. LOTT SAREE TAB (POINT 4: S.No REMOVED, BUTTON ONLY SAYS "Out")
     } else {
         thead.innerHTML = "<tr style='background:#dc2626; color:white;'>" +
-            "<th>Date</th><th>S.No.</th><th>Saree Ka Naam</th><th>Kahan Se Aayi (Source)</th><th>Lott Stock (Pcs)</th><th>Saste Me Becha (Out)</th><th style='text-align:center;'>Action</th>" +
+            "<th>Date</th><th>Saree Ka Naam</th><th>Kahan Se Aayi (Source)</th><th>Lott Stock (Pcs)</th><th>Out</th><th style='text-align:center;'>Action</th>" +
         "</tr>";
 
-        var lottList = safeArray(getStore("lott_saree_stock"));
+        var lottList = flist || safeArray(getStore("lott_saree_stock"));
         if (!lottList.length) {
-            tbody.innerHTML = "<tr><td colspan='7' style='text-align:center; padding:20px; color:#888;'>Karkhane me abhi koi Lott Saree nahi hai.</td></tr>";
+            tbody.innerHTML = "<tr><td colspan='6' style='text-align:center; padding:20px; color:#888;'>Karkhane me abhi koi Lott Saree nahi hai.</td></tr>";
             return;
         }
 
@@ -978,17 +844,43 @@ function renderSareeTable(flist) {
             if (!l) return;
             tbody.innerHTML += "<tr>" +
                 "<td>" + formatDateDisplay(l.date) + "</td>" +
-                "<td>" + (idx + 1) + "</td>" +
                 "<td><strong>" + l.name + "</strong></td>" +
                 "<td>" + (l.source || "Loom / Job Work") + "</td>" +
                 "<td><span class='badge-red'>⚠️ " + (l.pcs || 0) + " pcs</span></td>" +
                 "<td>" +
-                    "<button class='quick-btn btn-out' style='background:#fef2f2; border:1px solid #fca5a5; font-size:11px;' onclick='outLottSareeCustomQty(" + idx + ")'>📤 Saste Me Becha</button>" +
+                    "<button class='quick-btn btn-out' style='background:#fef2f2; border:1px solid #fca5a5; font-size:12px; font-weight:700;' onclick='outLottSareeCustomQty(" + idx + ")'>📤 Out</button>" +
                 "</td>" +
-                "<td style='text-align:center;'><button class='detail-btn' onclick='viewPassbook(\"Lott Saree: " + l.name + "\", \"saree_history\", \"" + l.name + "\")'>📖 Passbook</button> <button class='delete-btn' onclick='deleteLottSareeStock(" + idx + ")'>🗑️</button></td>" +
+                "<td style='text-align:center;'><button class='detail-btn' onclick='viewLottSareePassbook(\"" + l.name + "\")'>📖 Passbook</button> <button class='delete-btn' onclick='deleteLottSareeStock(" + idx + ")'>🗑️</button></td>" +
             "</tr>";
         });
     }
+}
+
+// POINT 5: FIXED SEARCH BAR (FILTERS BOTH FRESH & LOTT TABS)
+function filterSaree() {
+    var txt = (document.getElementById("search-saree-input").value || "").toLowerCase().trim();
+    var fD = document.getElementById("saree-from-date").value;
+    var tD = document.getElementById("saree-to-date").value;
+
+    if (currentSareeStockTab === "fresh") {
+        var filteredFresh = getStore("saree_stock").filter(function(s) {
+            return s && (String(s.name || "") + " " + String(s.kariger || "") + " " + formatDateDisplay(s.date)).toLowerCase().indexOf(txt) !== -1 && isDateInRange(s.date, fD, tD);
+        });
+        renderSareeTable(filteredFresh);
+    } else {
+        var lottList = safeArray(getStore("lott_saree_stock"));
+        var filteredLott = lottList.filter(function(l) {
+            return l && (String(l.name || "") + " " + String(l.source || "") + " " + formatDateDisplay(l.date)).toLowerCase().indexOf(txt) !== -1 && isDateInRange(l.date, fD, tD);
+        });
+        renderSareeTable(filteredLott);
+    }
+}
+
+function resetSareeFilter() {
+    document.getElementById("saree-from-date").value = "";
+    document.getElementById("saree-to-date").value = "";
+    document.getElementById("search-saree-input").value = "";
+    renderSareeTable();
 }
 
 function outLottSareeCustomQty(idx) {
@@ -996,12 +888,12 @@ function outLottSareeCustomQty(idx) {
     var item = stock[idx];
     if (!item) return;
 
-    var qty = parseInt(prompt("Saree: " + item.name + "\nLott Pcs Available: " + item.pcs + "\n\nKitne Pcs saste me beche (Out):", item.pcs));
+    var qty = parseInt(prompt("Saree: " + item.name + "\nLott Pcs Available: " + item.pcs + "\n\nKitne Pcs Out karne hain:", item.pcs));
     if (!qty || isNaN(qty) || qty <= 0) return;
 
     if (qty > item.pcs) return alert("Sirf " + item.pcs + " Pcs available hain!");
 
-    var note = prompt("Dukan Vivran / Saste Rate Ka Note:", "Lott Discount Sale") || "Lott Discount Sale";
+    var note = prompt("Out Note / Vivran:", "Lott Saree Out") || "Lott Saree Out";
     item.pcs -= qty;
     setStore("lott_saree_stock", stock);
 
@@ -1019,7 +911,7 @@ function outLottSareeCustomQty(idx) {
 
     renderSareeTable();
     if (typeof updateDashboardBadgeTotals === "function") updateDashboardBadgeTotals();
-    alert("✅ " + qty + " Lott Saree saste me bech di gayi aur stock se out ho gayi!");
+    alert("✅ " + qty + " Lott Saree stock se Out ho gayi!");
 }
 
 function deleteLottSareeStock(idx) {
@@ -1065,36 +957,6 @@ function outSareeCustomQty(idx) {
     alert("✅ " + qty + " Saree stock se minus ho gayi!");
 }
 
-function toggleAddForm() {
-    var f = document.getElementById("add-saree-form");
-    if (!f) return;
-    f.style.display = (f.style.display === "block") ? "none" : "block";
-    document.getElementById("saree-date").value = getTodayDate();
-}
-
-function saveNewSaree() {
-    var d = document.getElementById("saree-date").value || getTodayDate();
-    var n = (document.getElementById("saree-name").value || "").trim();
-    var k = (document.getElementById("saree-kariger").value || "").trim();
-    var pcs = parseInt(document.getElementById("saree-pcs").value) || 0;
-
-    if (!n || pcs <= 0) return alert("Saree ka naam aur Pcs zaroori hai!");
-
-    var stock = getStore("saree_stock");
-    stock.push({ id: Date.now(), date: d, name: n, kariger: k || "-", pcs: pcs });
-    setStore("saree_stock", stock);
-
-    var h = getStore("saree_history");
-    h.push({ id: Date.now(), date: d, name: n, kariger: k || "-", type: "In (Received)", pcs: pcs, note: "Direct add" });
-    setStore("saree_history", h);
-
-    toggleAddForm();
-    renderSareeTable();
-    if (typeof updateDashboardBadgeTotals === "function") updateDashboardBadgeTotals();
-    if (typeof renderDashboardDayBook === "function") renderDashboardDayBook();
-    alert("✅ " + pcs + " Saree jud gayi!");
-}
-
 function deleteSareeStock(idx) {
     if (!confirm("Kya aap is saree stock ko delete karna chahte hain?")) return;
     var s = getStore("saree_stock");
@@ -1104,27 +966,18 @@ function deleteSareeStock(idx) {
     if (typeof updateDashboardBadgeTotals === "function") updateDashboardBadgeTotals();
 }
 
-function filterSaree() {
-    var txt = (document.getElementById("search-saree-input").value || "").toLowerCase().trim();
-    var fD = document.getElementById("saree-from-date").value;
-    var tD = document.getElementById("saree-to-date").value;
+// ================= 7. PASSBOOK MODAL (POINT 6: SEPARATE FRESH vs LOTT PASSBOOKS) =================
 
-    renderSareeTable(getStore("saree_stock").filter(function(s) {
-        return s && (String(s.name || "") + " " + String(s.kariger || "") + " " + formatDateDisplay(s.date)).toLowerCase().indexOf(txt) !== -1 && isDateInRange(s.date, fD, tD);
-    }));
+function viewFreshSareePassbook(sareeName) {
+    viewPassbook("Fresh Saree: " + sareeName, "saree_history", sareeName, "fresh");
 }
 
-function resetSareeFilter() {
-    document.getElementById("saree-from-date").value = "";
-    document.getElementById("saree-to-date").value = "";
-    document.getElementById("search-saree-input").value = "";
-    renderSareeTable();
+function viewLottSareePassbook(sareeName) {
+    viewPassbook("Lott Saree: " + sareeName, "saree_history", sareeName, "lott");
 }
 
-// ================= 7. PASSBOOK MODAL CONTROLLER =================
-
-function viewPassbook(title, storageKey, matchName) {
-    currentPassbookContext = { title: title, storageKey: storageKey, matchName: matchName };
+function viewPassbook(title, storageKey, matchName, filterMode) {
+    currentPassbookContext = { title: title, storageKey: storageKey, matchName: matchName, filterMode: filterMode };
     document.getElementById("modal-item-title").textContent = "📖 " + title;
     var hist = getStore(storageKey);
     var tbody = document.getElementById("modal-history-body");
@@ -1137,7 +990,14 @@ function viewPassbook(title, storageKey, matchName) {
         var nMatch = (it.name && it.name.toLowerCase() === String(matchName || "").toLowerCase());
         var kMatch = (it.kariger && it.kariger.toLowerCase() === String(matchName || "").toLowerCase());
 
-        if (nMatch || kMatch) {
+        var modeMatch = true;
+        if (filterMode === "fresh") {
+            modeMatch = !String(it.type || "").toLowerCase().includes("lott");
+        } else if (filterMode === "lott") {
+            modeMatch = String(it.type || "").toLowerCase().includes("lott");
+        }
+
+        if ((nMatch || kMatch) && modeMatch) {
             count++;
             tbody.innerHTML += "<tr>" +
                 "<td>" + formatDateDisplay(it.date) + "</td>" +
@@ -1160,7 +1020,7 @@ function deletePassbookRow(idx) {
     hist.splice(idx, 1);
     setStore(currentPassbookContext.storageKey, hist);
 
-    viewPassbook(currentPassbookContext.title, currentPassbookContext.storageKey, currentPassbookContext.matchName);
+    viewPassbook(currentPassbookContext.title, currentPassbookContext.storageKey, currentPassbookContext.matchName, currentPassbookContext.filterMode);
     if (typeof updateDashboardBadgeTotals === "function") updateDashboardBadgeTotals();
     if (typeof renderDashboardDayBook === "function") renderDashboardDayBook();
 }
