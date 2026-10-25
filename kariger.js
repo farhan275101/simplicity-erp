@@ -1008,7 +1008,6 @@ function shareSheetOnWhatsApp() {
     text += "━━━━━━━━━━━━━━━━━━━━━\n";
     text += "_Simplicity ERP • Developed by Farhan Jawed_";
 
-    // Direct WhatsApp: Client Account Mobile
     var mobile = getClientMobileNumber();
 
     if (!mobile) {
