@@ -1,6 +1,6 @@
 /* ========================================================
    SIMPLICITY ERP - KARIGER MASTER, KHATA SHEET & INACTIVE TRACKER
-   File 4 of 6 • Developed by Farhan Jawed
+   File 4 of 7 • Developed by Farhan Jawed
 ======================================================== */
 
 // ================= 1. KARIGER MASTER & ABSENCE TRACKER =================
@@ -666,7 +666,7 @@ function calculateSheetTotals(sheet) {
     };
 }
 
-// AUTO SEPARATE FRESH SAREE & LOTT SAREE
+// AUTO SEPARATE FRESH SAREE & LOTT SAREE (AUTOMATIC FLOW)
 function addSheetLineRow() {
     if (!activeKarigerId) return alert("Pehle koi Kariger chunein!");
 
@@ -756,7 +756,7 @@ function addSheetLineRow() {
     sheet.rows.push(row);
     saveKarigerSheets(activeKarigerId, sheets);
 
-    // 1. FRESH SAREE STOCK ENTRY (Net Pass Saree)
+    // 1. FRESH SAREE STOCK ENTRY (Net Pass Saree = saree - lott)
     var netPassSaree = Math.max(0, saree - lott);
     if (netPassSaree > 0) {
         var sStock = getStore("saree_stock");
@@ -776,7 +776,7 @@ function addSheetLineRow() {
         setStore("saree_history", sH);
     }
 
-    // 2. LOTT SAREE STOCK ENTRY (Kharab Saree alag jama hogi)
+    // 2. LOTT SAREE STOCK ENTRY (Lott saree automatically lott stock me darj hogi)
     if (lott > 0) {
         var lottStock = safeArray(getStore("lott_saree_stock"));
         var lItem = lottStock.find(function(x) { return x && x.name && x.name.toLowerCase() === karSaree.toLowerCase(); });
