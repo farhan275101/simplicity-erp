@@ -1,6 +1,6 @@
 /* ========================================================
    SIMPLICITY ERP - PAYMENT MODULE, DAYBOOK & APP STARTUP
-   File 6 of 6 • Developed by Farhan Jawed
+   File 6 of 7 • Developed by Farhan Jawed
 ======================================================== */
 
 // ================= 1. KARIGER FINANCE COMPUTATION ENGINE =================
