@@ -517,7 +517,7 @@ function addNewTaniSheet() {
         title: "Tani " + (sheets.length + 1),
         banaRate: cur ? cur.banaRate : 0.311,
         zariRate: cur ? cur.zariRate : 0.110,
-        baniRate: cur ? cur.baniRate : 240,
+        baniRate: 240,
         closingBana: Number(calc.remBana.toFixed(3)),
         closingZari: Number(calc.remZari.toFixed(3)),
         closingBani: Number(calc.remBani.toFixed(2)),
