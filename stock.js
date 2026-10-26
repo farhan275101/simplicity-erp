@@ -1,9 +1,9 @@
 /* ========================================================
    SIMPLICITY ERP - LIVE STOCK ENGINE (BANA, ZARI, SAREE, LOTT, SANCHA)
-   File 5 of 7 • Developed by Farhan Jawed (Fully Updated & Synced)
+   File 5 of 7 • Developed by Farhan Jawed (Finished Stock Added)
 ======================================================== */
 
-var currentSareeStockTab = "fresh"; // Sirf "fresh" ya "lott" chalega ("actual" hata diya gaya)
+var currentSareeStockTab = "fresh"; // "fresh", "finished", ya "lott"
 var rawModalPassbookEntries = [];
 var currentPassbookStoreKey = "";
 
@@ -630,7 +630,7 @@ function autoDeductSanchaStock(wazan, date, karName, sanchaName, taniName) {
     return true;
 }
 
-// ================= 6. SAREE STOCK: 2 TABS (FRESH & LOTT ONLY) =================
+// ================= 6. SAREE STOCK: 3 TABS (FRESH, FINISHED, LOTT) =================
 
 function openSareeModule() {
     if (typeof hideAllSections === "function") hideAllSections();
@@ -639,16 +639,16 @@ function openSareeModule() {
 }
 
 function switchSareeStockTab(tab) {
-    if (tab !== "fresh" && tab !== "lott") tab = "fresh";
+    if (tab !== "fresh" && tab !== "finished" && tab !== "lott") tab = "fresh";
     currentSareeStockTab = tab;
 
     var btnF = document.getElementById("btn-saree-tab-fresh");
+    var btnFin = document.getElementById("btn-saree-tab-finished");
     var btnL = document.getElementById("btn-saree-tab-lott");
-    var btnA = document.getElementById("btn-saree-tab-actual");
 
     if (btnF) btnF.className = (tab === "fresh") ? "sheet-tab active" : "sheet-tab";
+    if (btnFin) btnFin.className = (tab === "finished") ? "sheet-tab active" : "sheet-tab";
     if (btnL) btnL.className = (tab === "lott") ? "sheet-tab active" : "sheet-tab";
-    if (btnA) btnA.style.display = "none"; // Actual Stock button ko hamesha ke liye hide rakhein
 
     renderSareeTable();
 }
@@ -659,7 +659,7 @@ function renderSareeTable(flist) {
     if (!tbody || !thead) return;
     tbody.innerHTML = "";
 
-    // 1. FRESH SAREE TAB (MAIN SAREE STOCK)
+    // 1. FRESH SAREE TAB (KACCHI SAREE STOCK)
     if (currentSareeStockTab === "fresh") {
         thead.innerHTML = "<tr style='background:#2563eb; color:white;'>" +
             "<th>Date</th><th>S.No.</th><th>Saree Ka Naam</th><th>Kariger</th><th>Fresh Stock (Pcs)</th><th>Out (Bikri)</th><th style='text-align:center;'>Action</th>" +
@@ -689,7 +689,37 @@ function renderSareeTable(flist) {
             "</tr>";
         });
 
-    // 2. LOTT / DAMAGE SAREE TAB
+    // 2. FINISHED SAREE TAB (JOB WORK SE TAYAAR AAYI SAREE)
+    } else if (currentSareeStockTab === "finished") {
+        thead.innerHTML = "<tr style='background:#0d9488; color:white;'>" +
+            "<th>Date</th><th>S.No.</th><th>Saree Ka Naam</th><th>Kahan Se Aayi (Source)</th><th>Finished Stock (Pcs)</th><th>Out (Bikri/Dukan)</th><th style='text-align:center;'>Action</th>" +
+        "</tr>";
+
+        var finList = flist || safeArray(getStore("finished_saree_stock"));
+        if (!finList.length) {
+            tbody.innerHTML = "<tr><td colspan='7' style='text-align:center; padding:20px; color:#888;'>Abhi koi Finished Saree nahi aayi hai. Job work se aane par yahan judegi.</td></tr>";
+            return;
+        }
+
+        finList.forEach(function(f, idx) {
+            if (!f) return;
+            tbody.innerHTML += "<tr>" +
+                "<td>" + formatDateDisplay(f.date) + "</td>" +
+                "<td>" + (idx + 1) + "</td>" +
+                "<td><strong>" + (f.name || "Finished Saree") + "</strong></td>" +
+                "<td>" + (f.source || "Job Work") + "</td>" +
+                "<td><span class='badge-green' style='font-size:13px; font-weight:800;'>" + (f.pcs || 0) + " pcs</span></td>" +
+                "<td>" +
+                    "<div style='display:flex; gap:4px; align-items:center;'>" +
+                        "<input type='number' id='fin-out-input-" + idx + "' placeholder='Qty' style='width:60px; padding:4px; font-size:12px; border:1px solid #cbd5e1; border-radius:6px;' min='1'>" +
+                        "<button class='quick-btn btn-out' style='background:#0d9488; color:white;' onclick='outFinishedSareeCustomQty(" + idx + ")'>📤 Out</button>" +
+                    "</div>" +
+                "</td>" +
+                "<td style='text-align:center;'><button class='detail-btn' onclick='viewFinishedSareePassbook(\"" + (f.name || "Finished Saree") + "\")'>📖 Passbook</button> <button class='delete-btn' onclick='deleteFinishedSareeStock(" + idx + ")'>🗑️</button></td>" +
+            "</tr>";
+        });
+
+    // 3. LOTT / DAMAGE SAREE TAB
     } else if (currentSareeStockTab === "lott") {
         thead.innerHTML = "<tr style='background:#dc2626; color:white;'>" +
             "<th>Date</th><th>Saree Ka Naam</th><th>Kahan Se Aayi (Source)</th><th>Lott Stock (Pcs)</th><th>Out</th><th style='text-align:center;'>Action</th>" +
@@ -727,6 +757,12 @@ function filterSaree() {
             return s && (String(s.name || "") + " " + String(s.kariger || "") + " " + formatDateDisplay(s.date)).toLowerCase().indexOf(txt) !== -1 && isDateInRange(s.date, fD, tD);
         });
         renderSareeTable(filteredFresh);
+    } else if (currentSareeStockTab === "finished") {
+        var finList = safeArray(getStore("finished_saree_stock"));
+        var filteredFin = finList.filter(function(f) {
+            return f && (String(f.name || "") + " " + String(f.source || "") + " " + formatDateDisplay(f.date)).toLowerCase().indexOf(txt) !== -1 && isDateInRange(f.date, fD, tD);
+        });
+        renderSareeTable(filteredFin);
     } else if (currentSareeStockTab === "lott") {
         var lottList = safeArray(getStore("lott_saree_stock"));
         var filteredLott = lottList.filter(function(l) {
@@ -743,53 +779,7 @@ function resetSareeFilter() {
     renderSareeTable();
 }
 
-function outLottSareeCustomQty(idx) {
-    var stock = safeArray(getStore("lott_saree_stock"));
-    var item = stock[idx];
-    if (!item) return;
-
-    var qty = parseInt(prompt("Saree: " + item.name + "\nLott Pcs Available: " + item.pcs + "\n\nKitne Pcs Out karne hain:", item.pcs));
-    if (!qty || isNaN(qty) || qty <= 0) return;
-    if (qty > item.pcs) return alert("Sirf " + item.pcs + " Pcs available hain!");
-
-    var note = prompt("Out Note / Vivran:", "Lott Saree Out") || "Lott Saree Out";
-    item.pcs -= qty;
-    setStore("lott_saree_stock", stock);
-
-    var h = getStore("saree_history");
-    h.push({
-        id: "sh_lott_" + Date.now(),
-        date: getTodayDate(),
-        name: item.name,
-        kariger: item.source || "Lott Saree",
-        type: "Out (Lott Sale)",
-        pcs: qty,
-        note: note
-    });
-    setStore("saree_history", h);
-
-    renderSareeTable();
-    if (typeof updateDashboardBadgeTotals === "function") updateDashboardBadgeTotals();
-    alert("✅ " + qty + " Lott Saree Out ho gayi!");
-}
-
-function deleteLottSareeStock(idx) {
-    if (!confirm("Kya aap is Lott Saree record ko delete karna chahte hain? Iski Passbook entry bhi saaf ho jayegi.")) return;
-    var stock = safeArray(getStore("lott_saree_stock"));
-    var item = stock[idx];
-    if (item) {
-        var itemName = (item.name || "").toLowerCase();
-        var h = getStore("saree_history").filter(function(x) {
-            return !x || (x.name && x.name.toLowerCase() !== itemName);
-        });
-        setStore("saree_history", h);
-    }
-    stock.splice(idx, 1);
-    setStore("lott_saree_stock", stock);
-    renderSareeTable();
-    if (typeof updateDashboardBadgeTotals === "function") updateDashboardBadgeTotals();
-}
-
+// --- FRESH SAREE ACTIONS ---
 function outSareeCustomQty(idx) {
     var inp = document.getElementById("saree-out-input-" + idx);
     var qty = parseInt(inp ? inp.value : 0);
@@ -843,6 +833,98 @@ function deleteSareeStock(idx) {
     if (typeof renderDashboardDayBook === "function") renderDashboardDayBook();
 }
 
+// --- FINISHED SAREE ACTIONS ---
+function outFinishedSareeCustomQty(idx) {
+    var inp = document.getElementById("fin-out-input-" + idx);
+    var qty = parseInt(inp ? inp.value : 0);
+
+    if (!qty || qty <= 0) return alert("Sahi quantity likhein!");
+
+    var stock = safeArray(getStore("finished_saree_stock"));
+    var item = stock[idx];
+    if (!item) return;
+
+    if (qty > item.pcs) {
+        return alert("Finished Stock me sirf " + item.pcs + " saree bachi hai!");
+    }
+
+    item.pcs -= qty;
+    setStore("finished_saree_stock", stock);
+
+    var h = getStore("saree_history");
+    h.push({
+        id: "sh_fin_out_" + Date.now(),
+        date: getTodayDate(),
+        name: item.name || "Finished Saree",
+        kariger: item.source || "Finished Stock",
+        type: "Out (Finished Sale)",
+        pcs: qty,
+        note: "Tayaar Saree Bikri / Dukan Bheja"
+    });
+    setStore("saree_history", h);
+
+    renderSareeTable();
+    if (typeof updateDashboardBadgeTotals === "function") updateDashboardBadgeTotals();
+    alert("✅ " + qty + " Finished Saree Out ho gayi!");
+}
+
+function deleteFinishedSareeStock(idx) {
+    if (!confirm("Kya aap is Finished Saree record ko delete karna chahte hain? Iski Passbook history bhi saaf ho jayegi.")) return;
+    var stock = safeArray(getStore("finished_saree_stock"));
+    stock.splice(idx, 1);
+    setStore("finished_saree_stock", stock);
+    renderSareeTable();
+    if (typeof updateDashboardBadgeTotals === "function") updateDashboardBadgeTotals();
+}
+
+// --- LOTT SAREE ACTIONS ---
+function outLottSareeCustomQty(idx) {
+    var stock = safeArray(getStore("lott_saree_stock"));
+    var item = stock[idx];
+    if (!item) return;
+
+    var qty = parseInt(prompt("Saree: " + item.name + "\nLott Pcs Available: " + item.pcs + "\n\nKitne Pcs Out karne hain:", item.pcs));
+    if (!qty || isNaN(qty) || qty <= 0) return;
+    if (qty > item.pcs) return alert("Sirf " + item.pcs + " Pcs available hain!");
+
+    var note = prompt("Out Note / Vivran:", "Lott Saree Out") || "Lott Saree Out";
+    item.pcs -= qty;
+    setStore("lott_saree_stock", stock);
+
+    var h = getStore("saree_history");
+    h.push({
+        id: "sh_lott_" + Date.now(),
+        date: getTodayDate(),
+        name: item.name,
+        kariger: item.source || "Lott Saree",
+        type: "Out (Lott Sale)",
+        pcs: qty,
+        note: note
+    });
+    setStore("saree_history", h);
+
+    renderSareeTable();
+    if (typeof updateDashboardBadgeTotals === "function") updateDashboardBadgeTotals();
+    alert("✅ " + qty + " Lott Saree Out ho gayi!");
+}
+
+function deleteLottSareeStock(idx) {
+    if (!confirm("Kya aap is Lott Saree record ko delete karna chahte hain? Iski Passbook entry bhi saaf ho jayegi.")) return;
+    var stock = safeArray(getStore("lott_saree_stock"));
+    var item = stock[idx];
+    if (item) {
+        var itemName = (item.name || "").toLowerCase();
+        var h = getStore("saree_history").filter(function(x) {
+            return !x || (x.name && x.name.toLowerCase() !== itemName);
+        });
+        setStore("saree_history", h);
+    }
+    stock.splice(idx, 1);
+    setStore("lott_saree_stock", stock);
+    renderSareeTable();
+    if (typeof updateDashboardBadgeTotals === "function") updateDashboardBadgeTotals();
+}
+
 // ================= 7. PASSBOOK WITH DATE RANGE FILTER & DIRECT DELETE =================
 
 function viewFreshSareePassbook(sareeName) {
@@ -851,12 +933,25 @@ function viewFreshSareePassbook(sareeName) {
     hist.forEach(function(it) {
         if (!it) return;
         var nMatch = (it.name && it.name.toLowerCase() === String(sareeName || "").toLowerCase());
-        var isFresh = !String(it.type || "").toLowerCase().includes("lott");
+        var isFresh = !String(it.type || "").toLowerCase().includes("lott") && !String(it.type || "").toLowerCase().includes("finished");
         if (nMatch && isFresh) {
             entries.push({ id: it.id, date: it.date, type: it.type || "-", qty: it.pcs || it.qty || 0, kariger: it.kariger || "-" });
         }
     });
     viewCustomDatePassbook("Fresh Saree Passbook: " + sareeName, entries, "saree_history");
+}
+
+function viewFinishedSareePassbook(sareeName) {
+    var entries = [];
+    var hist = getStore("saree_history");
+    hist.forEach(function(it) {
+        if (!it) return;
+        var isFin = String(it.type || "").toLowerCase().includes("finished");
+        if (isFin) {
+            entries.push({ id: it.id, date: it.date, type: it.type || "Finished", qty: it.pcs || it.qty || 0, kariger: it.kariger || "Job Work" });
+        }
+    });
+    viewCustomDatePassbook("Finished Saree Passbook", entries, "saree_history");
 }
 
 function viewLottSareePassbook(sareeName) {
@@ -909,7 +1004,7 @@ function renderModalPassbookRows(list) {
     }
 
     list.sort(function(a, b) { return (b.date > a.date) ? 1 : -1; });
-    list.forEach(function(it, idx) {
+    list.forEach(function(it) {
         var delBtn = it.id ? ("<button class='delete-btn' style='padding:2px 6px; font-size:11px;' onclick='deletePassbookRowDirectly(\"" + it.id + "\")'>🗑️</button>") : "-";
 
         tbody.innerHTML += "<tr>" +
