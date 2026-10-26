@@ -937,7 +937,7 @@
                     </div>
                 </div>
 
-                <!-- VIEW 5: 💳 JOB WORK BILLS & PAYMENT REGISTER (NEW SECTION) -->
+                <!-- VIEW 5: 💳 JOB WORK BILLS & PAYMENT REGISTER (WITH 🔍 SEARCH & BILL NO.) -->
                 <div id="jw-billing-view" style="display:none;">
                     <div class="module-header">
                         <button class="back-btn" onclick="showJobWorkHub()">← Wapas Hub</button>
@@ -969,21 +969,35 @@
                         </div>
                     </div>
 
-                    <!-- ADD BILL FORM (LUMP SUM BILL ENTRY) -->
+                    <!-- 🔍 SEARCH BOX (POINT 2) -->
+                    <div class="filter-panel" style="margin-bottom:14px; background:#f5f3ff; border:1px solid #ddd6fe; padding:8px 12px;">
+                        <input type="text" id="jw-search-bill-input" class="search-box" placeholder="🔍 Search Worker, Bill No., Tareekh..." oninput="filterJwBills()" style="width:100%;">
+                    </div>
+
+                    <!-- ADD BILL FORM (WITH BILL NO. INPUT) -->
                     <div id="add-jw-bill-form" class="custom-form" style="display:none; background:#f8fafc; border:1px solid #cbd5e1; padding:15px; border-radius:10px; margin-bottom:15px;">
                         <strong style="color:#7c3aed; font-size:13px; display:block; margin-bottom:10px;">➕ Job Work Wale Ka Naya Bill Darj Karein:</strong>
                         <div class="form-row-4">
                             <div class="input-group"><label>Bill Date</label><input type="date" id="jw-bill-input-date"></div>
                             <div class="input-group">
+                                <label style="color:#7c3aed; font-weight:800;">Bill No. / Challan No.</label>
+                                <input type="text" id="jw-bill-input-no" placeholder="Jaise: Bill-101">
+                            </div>
+                            <div class="input-group">
                                 <label>Job Worker Name</label>
                                 <select id="jw-bill-input-worker" style="padding:7px; border:1px solid #cbd5e1; border-radius:6px;"></select>
                             </div>
-                            <div class="input-group"><label>Kitni Saree Ka Bill (Pcs)</label><input type="number" id="jw-bill-input-pcs" placeholder="Jaise: 500"></div>
-                            <div class="input-group"><label style="color:#b91c1c; font-weight:800;">Kul Bill Amount (₹)</label><input type="number" step="any" id="jw-bill-input-amt" placeholder="Jaise: 15000" style="border-color:#fca5a5; font-weight:bold;"></div>
+                            <div class="input-group"><label>Saree Pcs</label><input type="number" id="jw-bill-input-pcs" placeholder="Jaise: 500"></div>
                         </div>
-                        <div style="margin-bottom:10px;">
-                            <label style="font-size:11px; font-weight:700;">Bill No. / Parchi Note</label>
-                            <input type="text" id="jw-bill-input-note" placeholder="Bill No. 402 ya 500 Saree Lot" style="width:100%; padding:7px; border:1px solid #cbd5e1; border-radius:6px;">
+                        <div class="form-row-2">
+                            <div class="input-group">
+                                <label style="color:#b91c1c; font-weight:800;">Kul Bill Amount (₹)</label>
+                                <input type="number" step="any" id="jw-bill-input-amt" placeholder="Jaise: 15000" style="border-color:#fca5a5; font-weight:bold;">
+                            </div>
+                            <div class="input-group">
+                                <label>Parchi / Bill Note</label>
+                                <input type="text" id="jw-bill-input-note" placeholder="500 Saree Lot / Note">
+                            </div>
                         </div>
                         <button class="add-btn" style="background:#7c3aed; padding:9px 18px;" onclick="saveJobWorkNewBill()">Save Bill</button>
                     </div>
@@ -1037,7 +1051,7 @@
                     <div><label style="font-size:11px;">Date</label><input type="date" id="sancha-entry-date" style="width:100%; padding:6px; border:1px solid #cbd5e1; border-radius:6px;"></div>
                     <div><label style="font-size:11px; font-weight:700;">Kitna Aaya</label><input type="number" step="any" id="sancha-entry-qty" style="width:100%; padding:6px; border:1px solid #cbd5e1; border-radius:6px;"></div>
                     <div><label style="font-size:11px;">Note</label><input type="text" id="sancha-entry-note" style="width:100%; padding:6px; border:1px solid #cbd5e1; border-radius:6px;"></div>
-                    <div style="display:flex; align-items:flex-end;"><button class="add-btn" style="background:#0284c7; width:100%; padding:7px;" onclick="addSanchaStockEntry()">+ Add Stock</button></div>
+                    <div style="display:flex align-items:flex-end;"><button class="add-btn" style="background:#0284c7; width:100%; padding:7px;" onclick="addSanchaStockEntry()">+ Add Stock</button></div>
                 </div>
                 <div class="table-responsive">
                     <table>
@@ -1140,8 +1154,8 @@
     <!-- JAVASCRIPT SCRIPTS -->
     <script src="auth.js"></script>
     <script src="kariger.js"></script>
-    <script src="stock.js?v=3"></script>
+    <script src="stock.js?v=4"></script>
     <script src="daybook.js"></script>
-    <script src="jobwork.js?v=3"></script>
+    <script src="jobwork.js?v=4"></script>
 </body>
 </html>
