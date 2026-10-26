@@ -1,6 +1,6 @@
 /* ========================================================
    SIMPLICITY ERP - JOB WORK (CUTTING, CALENDER & DUKAN BHEJA)
-   File 7 of 7 • Developed by Farhan Jawed
+   File 7 of 7 • Developed by Farhan Jawed (Updated & Synced)
 ======================================================== */
 
 var currentJobWorkMode = "hub"; // "hub", "cutting", "calender", "dukan"
@@ -176,7 +176,6 @@ function renderJobWorkWorkersTable() {
     var allWorkers = getJobWorkers();
     var filtered = allWorkers.filter(function(w) { return w && w.type === currentJobWorkMode; });
 
-    // Search filter (Point 2)
     var txt = (document.getElementById("jw-search-worker-input") && document.getElementById("jw-search-worker-input").value || "").toLowerCase().trim();
     if (txt) {
         filtered = filtered.filter(function(w) {
@@ -184,7 +183,6 @@ function renderJobWorkWorkersTable() {
         });
     }
 
-    // Absent filter (Point 3)
     var minDays = parseInt(document.getElementById("jw-absent-filter") && document.getElementById("jw-absent-filter").value || 0) || 0;
     if (minDays > 0) {
         filtered = filtered.filter(function(w) {
@@ -200,7 +198,6 @@ function renderJobWorkWorkersTable() {
         totDmg += sum.totDmg;
     });
 
-    // 3 Colorful Summary Boxes with Passbook Clickable
     var elGayi = document.getElementById("jw-stat-total-gayi");
     var elAayi = document.getElementById("jw-stat-total-aayi");
     var elDmg = document.getElementById("jw-stat-total-damage");
@@ -285,7 +282,7 @@ function viewJobWorkSummaryPassbook(boxCategory) {
                     entries.push({
                         date: r.date,
                         type: "Gayi (Diya)",
-                        qty: Number(r.gayiQty) + " Pcs (@ ₹" + (r.gayiRate || 0) + ")" + (r.stockSource ? " [" + r.stockSource + "]" : ""),
+                        qty: Number(r.gayiQty) + " Pcs (@ ₹" + (r.gayiRate || 0) + ")",
                         kariger: w.name + " (" + sh.title + ")"
                     });
                 } else if (boxCategory === "aayi" && Number(r.aayiQty) > 0) {
@@ -423,15 +420,11 @@ function openJobWorkerSheet(workerId) {
     if (document.getElementById("jw-form-diya-date")) document.getElementById("jw-form-diya-date").value = dToday;
     if (document.getElementById("jw-form-aayi-date")) document.getElementById("jw-form-aayi-date").value = dToday;
 
+    // Point: Main Stock / Cutting Stock Selector ko puri tarah chupayein (Saree direct Main se jayegi)
     var stockSelectRow = document.getElementById("jw-calender-stock-source-wrap");
     var stockColTh = document.getElementById("jw-th-stock-source");
-    if (w.type === "calender") {
-        if (stockSelectRow) stockSelectRow.style.display = "flex";
-        if (stockColTh) stockColTh.style.display = "";
-    } else {
-        if (stockSelectRow) stockSelectRow.style.display = "none";
-        if (stockColTh) stockColTh.style.display = "none";
-    }
+    if (stockSelectRow) stockSelectRow.style.display = "none";
+    if (stockColTh) stockColTh.style.display = "none";
 
     setDisplay("jw-workers-view", "none");
     setDisplay("jw-sheet-view", "block");
@@ -556,7 +549,7 @@ function saveJobWorkSheetConfig() {
     renderJobWorkSheetTable(sh);
 }
 
-// ================= 5. ADD & EDIT ROW (3 CLEAN EQUAL LINES - DRAWING EXACT) =================
+// ================= 5. ADD, EDIT & DELETE ROW (LIVE SYNC WITH SAREE STOCK & PASSBOOK) =================
 
 function addJobWorkUnifiedRow() {
     if (!activeJobWorkerId) return;
@@ -568,23 +561,17 @@ function addJobWorkUnifiedRow() {
     var workerName = worker ? worker.name : "Worker";
     var isCalender = (worker && worker.type === "calender");
 
-    // Line 1: Saree Diya (Date, QTY, RATE)
+    // Line 1: Saree Diya
     var dDate = document.getElementById("jw-form-diya-date").value || getTodayDate();
     var diyaQty = parseInt(document.getElementById("jw-form-diya-qty").value) || 0;
     var diyaRate = parseFloat(document.getElementById("jw-form-diya-rate").value) || 0;
 
-    var stockSource = "Main";
-    var rCut = document.getElementById("jw-source-cutting");
-    if (isCalender && rCut && rCut.checked) {
-        stockSource = "Cutting";
-    }
-
-    // Line 2: Saree Wapas Aayi (Date, QTY, RATE)
+    // Line 2: Saree Wapas Aayi
     var aDate = document.getElementById("jw-form-aayi-date").value || getTodayDate();
     var aayiQty = parseInt(document.getElementById("jw-form-aayi-qty").value) || 0;
     var aayiRate = parseFloat(document.getElementById("jw-form-aayi-rate").value) || 0;
 
-    // Line 3: Payment & Damage (Payment, Damage Pcs, Katuti)
+    // Line 3: Payment & Damage
     var payment = parseFloat(document.getElementById("jw-form-payment").value) || 0;
     var damagePcs = parseInt(document.getElementById("jw-form-damage-pcs").value) || 0;
     var damageAmt = parseFloat(document.getElementById("jw-form-damage-amt").value) || 0;
@@ -593,14 +580,14 @@ function addJobWorkUnifiedRow() {
         return alert("Kripya Saree Diya, Aayi, Payment ya Damage me se koi detail bharein!");
     }
 
+    var rowId = "jwr_" + Date.now();
     var rowDate = (diyaQty > 0) ? dDate : aDate;
 
     var newRow = {
-        id: "jwr_" + Date.now(),
+        id: rowId,
         date: rowDate,
         gayiQty: diyaQty,
         gayiRate: diyaRate,
-        stockSource: stockSource,
         aayiQty: aayiQty,
         aayiRate: aayiRate,
         payment: payment,
@@ -612,46 +599,81 @@ function addJobWorkUnifiedRow() {
     sh.rows.push(newRow);
     saveJobWorkerSheets(activeJobWorkerId, sheets);
 
-    // Point 11: Auto Deduct from Main Saree Stock if Saree Diya from Main
-    if (diyaQty > 0 && stockSource === "Main") {
-        var sStock = getStore("saree_stock");
+    // 1. SAREE STOCK SE MINUS (CUTTING YA CALENDER KAHIN BHI MAAL GAYA)
+    if (diyaQty > 0) {
+        var sStock = safeArray(getStore("saree_stock"));
         if (sStock.length > 0) {
-            var remToDeduct = diyaQty;
+            var rem = diyaQty;
             for (var i = 0; i < sStock.length; i++) {
-                if (remToDeduct <= 0) break;
-                var curPcs = Number(sStock[i].pcs) || 0;
-                if (curPcs > 0) {
-                    var take = Math.min(curPcs, remToDeduct);
+                if (rem <= 0) break;
+                var cur = Number(sStock[i].pcs) || 0;
+                if (cur > 0) {
+                    var take = Math.min(cur, rem);
                     sStock[i].pcs -= take;
-                    remToDeduct -= take;
+                    rem -= take;
                 }
             }
             setStore("saree_stock", sStock);
-
-            var sH = getStore("saree_history");
-            sH.push({
-                id: Date.now(),
-                date: dDate,
-                name: (isCalender ? "Calender" : "Cutting") + " Maal",
-                kariger: workerName,
-                type: "Out (" + (isCalender ? "Calender" : "Cutting") + ")",
-                pcs: diyaQty,
-                note: workerName + " (" + (isCalender ? "Calender" : "Cutting") + " me diya)"
-            });
-            setStore("saree_history", sH);
         }
+
+        // Passbook me entry daalein (Linked with rowId)
+        var sH = safeArray(getStore("saree_history"));
+        sH.push({
+            id: "sh_diya_" + Date.now(),
+            refId: rowId,
+            date: dDate,
+            name: (isCalender ? "Calender" : "Cutting") + " Maal Diya",
+            kariger: workerName,
+            type: "Out (" + (isCalender ? "Calender" : "Cutting") + ")",
+            pcs: diyaQty,
+            note: workerName + " (" + (isCalender ? "Calender" : "Cutting") + " me diya)"
+        });
+        setStore("saree_history", sH);
     }
 
-    // Auto Push Damage to Lott Saree Stock
+    // 2. SAREE STOCK ME PLUS (WAPAS AAYI TO STOCK ME KHUD JUD JAYEGI)
+    if (aayiQty > 0) {
+        var sStock = safeArray(getStore("saree_stock"));
+        if (sStock.length > 0) {
+            sStock[0].pcs = (Number(sStock[0].pcs) || 0) + aayiQty;
+        } else {
+            sStock.push({
+                id: "saree_" + Date.now(),
+                date: aDate,
+                name: "Saree Stock",
+                kariger: workerName,
+                pcs: aayiQty,
+                outPcs: 0
+            });
+        }
+        setStore("saree_stock", sStock);
+
+        // Passbook me wapas aane ki entry (Linked with rowId)
+        var sH = safeArray(getStore("saree_history"));
+        sH.push({
+            id: "sh_aayi_" + Date.now(),
+            refId: rowId,
+            date: aDate,
+            name: (isCalender ? "Calender" : "Cutting") + " Se Wapas Aayi",
+            kariger: workerName,
+            type: "In (" + (isCalender ? "Calender" : "Cutting") + ")",
+            pcs: aayiQty,
+            note: workerName + " se tayaar aayi"
+        });
+        setStore("saree_history", sH);
+    }
+
+    // 3. DAMAGE KO LOTT SAREE STOCK ME BHEJEIN
     if (damagePcs > 0) {
         var lottStock = safeArray(getStore("lott_saree_stock"));
-        var lItem = lottStock.find(function(x) { return x && x.source && x.source.includes(workerName); });
+        var lItem = lottStock.find(function(x) { return x && x.source && x.source.indexOf(workerName) !== -1; });
         if (lItem) {
             lItem.pcs = (Number(lItem.pcs) || 0) + damagePcs;
             lItem.date = rowDate;
         } else {
             lottStock.push({
                 id: "lott_" + Date.now(),
+                refId: rowId,
                 date: rowDate,
                 name: "Damage Saree",
                 source: workerName + " (" + (isCalender ? "Calender" : "Cutting") + " Damage)",
@@ -661,6 +683,7 @@ function addJobWorkUnifiedRow() {
         setStore("lott_saree_stock", lottStock);
     }
 
+    // Input fields clear karein
     document.getElementById("jw-form-diya-qty").value = "";
     document.getElementById("jw-form-diya-rate").value = "";
     document.getElementById("jw-form-aayi-qty").value = "";
@@ -670,8 +693,9 @@ function addJobWorkUnifiedRow() {
     document.getElementById("jw-form-damage-pcs").value = "";
 
     renderJobWorkSheetTable(sh);
+    if (typeof renderSareeTable === "function") renderSareeTable();
     if (typeof updateDashboardBadgeTotals === "function") updateDashboardBadgeTotals();
-    alert("✅ Line entry jud gayi aur hisab live update ho gaya!");
+    alert("✅ Line entry jud gayi aur Saree Stock live sync ho gaya!");
 }
 
 function deleteJobWorkUnifiedRow(idx) {
@@ -683,18 +707,45 @@ function deleteJobWorkUnifiedRow(idx) {
 
     sh.rows = safeArray(sh.rows);
     var r = sh.rows[idx];
+    if (!r) return;
 
-    // Reverse Main Stock if it was deducted
-    if (r && r.gayiQty > 0 && r.stockSource === "Main") {
-        var sStock = getStore("saree_stock");
+    var worker = getJobWorkers().find(function(x) { return String(x.id) === String(activeJobWorkerId); });
+    var workerName = worker ? worker.name : "";
+
+    // 1. REVERSE SAREE STOCK:
+    // Agar Diya tha to stock wapas laao (+)
+    if (Number(r.gayiQty) > 0) {
+        var sStock = safeArray(getStore("saree_stock"));
         if (sStock.length > 0) {
             sStock[0].pcs = (Number(sStock[0].pcs) || 0) + Number(r.gayiQty);
             setStore("saree_stock", sStock);
         }
     }
 
-    // Reverse Lott Stock if damage was pushed
-    if (r && r.damagePcs > 0) {
+    // Agar Aaya tha to stock se wapas ghatao (-)
+    if (Number(r.aayiQty) > 0) {
+        var sStock = safeArray(getStore("saree_stock"));
+        if (sStock.length > 0) {
+            sStock[0].pcs = Math.max(0, (Number(sStock[0].pcs) || 0) - Number(r.aayiQty));
+            setStore("saree_stock", sStock);
+        }
+    }
+
+    // 2. PASSBOOK SE RECORD AUTOMATIC PURA DELETE (POINT 2 FIX)
+    var sH = safeArray(getStore("saree_history"));
+    sH = sH.filter(function(h) {
+        if (!h) return false;
+        if (r.id && h.refId && String(h.refId) === String(r.id)) return false;
+        // Purane records ke liye fallback matching
+        if (h.kariger === workerName && h.date === r.date && (Number(h.pcs) === Number(r.gayiQty) || Number(h.pcs) === Number(r.aayiQty))) {
+            return false;
+        }
+        return true;
+    });
+    setStore("saree_history", sH);
+
+    // 3. REVERSE DAMAGE FROM LOTT STOCK
+    if (Number(r.damagePcs) > 0) {
         var lottStock = safeArray(getStore("lott_saree_stock"));
         if (lottStock.length > 0) {
             lottStock[0].pcs = Math.max(0, (Number(lottStock[0].pcs) || 0) - Number(r.damagePcs));
@@ -702,11 +753,14 @@ function deleteJobWorkUnifiedRow(idx) {
         }
     }
 
+    // Sheet se row delete karein
     sh.rows.splice(idx, 1);
     saveJobWorkerSheets(activeJobWorkerId, sheets);
 
     renderJobWorkSheetTable(sh);
+    if (typeof renderSareeTable === "function") renderSareeTable();
     if (typeof updateDashboardBadgeTotals === "function") updateDashboardBadgeTotals();
+    alert("🗑️ Line delete ho gayi aur Passbook se bhi entry saaf ho gayi!");
 }
 
 function editJobWorkUnifiedRow(idx) {
@@ -717,6 +771,10 @@ function editJobWorkUnifiedRow(idx) {
     sh.rows = safeArray(sh.rows);
     var r = sh.rows[idx];
     if (!r) return;
+
+    var oldGQ = Number(r.gayiQty) || 0;
+    var oldAQ = Number(r.aayiQty) || 0;
+    var oldDmgP = Number(r.damagePcs) || 0;
 
     var nGQ = prompt("Gayi QTY:", r.gayiQty);
     if (nGQ === null) return;
@@ -733,16 +791,60 @@ function editJobWorkUnifiedRow(idx) {
     var nDmgA = prompt("Damage Katuti (₹):", r.damageAmt);
     if (nDmgA === null) return;
 
-    r.gayiQty = parseInt(nGQ) || 0;
-    r.gayiRate = parseFloat(nGR) || 0;
-    r.aayiQty = parseInt(nAQ) || 0;
-    r.aayiRate = parseFloat(nAR) || 0;
-    r.payment = parseFloat(nPay) || 0;
-    r.damagePcs = parseInt(nDmgP) || 0;
-    r.damageAmt = parseFloat(nDmgA) || 0;
+    var newGQ = parseInt(nGQ) || 0;
+    var newGR = parseFloat(nGR) || 0;
+    var newAQ = parseInt(nAQ) || 0;
+    var newAR = parseFloat(nAR) || 0;
+    var newPay = parseFloat(nPay) || 0;
+    var newDmgP = parseInt(nDmgP) || 0;
+    var newDmgA = parseFloat(nDmgA) || 0;
+
+    // POINT 3 FIX: PURANA DATA AUR STOCK LIVE ADJUST HOGA
+    var diffGayi = newGQ - oldGQ;
+    var diffAayi = newAQ - oldAQ;
+    var diffDmg = newDmgP - oldDmgP;
+
+    var sStock = safeArray(getStore("saree_stock"));
+    if (sStock.length > 0) {
+        // Agar nayi Gayi badhi to stock aur ghatega, agar kam hui to judega
+        sStock[0].pcs = (Number(sStock[0].pcs) || 0) - diffGayi;
+        // Agar nayi Wapas Aayi badhi to stock judega
+        sStock[0].pcs = (Number(sStock[0].pcs) || 0) + diffAayi;
+        setStore("saree_stock", sStock);
+    }
+
+    // Damage stock adjust
+    if (diffDmg !== 0) {
+        var lottStock = safeArray(getStore("lott_saree_stock"));
+        if (lottStock.length > 0) {
+            lottStock[0].pcs = Math.max(0, (Number(lottStock[0].pcs) || 0) + diffDmg);
+            setStore("lott_saree_stock", lottStock);
+        }
+    }
+
+    // Passbook update
+    var sH = safeArray(getStore("saree_history"));
+    sH.forEach(function(h) {
+        if (h && r.id && String(h.refId) === String(r.id)) {
+            if (h.type && h.type.indexOf("Out") !== -1) h.pcs = newGQ;
+            if (h.type && h.type.indexOf("In") !== -1) h.pcs = newAQ;
+        }
+    });
+    setStore("saree_history", sH);
+
+    r.gayiQty = newGQ;
+    r.gayiRate = newGR;
+    r.aayiQty = newAQ;
+    r.aayiRate = newAR;
+    r.payment = newPay;
+    r.damagePcs = newDmgP;
+    r.damageAmt = newDmgA;
 
     saveJobWorkerSheets(activeJobWorkerId, sheets);
     renderJobWorkSheetTable(sh);
+    if (typeof renderSareeTable === "function") renderSareeTable();
+    if (typeof updateDashboardBadgeTotals === "function") updateDashboardBadgeTotals();
+    alert("✅ Data update ho gaya aur Live Stock sync ho gaya!");
 }
 
 // ================= 6. RENDER DRAWING SINGLE TABLE & 4 CARDS =================
@@ -752,23 +854,17 @@ function renderJobWorkSheetTable(sh) {
     if (!tbody) return;
     tbody.innerHTML = "";
 
-    var worker = getJobWorkers().find(function(x) { return String(x.id) === String(activeJobWorkerId); });
-    var isCalender = (worker && worker.type === "calender");
-
     var rows = safeArray(sh.rows);
 
     if (!rows.length) {
-        tbody.innerHTML = "<tr><td colspan='9' style='text-align:center; padding:15px; color:#888;'>Is Mahine me abhi koi entry nahi hui hai. Upar se line jodein.</td></tr>";
+        tbody.innerHTML = "<tr><td colspan='8' style='text-align:center; padding:15px; color:#888;'>Is Mahine me abhi koi entry nahi hui hai. Upar se line jodein.</td></tr>";
     } else {
         rows.forEach(function(r, idx) {
             if (!r) return;
-            var stockBadge = isCalender ? ("<td><span class='badge-blue'>" + (r.stockSource || "Main") + "</span></td>") : "";
-
             tbody.innerHTML += "<tr>" +
                 "<td>" + formatDateDisplay(r.date) + "</td>" +
                 "<td>" + (r.gayiQty > 0 ? ("<strong style='color:#dc2626;'>-" + r.gayiQty + "</strong>") : "-") + "</td>" +
                 "<td>" + (r.gayiRate > 0 ? ("₹ " + r.gayiRate) : "-") + "</td>" +
-                stockBadge +
                 "<td>" + (r.aayiQty > 0 ? ("<strong style='color:#059669;'>+" + r.aayiQty + "</strong>") : "-") + "</td>" +
                 "<td>" + (r.aayiRate > 0 ? ("₹ " + r.aayiRate) : "-") + "</td>" +
                 "<td>" + (r.payment > 0 ? ("<strong style='color:#059669;'>₹ " + r.payment + "</strong>") : "-") + "</td>" +
