@@ -91,10 +91,18 @@
                 <span style="font-size:24px;">✨</span>
                 <div>
                     <h2>Welcome to Simplicity</h2>
-                    <p>Multi-Karkhana ERP Dashboard • <strong>Created by Farhan Jawed</strong></p>
+                    <p>Multi-Unit ERP System • <strong>Created by Farhan Jawed</strong></p>
                 </div>
             </div>
-            <div class="navbar-user-area">
+            <div class="navbar-user-area" style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                
+                <!-- 📅 FINANCIAL YEAR SESSION SWITCHER (TOP NAVBAR) -->
+                <div class="session-dropdown-wrap" style="display:inline-flex; align-items:center; gap:6px; background:#1e293b; padding:4px 8px; border-radius:6px; border:1px solid #475569;">
+                    <span style="font-size:12px; color:#94a3b8; font-weight:700;">📅 Session:</span>
+                    <select id="app-session-select" onchange="switchAppFinancialSession(this.value)" style="background:#0f172a; color:#38bdf8; border:1px solid #334155; padding:4px 8px; border-radius:4px; font-weight:bold; font-size:12px;"></select>
+                    <button class="add-btn" style="padding:4px 8px; font-size:11px; background:#7c3aed;" onclick="openSessionClosingModal()" title="1 April Year-End Closing">➕ Naya Saal</button>
+                </div>
+
                 <button id="nav-admin-btn" class="admin-nav-btn" onclick="openAdminModule()">👑 Admin Control</button>
                 <button class="profile-btn" onclick="openProfileModal()">👤 Profile & Settings</button>
                 <button class="logout-btn" onclick="logout()">Logout</button>
@@ -326,7 +334,7 @@
                     </div>
                 </div>
 
-                <!-- ADD KARIGER FORM WITH KARKHANA SELECTOR -->
+                <!-- ADD KARIGER FORM -->
                 <div id="add-kariger-form" class="custom-form">
                     <input type="hidden" id="kar-edit-id">
                     <div class="form-row-4">
@@ -1167,7 +1175,7 @@
         </div>
     </div>
 
-    <!-- MODAL 6: 🏭 KARKHANA MANAGER MODAL (DYNAMIC ADD, EDIT & DELETE) -->
+    <!-- MODAL 6: 🏭 KARKHANA MANAGER MODAL -->
     <div id="karkhana-manager-modal" class="modal-overlay">
         <div class="modal-card" style="max-width:540px;">
             <div class="modal-header" style="background:#0284c7; color:white;">
@@ -1179,8 +1187,8 @@
                 <div style="background:#f0f9ff; border:1px solid #bae6fd; padding:12px; border-radius:8px; margin-bottom:14px;">
                     <strong style="color:#0284c7; font-size:12px; display:block; margin-bottom:8px;">➕ Naya Karkhana Jodein ya Naam Badlein:</strong>
                     <div style="display:grid; grid-template-columns:2fr 1fr auto; gap:8px;">
-                        <input type="text" id="karkhana-input-name" placeholder="Karkhane Ka Naam (Jaise: Mau Unit)" style="padding:7px; border:1px solid #cbd5e1; border-radius:6px; font-weight:bold;">
-                        <input type="text" id="karkhana-input-location" placeholder="Location (Mohalla)" style="padding:7px; border:1px solid #cbd5e1; border-radius:6px;">
+                        <input type="text" id="karkhana-input-name" placeholder="Karkhane Ka Naam" style="padding:7px; border:1px solid #cbd5e1; border-radius:6px; font-weight:bold;">
+                        <input type="text" id="karkhana-input-location" placeholder="Location / Note" style="padding:7px; border:1px solid #cbd5e1; border-radius:6px;">
                         <button class="add-btn" style="background:#0284c7; padding:7px 14px;" id="karkhana-save-btn" onclick="saveKarkhanaFromManager()">Save</button>
                     </div>
                 </div>
@@ -1202,7 +1210,7 @@
         </div>
     </div>
 
-    <!-- MODAL 7: 🚚 RAW MATERIAL TRANSFER MODAL (GODAM SE KARKHANE KO BHEJA) -->
+    <!-- MODAL 7: 🚚 RAW MATERIAL TRANSFER MODAL -->
     <div id="material-transfer-modal" class="modal-overlay">
         <div class="modal-card" style="max-width:480px;">
             <div class="modal-header" style="background:#0284c7; color:white;">
@@ -1231,7 +1239,7 @@
         </div>
     </div>
 
-    <!-- MODAL 8: 📥 SAREE INWARD / TRANSFER MODAL (KARKHANE SE MAIN GODOWN AAYI) -->
+    <!-- MODAL 8: 📥 SAREE INWARD / TRANSFER MODAL -->
     <div id="saree-transfer-modal" class="modal-overlay">
         <div class="modal-card" style="max-width:480px;">
             <div class="modal-header" style="background:#059669; color:white;">
@@ -1256,11 +1264,44 @@
         </div>
     </div>
 
+    <!-- MODAL 9: 📅 YEAR-END CLOSING & NEW SESSION MODAL (1 APRIL CLOSING) -->
+    <div id="session-closing-modal" class="modal-overlay">
+        <div class="modal-card" style="max-width:520px;">
+            <div class="modal-header" style="background:#7c3aed; color:white;">
+                <div><h3 style="color:white; font-weight:800;">📅 Year-End Closing (Naya Saal)</h3></div>
+                <button class="close-modal-btn" style="color:white;" onclick="closeSessionClosingModal()">X</button>
+            </div>
+            <div class="modal-body">
+                <div style="background:#f5f3ff; border:1px solid #ddd6fe; padding:12px; border-radius:8px; margin-bottom:14px; font-size:13px; color:#4c1d95; line-height:1.6;">
+                    <strong>ℹ️ 1 April / Year-End Closing Kaise Hogi:</strong>
+                    <ul style="margin-top:6px; padding-left:18px;">
+                        <li>Purana saal hamesha ke liye <strong>सुरक्षित (Locked)</strong> rahega.</li>
+                        <li>Sabhi karigaron ka baki hisab (Bani, Bana, Zari) naye saal ka <strong>Opening Balance</strong> ban jayega.</li>
+                        <li>Sabhi karkhanon me bachi sariyan aur raw material naye saal ka <strong>Opening Stock</strong> ban jayega.</li>
+                        <li>Naye saal me rozana ki purani lines saaf ho jayengi aur app bilkul halka ho jayega!</li>
+                    </ul>
+                </div>
+
+                <div class="input-group">
+                    <label>Abhi Ka Current Session:</label>
+                    <input type="text" id="session-current-display" disabled style="background:#f1f5f9; font-weight:bold; color:#7c3aed;">
+                </div>
+
+                <div class="input-group">
+                    <label style="color:#7c3aed; font-weight:800;">Naye Saal (Session) Ka Naam Likhein:</label>
+                    <input type="text" id="session-new-input" placeholder="Jaise: 2027-2028" style="font-weight:bold; font-size:15px; border-color:#c4b5fd;">
+                </div>
+
+                <button class="btn" style="background:#7c3aed; margin-top:10px;" onclick="executeYearEndClosingProcess()">🚀 Close Session & Start New Year</button>
+            </div>
+        </div>
+    </div>
+
     <!-- JAVASCRIPT SCRIPTS -->
     <script src="auth.js"></script>
-    <script src="kariger.js?v=10"></script>
-    <script src="stock.js?v=10"></script>
+    <script src="kariger.js?v=25"></script>
+    <script src="stock.js?v=25"></script>
     <script src="daybook.js"></script>
-    <script src="jobwork.js?v=10"></script>
+    <script src="jobwork.js?v=25"></script>
 </body>
 </html>
