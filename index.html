@@ -562,11 +562,11 @@
                     <div></div>
                 </div>
 
-                <!-- 3 TABS (FRESH, FINISHED & LOTT) -->
+                <!-- 3 TABS -->
                 <div class="sheet-tabs-bar" style="margin-bottom:15px;">
                     <div class="sheet-tabs-list">
                         <button class="sheet-tab active" id="btn-saree-tab-fresh" onclick="switchSareeStockTab('fresh')">🥻 Fresh Saree</button>
-                        <button class="sheet-tab" id="btn-saree-tab-finished" onclick="switchSareeStockTab('finished')">✨ Finished Saree</button>
+                        <button class="sheet-tab" id="btn-saree-tab-finished" onclick="switchSareeStockTab('finished')">✨ Finished Saree (Calender)</button>
                         <button class="sheet-tab" id="btn-saree-tab-lott" onclick="switchSareeStockTab('lott')">⚠️ Lott / Damage Saree</button>
                     </div>
                 </div>
@@ -632,10 +632,10 @@
                 </div>
             </div>
 
-            <!-- 8. MASTER MODULE: JOB WORK (CUTTING, CALENDER & DUKAN BHEJA) -->
+            <!-- 8. MASTER MODULE: JOB WORK (CUTTING, CALENDER, DUKAN & BILLS) -->
             <div id="jobwork-section" class="module-section">
                 
-                <!-- VIEW 1: JOB WORK MAIN HUB -->
+                <!-- VIEW 1: JOB WORK MAIN HUB (4 BUTTONS) -->
                 <div id="jw-hub-view">
                     <div class="module-header">
                         <button class="back-btn" onclick="backToDashboard()">← Dashboard Wapas</button>
@@ -658,11 +658,18 @@
                             <span class="menu-badge" id="jw-hub-badge-calender" style="background:#e0f2fe; color:#0284c7; border:1px solid #bae6fd; font-size:12px;">0 Kariger</span>
                         </div>
                         
-                        <!-- BUTTON 3: DUKAN BHEJA (FINAL OUT) -->
+                        <!-- BUTTON 3: DUKAN BHEJA -->
                         <div class="menu-btn" style="border-top:4px solid #059669; padding:25px;" onclick="openJobWorkSubSection('dukan')">
                             <span class="icon" style="font-size:38px;">🏪</span>
                             <span class="title" style="font-size:15px; font-weight:800;">3. Dukan Bheja (Final Out)</span>
                             <span class="menu-badge" id="jw-hub-badge-dukan" style="background:#dcfce7; color:#15803d; border:1px solid #bbf7d0; font-size:12px;">0 Pcs Bheje</span>
+                        </div>
+
+                        <!-- BUTTON 4: BILLS & PAYMENTS -->
+                        <div class="menu-btn" style="border-top:4px solid #7c3aed; padding:25px;" onclick="openJobWorkSubSection('billing')">
+                            <span class="icon" style="font-size:38px;">💳</span>
+                            <span class="title" style="font-size:15px; font-weight:800;">4. Job Work Bills & Hisab</span>
+                            <span class="menu-badge" id="jw-hub-badge-billing" style="background:#f3e8ff; color:#7c3aed; border:1px solid #d8b4fe; font-size:12px;">Baki: ₹ 0</span>
                         </div>
                     </div>
                 </div>
@@ -675,7 +682,6 @@
                         <button class="add-btn" style="background:#0d9488;" onclick="toggleJobWorkerForm()"><span id="jw-add-worker-btn-text">+ Naya Kariger</span></button>
                     </div>
 
-                    <!-- SEARCH & ABSENT TRACKER PANEL -->
                     <div class="filter-panel" style="background:#fff7ed; border-color:#fed7aa;">
                         <input type="text" id="jw-search-worker-input" class="search-box" placeholder="🔍 Search Kariger, Address, Mobile..." oninput="filterJobWorkWorkers()">
                         
@@ -691,7 +697,6 @@
                         </div>
                     </div>
 
-                    <!-- ADD WORKER FORM -->
                     <div id="add-jw-worker-form" class="custom-form">
                         <input type="hidden" id="jw-worker-edit-id">
                         <div class="form-row-4">
@@ -706,7 +711,6 @@
                         </div>
                     </div>
 
-                    <!-- WORKERS MASTER TABLE -->
                     <div class="table-responsive">
                         <table>
                             <thead>
@@ -723,7 +727,6 @@
                         </table>
                     </div>
 
-                    <!-- 3 COLORFUL SUMMARY BOXES -->
                     <div class="summary-bar" style="margin-top:20px;">
                         <div class="summary-box" style="border-top:4px solid #dc2626; background:#fef2f2; cursor:pointer;" onclick="viewJobWorkSummaryPassbook('gayi')" title="Passbook dekhne ke liye click karein">
                             <span style="color:#991b1b; font-size:12px; font-weight:700;">🔴 KUL SAREE GAYI (📖 Passbook)</span>
@@ -740,7 +743,7 @@
                     </div>
                 </div>
 
-                <!-- VIEW 3: WORKER KHATA SHEET -->
+                <!-- VIEW 3: WORKER KHATA SHEET (WITH [+] BATCH BUILDER) -->
                 <div id="jw-sheet-view" style="display:none;">
                     <div class="module-header">
                         <div style="display:flex; gap:10px; align-items:center;">
@@ -760,7 +763,6 @@
                             <span id="jw-sheet-active-badge" style="font-size:12px; background:rgba(255,255,255,0.25); padding:3px 8px; border-radius:4px;">Month 1</span>
                         </div>
 
-                        <!-- MONTHLY TABS BAR -->
                         <div class="sheet-tabs-bar">
                             <div class="sheet-tabs-list" id="jw-month-tabs-container"></div>
                             <button class="add-sheet-btn" style="background:#0d9488;" onclick="addNewJobWorkerMonthlySheet()">➕ Naya Mahina (Add Sheet)</button>
@@ -778,55 +780,74 @@
                             </div>
                         </div>
 
-                        <!-- 3 LINES FORM -->
+                        <!-- 3 SECTIONS ENTRY FORM (POINT 1 & POINT 3 [+] BATCH BUILDER) -->
                         <div id="add-jw-unified-form" style="background:#f8fafc; border:1px solid #cbd5e1; padding:15px; border-radius:10px; margin-bottom:15px;">
                             
-                            <!-- LINE 1: SAREE DIYA -->
-                            <div style="background:#fff1f2; border:1px solid #fecdd3; border-radius:8px; padding:10px; margin-bottom:10px;">
-                                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; flex-wrap:wrap; gap:6px;">
-                                    <strong style="color:#e11d48; font-size:12px;">📤 SAREE DIYA</strong>
+                            <!-- LINE 1: JANE WALI SAREE (BATCH BUILDER) -->
+                            <div style="background:#fff1f2; border:1px solid #fecdd3; border-radius:8px; padding:12px; margin-bottom:12px;">
+                                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; flex-wrap:wrap; gap:6px;">
+                                    <strong style="color:#e11d48; font-size:13px;">📤 JANE WALI SAREE (Batch Entry)</strong>
+                                    
+                                    <!-- POINT 1: CALENDER STOCK SELECTOR (FRESH VS CUTTING) -->
+                                    <div id="jw-calender-stock-source-wrap" style="display:none; gap:12px; font-size:12px; font-weight:700;">
+                                        <span style="color:#475569;">Stock Kahan Se Kate:</span>
+                                        <label style="color:#2563eb; cursor:pointer;"><input type="radio" name="jw-source-rad" id="jw-source-fresh" checked> 🥻 Fresh Stock (Kachha)</label>
+                                        <label style="color:#059669; cursor:pointer;"><input type="radio" name="jw-source-rad" id="jw-source-cutting"> ✂️ Cutting Stock</label>
+                                    </div>
                                 </div>
-                                <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px;">
+
+                                <div style="display:grid; grid-template-columns:1fr 1.5fr 1fr auto; gap:8px; align-items:flex-end;">
                                     <div><label style="font-size:11px; font-weight:700;">Date</label><input type="date" id="jw-form-diya-date" style="width:100%; padding:6px; font-size:12px; border:1px solid #cbd5e1; border-radius:6px;"></div>
-                                    <div><label style="font-size:11px; font-weight:700; color:#e11d48;">QTY</label><input type="number" id="jw-form-diya-qty" placeholder="0" style="width:100%; padding:6px; font-size:12px; border:1px solid #fca5a5; border-radius:6px; font-weight:bold;"></div>
-                                    <div><label style="font-size:11px; font-weight:700;">RATE</label><input type="number" step="any" id="jw-form-diya-rate" placeholder="0" style="width:100%; padding:6px; font-size:12px; border:1px solid #cbd5e1; border-radius:6px;"></div>
+                                    <div><label style="font-size:11px; font-weight:700;">Karigar Name</label><input type="text" id="jw-diya-karigar" list="dl-karigers-list" placeholder="Karigar Name" style="width:100%; padding:6px; font-size:12px; border:1px solid #cbd5e1; border-radius:6px;"></div>
+                                    <div><label style="font-size:11px; font-weight:700; color:#e11d48;">QTY (Pcs)</label><input type="number" id="jw-diya-qty" placeholder="0" style="width:100%; padding:6px; font-size:12px; border:1px solid #fca5a5; border-radius:6px; font-weight:bold;"></div>
+                                    <div><button class="add-btn" type="button" style="background:#e11d48; padding:7px 14px; font-weight:bold;" onclick="addDiyaBatchKarigarItem()">+ Jodein</button></div>
                                 </div>
+                                <datalist id="dl-karigers-list"></datalist>
+
+                                <!-- Live added karigar chips -->
+                                <div id="jw-diya-batch-chips" style="display:flex; flex-wrap:wrap; gap:6px; margin-top:8px;"></div>
+                                <div id="jw-diya-batch-total-text" style="font-size:12px; font-weight:800; color:#e11d48; margin-top:4px;"></div>
                             </div>
 
-                            <!-- LINE 2: SAREE WAPAS AAI -->
-                            <div style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:8px; padding:10px; margin-bottom:10px;">
-                                <strong style="color:#15803d; font-size:12px; display:block; margin-bottom:6px;">📥 SAREE WAPAS AAI</strong>
-                                <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px;">
+                            <!-- LINE 2: AANE WALI SAREE (BATCH BUILDER) -->
+                            <div style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:8px; padding:12px; margin-bottom:12px;">
+                                <strong style="color:#15803d; font-size:13px; display:block; margin-bottom:8px;">📥 AANE WALI SAREE (Wapas Laya Batch Entry)</strong>
+                                
+                                <div style="display:grid; grid-template-columns:1fr 1.5fr 1fr auto; gap:8px; align-items:flex-end;">
                                     <div><label style="font-size:11px; font-weight:700;">Date</label><input type="date" id="jw-form-aayi-date" style="width:100%; padding:6px; font-size:12px; border:1px solid #cbd5e1; border-radius:6px;"></div>
-                                    <div><label style="font-size:11px; font-weight:700; color:#15803d;">QTY</label><input type="number" id="jw-form-aayi-qty" placeholder="0" style="width:100%; padding:6px; font-size:12px; border:1px solid #86efac; border-radius:6px; font-weight:bold;"></div>
-                                    <div><label style="font-size:11px; font-weight:700;">RATE</label><input type="number" step="any" id="jw-form-aayi-rate" placeholder="0" style="width:100%; padding:6px; font-size:12px; border:1px solid #cbd5e1; border-radius:6px;"></div>
+                                    <div><label style="font-size:11px; font-weight:700;">Karigar Name</label><input type="text" id="jw-aayi-karigar" list="dl-karigers-list" placeholder="Karigar Name" style="width:100%; padding:6px; font-size:12px; border:1px solid #cbd5e1; border-radius:6px;"></div>
+                                    <div><label style="font-size:11px; font-weight:700; color:#15803d;">QTY (Pcs)</label><input type="number" id="jw-aayi-qty" placeholder="0" style="width:100%; padding:6px; font-size:12px; border:1px solid #86efac; border-radius:6px; font-weight:bold;"></div>
+                                    <div><button class="add-btn" type="button" style="background:#15803d; padding:7px 14px; font-weight:bold;" onclick="addAayiBatchKarigarItem()">+ Jodein</button></div>
+                                </div>
+
+                                <!-- Live added karigar chips -->
+                                <div id="jw-aayi-batch-chips" style="display:flex; flex-wrap:wrap; gap:6px; margin-top:8px;"></div>
+                                <div id="jw-aayi-batch-total-text" style="font-size:12px; font-weight:800; color:#15803d; margin-top:4px;"></div>
+                            </div>
+
+                            <!-- LINE 3: DAMAGE (LOTT) -->
+                            <div style="background:#fff7ed; border:1px solid #fed7aa; border-radius:8px; padding:10px; margin-bottom:12px;">
+                                <strong style="color:#c2410c; font-size:12px; display:block; margin-bottom:6px;">⚠️ DAMAGE / LOTT (Agar Koi Saree Kharab Hui)</strong>
+                                <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+                                    <div><label style="font-size:11px; font-weight:700; color:#dc2626;">Damage (Pcs)</label><input type="number" id="jw-form-damage-pcs" placeholder="0" style="width:100%; padding:6px; font-size:12px; border:1px solid #fca5a5; border-radius:6px;"></div>
+                                    <div><label style="font-size:11px; font-weight:700; color:#dc2626;">Katuti (₹ Katauti)</label><input type="number" step="any" id="jw-form-damage-amt" placeholder="0" style="width:100%; padding:6px; font-size:12px; border:1px solid #fca5a5; border-radius:6px;"></div>
                                 </div>
                             </div>
 
-                            <!-- LINE 3: PAYMENT & DAMAGE -->
-                            <div style="background:#faf5ff; border:1px solid #e9d5ff; border-radius:8px; padding:10px; margin-bottom:12px;">
-                                <strong style="color:#7e22ce; font-size:12px; display:block; margin-bottom:6px;">💳 PAYMENT & DAMAGE</strong>
-                                <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px;">
-                                    <div><label style="font-size:11px; font-weight:700; color:#059669;">Payment(₹)</label><input type="number" step="any" id="jw-form-payment" placeholder="0" style="width:100%; padding:6px; font-size:12px; border:1px solid #86efac; border-radius:6px;"></div>
-                                    <div><label style="font-size:11px; font-weight:700; color:#dc2626;">Damage(Pcs)</label><input type="number" id="jw-form-damage-pcs" placeholder="0" style="width:100%; padding:6px; font-size:12px; border:1px solid #fca5a5; border-radius:6px;"></div>
-                                    <div><label style="font-size:11px; font-weight:700; color:#dc2626;">Katuti(₹)</label><input type="number" step="any" id="jw-form-damage-amt" placeholder="0" style="width:100%; padding:6px; font-size:12px; border:1px solid #fca5a5; border-radius:6px;"></div>
-                                </div>
-                            </div>
-
-                            <button class="add-btn" style="background:#0d9488; width:100%; padding:10px; font-size:14px; font-weight:800;" onclick="addJobWorkUnifiedRow()">Line Jode & Save Kare</button>
+                            <button class="add-btn" style="background:#0d9488; width:100%; padding:11px; font-size:14px; font-weight:800;" onclick="saveJobWorkBatchLine()">💾 Poori Batch Entry Save Karein (Line Jodein)</button>
                         </div>
 
-                        <!-- 1 SINGLE UNIFIED TABLE -->
+                        <!-- 1 SINGLE CLEAN TABLE (1 SUMMARY ROW PER BATCH) -->
                         <div class="table-responsive">
                             <table class="sheet-table">
                                 <thead>
                                     <tr style="background:#0d9488; color:white;">
                                         <th>Date</th>
-                                        <th>Gayi QTY</th>
-                                        <th>Rate</th>
-                                        <th>Wapas Aai QTY</th>
-                                        <th>Rate</th>
-                                        <th>Payment (₹)</th>
+                                        <th>Gayi Saree</th>
+                                        <th>Gayi Detail</th>
+                                        <th>Wapas Aai Saree</th>
+                                        <th>Aai Detail</th>
+                                        <th>Damage (Pcs)</th>
                                         <th>Damage (₹)</th>
                                         <th>Action</th>
                                     </tr>
@@ -845,32 +866,20 @@
                                 <div style="font-size:11px; font-weight:700; color:#065f46;">SAREE TOTAL AAI</div>
                                 <h3 id="jw-card-total-aayi" style="color:#059669; font-size:18px; margin-top:4px;">0 Pcs</h3>
                             </div>
-                            <div class="calc-card" style="border-top:4px solid #7e22ce; text-align:center; padding:12px 8px;">
-                                <div style="font-size:11px; font-weight:700; color:#6b21a8;">PAYMENT TOTAL DIYA</div>
-                                <h3 id="jw-card-total-diya-pay" style="color:#7e22ce; font-size:18px; margin-top:4px;">₹ 0</h3>
-                            </div>
                             <div class="calc-card" style="border-top:4px solid #ea580c; text-align:center; padding:12px 8px;">
                                 <div style="font-size:11px; font-weight:700; color:#c2410c;">LOTT TOTAL</div>
                                 <h3 id="jw-card-total-lott" style="color:#ea580c; font-size:18px; margin-top:4px;">0 Pcs</h3>
                             </div>
-                        </div>
-
-                        <!-- FINAL BALANCES STRIP -->
-                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; background:#f8fafc; border:1px solid #cbd5e1; border-radius:10px; padding:12px;">
-                            <div style="text-align:center;">
-                                <span style="font-size:11px; font-weight:700; color:#475569;">📦 FINAL BAKI SAREE:</span>
-                                <h4 id="jw-calc-baki-saree-display" style="color:#0284c7; font-size:18px; font-weight:800; margin-top:2px;">0 Pcs Baki</h4>
-                            </div>
-                            <div style="text-align:center;">
-                                <span style="font-size:11px; font-weight:700; color:#475569;">💰 FINAL BAKI RUPAYE:</span>
-                                <h4 id="jw-calc-final-baki-amt-display" style="color:#dc2626; font-size:18px; font-weight:800; margin-top:2px;">₹ 0.00</h4>
+                            <div class="calc-card" style="border-top:4px solid #0284c7; text-align:center; padding:12px 8px;">
+                                <div style="font-size:11px; font-weight:700; color:#0369a1;">PENDING BAKI SAREE</div>
+                                <h3 id="jw-calc-baki-saree-display" style="color:#0284c7; font-size:18px; margin-top:4px;">0 Pcs</h3>
                             </div>
                         </div>
 
                     </div>
                 </div>
 
-                <!-- VIEW 4: DUKAN BHEJA -->
+                <!-- VIEW 4: 🏪 DUKAN BHEJA -->
                 <div id="jw-dukan-view" style="display:none;">
                     <div class="module-header">
                         <button class="back-btn" onclick="showJobWorkHub()">← Wapas Hub</button>
@@ -878,7 +887,6 @@
                         <div></div>
                     </div>
 
-                    <!-- SUMMARY STATS -->
                     <div class="summary-bar" style="margin-bottom:15px;">
                         <div class="summary-box" style="border-top:4px solid #0284c7;">
                             <span>CALENDER SE TAYAAR SAREE</span>
@@ -894,7 +902,6 @@
                         </div>
                     </div>
 
-                    <!-- DATE RANGE FILTER PANEL -->
                     <div class="filter-panel" style="background:#f0fdf4; border-color:#bbf7d0;">
                         <div class="filter-date-group">
                             <label>From Date:</label><input type="date" id="jw-dukan-from-date">
@@ -905,7 +912,6 @@
                         <span id="jw-dukan-filter-total" style="font-size:13px; font-weight:800; color:#059669; margin-left:auto;"></span>
                     </div>
 
-                    <!-- ENTRY FORM -->
                     <div style="background:#f8fafc; border:1px solid #cbd5e1; border-radius:12px; padding:15px; margin-bottom:15px;">
                         <strong style="color:#059669; font-size:13px; display:block; margin-bottom:8px;">➕ Karkhane Se Apni Dukan Maal Bhejein:</strong>
                         <div style="display:grid; grid-template-columns:1fr 1fr 2fr auto; gap:8px;">
@@ -916,7 +922,6 @@
                         </div>
                     </div>
 
-                    <!-- TABLE -->
                     <div class="table-responsive">
                         <table>
                             <thead>
@@ -928,6 +933,66 @@
                                 </tr>
                             </thead>
                             <tbody id="jw-dukan-table-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- VIEW 5: 💳 JOB WORK BILLS & PAYMENT REGISTER (NEW SECTION) -->
+                <div id="jw-billing-view" style="display:none;">
+                    <div class="module-header">
+                        <button class="back-btn" onclick="showJobWorkHub()">← Wapas Hub</button>
+                        <h2 style="color:#7c3aed; font-size:18px; font-weight:700;">💳 Job Work Bills & Payment Register</h2>
+                        <button class="add-btn" style="background:#7c3aed;" onclick="toggleAddJwBillForm()">+ Naya Bill Darj Karein</button>
+                    </div>
+
+                    <!-- 3 SUMMARY CARDS -->
+                    <div class="summary-bar" style="margin-bottom:15px;">
+                        <div class="summary-box" style="border-top:4px solid #dc2626; background:#fef2f2;">
+                            <span style="color:#991b1b; font-weight:700;">🔴 KUL BILL BANA</span>
+                            <h3 id="jw-bill-stat-total" style="color:#dc2626; font-size:22px;">₹ 0</h3>
+                        </div>
+                        <div class="summary-box" style="border-top:4px solid #059669; background:#ecfdf5;">
+                            <span style="color:#065f46; font-weight:700;">🟢 KUL CHUKTA (PAID)</span>
+                            <h3 id="jw-bill-stat-paid" style="color:#059669; font-size:22px;">₹ 0</h3>
+                        </div>
+                        <div class="summary-box" style="border-top:4px solid #ea580c; background:#fff7ed;">
+                            <span style="color:#c2410c; font-weight:700;">🟠 KUL DENA BAKI HAI</span>
+                            <h3 id="jw-bill-stat-pending" style="color:#ea580c; font-size:22px;">₹ 0</h3>
+                        </div>
+                    </div>
+
+                    <!-- 2 TABS: PENDING VS PAID -->
+                    <div class="sheet-tabs-bar" style="margin-bottom:12px;">
+                        <div class="sheet-tabs-list">
+                            <button class="sheet-tab active" id="btn-jw-bill-pending" onclick="switchJwBillTab('pending')">🔴 Dena Baki Hai (Pending Bills)</button>
+                            <button class="sheet-tab" id="btn-jw-bill-paid" onclick="switchJwBillTab('paid')">🟢 Chukta Ho Chuka (Paid Bills)</button>
+                        </div>
+                    </div>
+
+                    <!-- ADD BILL FORM (LUMP SUM BILL ENTRY) -->
+                    <div id="add-jw-bill-form" class="custom-form" style="display:none; background:#f8fafc; border:1px solid #cbd5e1; padding:15px; border-radius:10px; margin-bottom:15px;">
+                        <strong style="color:#7c3aed; font-size:13px; display:block; margin-bottom:10px;">➕ Job Work Wale Ka Naya Bill Darj Karein:</strong>
+                        <div class="form-row-4">
+                            <div class="input-group"><label>Bill Date</label><input type="date" id="jw-bill-input-date"></div>
+                            <div class="input-group">
+                                <label>Job Worker Name</label>
+                                <select id="jw-bill-input-worker" style="padding:7px; border:1px solid #cbd5e1; border-radius:6px;"></select>
+                            </div>
+                            <div class="input-group"><label>Kitni Saree Ka Bill (Pcs)</label><input type="number" id="jw-bill-input-pcs" placeholder="Jaise: 500"></div>
+                            <div class="input-group"><label style="color:#b91c1c; font-weight:800;">Kul Bill Amount (₹)</label><input type="number" step="any" id="jw-bill-input-amt" placeholder="Jaise: 15000" style="border-color:#fca5a5; font-weight:bold;"></div>
+                        </div>
+                        <div style="margin-bottom:10px;">
+                            <label style="font-size:11px; font-weight:700;">Bill No. / Parchi Note</label>
+                            <input type="text" id="jw-bill-input-note" placeholder="Bill No. 402 ya 500 Saree Lot" style="width:100%; padding:7px; border:1px solid #cbd5e1; border-radius:6px;">
+                        </div>
+                        <button class="add-btn" style="background:#7c3aed; padding:9px 18px;" onclick="saveJobWorkNewBill()">Save Bill</button>
+                    </div>
+
+                    <!-- BILLS TABLE -->
+                    <div class="table-responsive">
+                        <table>
+                            <thead id="jw-bills-table-thead"></thead>
+                            <tbody id="jw-bills-table-tbody"></tbody>
                         </table>
                     </div>
                 </div>
@@ -1011,11 +1076,72 @@
         </div>
     </div>
 
-    <!-- JAVASCRIPT SCRIPTS (SAME FOLDER) -->
+    <!-- MODAL 4: JOB WORK BATCH PASSBOOK (KARIGAR BREAKDOWN WITH ✏️ EDIT & 🗑️ DELETE) -->
+    <div id="jw-batch-modal" class="modal-overlay">
+        <div class="modal-card" style="max-width:560px;">
+            <div class="modal-header" style="background:#0d9488; color:white;">
+                <div><h3 id="jw-batch-modal-title" style="color:white; font-weight:800;">📖 Batch Karigar Breakdown</h3></div>
+                <button class="close-modal-btn" style="color:white;" onclick="closeJwBatchModal()">X</button>
+            </div>
+            <div class="modal-body">
+                <p id="jw-batch-modal-subtitle" style="font-size:12px; color:#64748b; margin-bottom:10px;"></p>
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr style="background:#0d9488; color:white;">
+                                <th>S.No.</th>
+                                <th>Karigar Ka Naam</th>
+                                <th>Saree Qty (Pcs)</th>
+                                <th style="text-align:center;">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="jw-batch-modal-tbody"></tbody>
+                        <tfoot id="jw-batch-modal-tfoot"></tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 5: QUICK PAYMENT MODAL (BILL KA PAISA DENA) -->
+    <div id="jw-pay-modal" class="modal-overlay">
+        <div class="modal-card" style="max-width:440px;">
+            <div class="modal-header" style="background:#059669; color:white;">
+                <div><h3 style="color:white; font-weight:800;">💰 Paisa Diya (Payment Entry)</h3></div>
+                <button class="close-modal-btn" style="color:white;" onclick="closeJwPayModal()">X</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="jw-pay-bill-id">
+                <div style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:8px; padding:10px; margin-bottom:12px;">
+                    <div style="font-size:12px; color:#15803d; font-weight:700;" id="jw-pay-modal-worker-text">Worker: -</div>
+                    <div style="font-size:14px; font-weight:800; color:#b91c1c; margin-top:2px;" id="jw-pay-modal-baki-text">Abhi Baki: ₹ 0</div>
+                </div>
+
+                <div class="input-group"><label>Payment Date</label><input type="date" id="jw-pay-date"></div>
+                <div class="input-group">
+                    <label style="color:#059669; font-weight:800;">Kitna Rupya Diya (₹)</label>
+                    <input type="number" step="any" id="jw-pay-amount" placeholder="0" style="font-weight:bold; font-size:15px; border-color:#86efac;">
+                </div>
+                <div class="input-group">
+                    <label>Payment Ka Tarika</label>
+                    <select id="jw-pay-mode" style="padding:7px; border:1px solid #cbd5e1; border-radius:6px;">
+                        <option value="Cash">Cash (Rokad)</option>
+                        <option value="Online / UPI">Online / UPI</option>
+                        <option value="Bank Transfer">Bank Transfer</option>
+                    </select>
+                </div>
+                <div class="input-group"><label>Parchi / Payment Note</label><input type="text" id="jw-pay-note" placeholder="Kis cheez ka paisa diya"></div>
+
+                <button class="btn" style="background:#059669;" onclick="saveJobWorkPayment()">Save Payment & Update</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT SCRIPTS -->
     <script src="auth.js"></script>
     <script src="kariger.js"></script>
-    <script src="stock.js"></script>
+    <script src="stock.js?v=3"></script>
     <script src="daybook.js"></script>
-    <script src="jobwork.js"></script>
+    <script src="jobwork.js?v=3"></script>
 </body>
 </html>
