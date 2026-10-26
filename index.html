@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Welcome to Simplicity - ERP by Farhan Jawed</title>
     
-    <!-- PWA Web App Manifest (App banane ke liye zaruri) -->
+    <!-- PWA Web App Manifest -->
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#0f172a">
     <meta name="mobile-web-app-capable" content="yes">
@@ -554,7 +554,7 @@
                 </div>
             </div>
 
-            <!-- MODULE: SAREE (3 TABS: FRESH, LOTT, ACTUAL STOCK) -->
+            <!-- MODULE: SAREE (3 TABS: FRESH, FINISHED, LOTT) -->
             <div id="saree-section" class="module-section">
                 <div class="module-header">
                     <button class="back-btn" onclick="backToDashboard()">← Dashboard Wapas</button>
@@ -562,12 +562,12 @@
                     <div></div>
                 </div>
 
-                <!-- 3 TABS -->
+                <!-- 3 TABS (FRESH, FINISHED & LOTT) -->
                 <div class="sheet-tabs-bar" style="margin-bottom:15px;">
                     <div class="sheet-tabs-list">
                         <button class="sheet-tab active" id="btn-saree-tab-fresh" onclick="switchSareeStockTab('fresh')">🥻 Fresh Saree</button>
+                        <button class="sheet-tab" id="btn-saree-tab-finished" onclick="switchSareeStockTab('finished')">✨ Finished Saree</button>
                         <button class="sheet-tab" id="btn-saree-tab-lott" onclick="switchSareeStockTab('lott')">⚠️ Lott / Damage Saree</button>
-                        <button class="sheet-tab" id="btn-saree-tab-actual" onclick="switchSareeStockTab('actual')">📦 Actual Stock</button>
                     </div>
                 </div>
 
@@ -635,7 +635,7 @@
             <!-- 8. MASTER MODULE: JOB WORK (CUTTING, CALENDER & DUKAN BHEJA) -->
             <div id="jobwork-section" class="module-section">
                 
-                <!-- VIEW 1: JOB WORK MAIN HUB (3 BIG CLEAN BUTTONS) -->
+                <!-- VIEW 1: JOB WORK MAIN HUB -->
                 <div id="jw-hub-view">
                     <div class="module-header">
                         <button class="back-btn" onclick="backToDashboard()">← Dashboard Wapas</button>
@@ -667,7 +667,7 @@
                     </div>
                 </div>
 
-                <!-- VIEW 2: WORKERS LIST VIEW (WITH SEARCH & ABSENT FILTER) -->
+                <!-- VIEW 2: WORKERS LIST VIEW -->
                 <div id="jw-workers-view" style="display:none;">
                     <div class="module-header">
                         <button class="back-btn" onclick="showJobWorkHub()">← Wapas Hub</button>
@@ -785,11 +785,6 @@
                             <div style="background:#fff1f2; border:1px solid #fecdd3; border-radius:8px; padding:10px; margin-bottom:10px;">
                                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; flex-wrap:wrap; gap:6px;">
                                     <strong style="color:#e11d48; font-size:12px;">📤 SAREE DIYA</strong>
-                                    <!-- CALENDER ONLY STOCK SELECTOR -->
-                                    <div id="jw-calender-stock-source-wrap" style="display:none; gap:12px; font-size:12px; font-weight:700;">
-                                        <label style="color:#0284c7; cursor:pointer;"><input type="radio" name="jw-source-rad" id="jw-source-cutting"> ✂️ Cutting Stock</label>
-                                        <label style="color:#2563eb; cursor:pointer;"><input type="radio" name="jw-source-rad" id="jw-source-main" checked> 🥻 Main Stock</label>
-                                    </div>
                                 </div>
                                 <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px;">
                                     <div><label style="font-size:11px; font-weight:700;">Date</label><input type="date" id="jw-form-diya-date" style="width:100%; padding:6px; font-size:12px; border:1px solid #cbd5e1; border-radius:6px;"></div>
@@ -829,7 +824,6 @@
                                         <th>Date</th>
                                         <th>Gayi QTY</th>
                                         <th>Rate</th>
-                                        <th id="jw-th-stock-source" style="display:none;">Stock</th>
                                         <th>Wapas Aai QTY</th>
                                         <th>Rate</th>
                                         <th>Payment (₹)</th>
