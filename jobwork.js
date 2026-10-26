@@ -1,6 +1,6 @@
 /* ========================================================
    SIMPLICITY ERP - JOB WORK (BATCH BUILDER, BILLING & SEARCH)
-   File 7 of 7 • Developed by Farhan Jawed (Full Feature Engine)
+   File 7 of 7 • Developed by Farhan Jawed (Exact Bill No. Fixed)
 ======================================================== */
 
 var currentJobWorkMode = "hub"; // "hub", "cutting", "calender", "dukan", "billing"
@@ -257,12 +257,7 @@ function renderJobWorkWorkersTable() {
             "<td>" + (w.address || "-") + "</td>" +
             "<td>" + (w.mobile || "-") + "</td>" +
             "<td>" + statusBadge + "</td>" +
-            "<td style='text-align:center;'>" +
-                "<button class='sheet-btn' onclick='openJobWorkerSheet(\"" + w.id + "\")'>📊 Sheet Khata</button>" +
-                tagadaBtn + " " +
-                "<button class='edit-btn' onclick='editJobWorker(\"" + w.id + "\")'>✏️</button> " +
-                "<button class='delete-btn' onclick='deleteJobWorker(\"" + w.id + "\")'>🗑️</button>" +
-            "</td>" +
+            "<td style='text-align:center;'><button class='sheet-btn' onclick='openJobWorkerSheet(\"" + w.id + "\")'>📊 Sheet Khata</button> " + tagadaBtn + " <button class='edit-btn' onclick='editJobWorker(\"" + w.id + "\")'>✏️</button> <button class='delete-btn' onclick='deleteJobWorker(\"" + w.id + "\")'>🗑️</button></td>" +
         "</tr>";
     });
 }
@@ -431,7 +426,6 @@ function openJobWorkerSheet(workerId) {
     renderAayiBatchChips();
     populateKarigersDatalist();
 
-    // POINT 1: Stock Source Selection in Calender
     var stockSelectWrap = document.getElementById("jw-calender-stock-source-wrap");
     if (stockSelectWrap) {
         stockSelectWrap.style.display = (w.type === "calender") ? "flex" : "none";
@@ -556,7 +550,7 @@ function saveJobWorkSheetConfig() {
     renderJobWorkSheetTable(sh);
 }
 
-// ================= 5. [+] BATCH BUILDER SYSTEM (POINT 3) =================
+// ================= 5. [+] BATCH BUILDER SYSTEM =================
 
 function populateKarigersDatalist() {
     var dl = document.getElementById("dl-karigers-list");
@@ -663,7 +657,6 @@ function renderAayiBatchChips() {
     }
 }
 
-// SAVE SINGLE BATCH SUMMARY ROW (POINT 3)
 function saveJobWorkBatchLine() {
     if (!activeJobWorkerId) return;
     var sheets = getJobWorkerSheets(activeJobWorkerId);
@@ -691,7 +684,6 @@ function saveJobWorkBatchLine() {
     var aDate = document.getElementById("jw-form-aayi-date").value || getTodayDate();
     var rowDate = (totGayi > 0) ? dDate : aDate;
 
-    // POINT 1: Stock Source selection in Calender
     var stockSource = "fresh";
     if (isCalender) {
         var rCut = document.getElementById("jw-source-cutting");
@@ -716,7 +708,7 @@ function saveJobWorkBatchLine() {
     sh.rows.push(newRow);
     saveJobWorkerSheets(activeJobWorkerId, sheets);
 
-    // POINT 1 STOCK DEDUCTION
+    // Stock Deduction
     if (totGayi > 0) {
         if (stockSource === "cutting") {
             var cStock = safeArray(getStore("finished_saree_stock"));
@@ -756,7 +748,7 @@ function saveJobWorkBatchLine() {
         setStore("saree_history", sH);
     }
 
-    // POINT 2: SAREE WAPAS AANE PAR STOCK ADDITION
+    // Stock Addition
     if (totAayi > 0) {
         var finishedName = isCalender ? "Calender Finished Saree" : "Cutting Finished Saree";
         var finishedSource = isCalender ? "🎛️ Calender Process" : "✂️ Booti Cutting Process";
@@ -793,7 +785,7 @@ function saveJobWorkBatchLine() {
         setStore("saree_history", sH2);
     }
 
-    // Damage to Lott Saree Stock
+    // Damage
     if (damagePcs > 0) {
         var lottStock = safeArray(getStore("lott_saree_stock"));
         var lItem = lottStock.find(function(x) { return x && x.source && x.source.indexOf(workerName) !== -1; });
@@ -813,7 +805,6 @@ function saveJobWorkBatchLine() {
         setStore("lott_saree_stock", lottStock);
     }
 
-    // Reset Form
     currentDiyaBatch = [];
     currentAayiBatch = [];
     renderDiyaBatchChips();
@@ -891,7 +882,6 @@ function deleteJobWorkBatchRow(idx) {
     var worker = getJobWorkers().find(function(x) { return String(x.id) === String(activeJobWorkerId); });
     var isCalender = (worker && worker.type === "calender");
 
-    // 1. REVERSE GAYI STOCK
     if (Number(r.gayiQty) > 0) {
         if (r.stockSource === "cutting") {
             var cStock = safeArray(getStore("finished_saree_stock"));
@@ -909,7 +899,6 @@ function deleteJobWorkBatchRow(idx) {
         }
     }
 
-    // 2. REVERSE AAYI FINISHED STOCK
     if (Number(r.aayiQty) > 0) {
         var finishedName = isCalender ? "Calender Finished Saree" : "Cutting Finished Saree";
         var fStock = safeArray(getStore("finished_saree_stock"));
@@ -920,7 +909,6 @@ function deleteJobWorkBatchRow(idx) {
         }
     }
 
-    // 3. REVERSE DAMAGE FROM LOTT
     if (Number(r.damagePcs) > 0) {
         var lottStock = safeArray(getStore("lott_saree_stock"));
         if (lottStock.length > 0) {
@@ -929,7 +917,6 @@ function deleteJobWorkBatchRow(idx) {
         }
     }
 
-    // 4. CLEAN SAREE HISTORY
     var sH = safeArray(getStore("saree_history"));
     sH = sH.filter(function(h) { return !h || String(h.refId) !== String(r.id); });
     setStore("saree_history", sH);
@@ -1008,7 +995,6 @@ function renderJwBatchModalTable() {
     }
 }
 
-// ✏️ EDIT KARIGAR ITEM INSIDE PASSBOOK
 function editJwBatchItem(itemIdx) {
     if (!activeBatchModalInfo) return;
     var sheets = getJobWorkerSheets(activeJobWorkerId);
@@ -1071,7 +1057,6 @@ function editJwBatchItem(itemIdx) {
     alert("✅ Karigar QTY update ho gayi aur Stock adjust ho gaya!");
 }
 
-// 🗑️ DELETE KARIGAR ITEM INSIDE PASSBOOK
 function deleteJwBatchItem(itemIdx) {
     if (!confirm("Kya aap is Karigar ki entry ko batch se delete karna chahte hain?")) return;
     if (!activeBatchModalInfo) return;
@@ -1129,7 +1114,7 @@ function deleteJwBatchItem(itemIdx) {
     alert("🗑️ Karigar item delete ho gaya aur stock theek ho gaya!");
 }
 
-// ================= 7. 💳 JOB WORK BILLS & PAYMENT ENGINE (SEARCH & BILL NO.) =================
+// ================= 7. 💳 JOB WORK BILLS & PAYMENT ENGINE (EXACT BILL NO. FIXED) =================
 
 function getJwBills() {
     return safeArray(getStore("jw_bills_list"));
@@ -1181,17 +1166,32 @@ function toggleAddJwBillForm() {
     document.getElementById("jw-bill-input-date").value = getTodayDate();
 }
 
-// SAVE NEW BILL WITH BILL NO.
+// EXACT BILL NO. SAVING LOGIC (NO OVERWRITING)
 function saveJobWorkNewBill() {
-    var d = document.getElementById("jw-bill-input-date").value || getTodayDate();
-    var billNo = (document.getElementById("jw-bill-input-no") && document.getElementById("jw-bill-input-no").value || "").trim().toUpperCase();
-    var wId = document.getElementById("jw-bill-input-worker").value;
-    var pcs = parseInt(document.getElementById("jw-bill-input-pcs").value) || 0;
-    var amt = parseFloat(document.getElementById("jw-bill-input-amt").value) || 0;
-    var note = (document.getElementById("jw-bill-input-note").value || "").trim();
+    var d = document.getElementById("jw-bill-input-date") ? document.getElementById("jw-bill-input-date").value : getTodayDate();
+    
+    // Read Bill No.
+    var bNoEl = document.getElementById("jw-bill-input-no");
+    var noteEl = document.getElementById("jw-bill-input-note");
+    
+    var billNo = bNoEl ? bNoEl.value.trim() : "";
+    var note = noteEl ? noteEl.value.trim() : "";
+    
+    // Agar user ne note wale box me likha ho to wahan se utha lein
+    if (!billNo && note) {
+        billNo = note;
+    }
+    
+    // Agar bilkul khali ho to hi default "Bill" likhein, koi ajeeb number nahi banega
+    if (!billNo) {
+        billNo = "-";
+    }
+
+    var wId = document.getElementById("jw-bill-input-worker") ? document.getElementById("jw-bill-input-worker").value : "";
+    var pcs = parseInt(document.getElementById("jw-bill-input-pcs") ? document.getElementById("jw-bill-input-pcs").value : 0) || 0;
+    var amt = parseFloat(document.getElementById("jw-bill-input-amt") ? document.getElementById("jw-bill-input-amt").value : 0) || 0;
 
     if (!wId) return alert("Worker chunein!");
-    if (!billNo) billNo = "BILL-" + Date.now().toString().slice(-4);
     if (amt <= 0) return alert("Sahi Bill Amount (₹) bharein!");
 
     var worker = getJobWorkers().find(function(x) { return String(x.id) === String(wId); });
@@ -1201,28 +1201,28 @@ function saveJobWorkNewBill() {
     var bills = getJwBills();
     bills.push({
         id: "bill_" + Date.now(),
-        billNo: billNo,
-        date: d,
+        billNo: billNo, // EXACTLY what user typed
+        date: d || getTodayDate(),
         workerId: wId,
         workerName: workerName,
         workType: workType,
         pcs: pcs,
         billAmt: amt,
         paidAmt: 0,
-        note: note || "Lump-sum Job Work Bill"
+        note: note || billNo
     });
 
     saveJwBills(bills);
 
-    if (document.getElementById("jw-bill-input-no")) document.getElementById("jw-bill-input-no").value = "";
-    document.getElementById("jw-bill-input-pcs").value = "";
-    document.getElementById("jw-bill-input-amt").value = "";
-    document.getElementById("jw-bill-input-note").value = "";
+    if (bNoEl) bNoEl.value = "";
+    if (noteEl) noteEl.value = "";
+    if (document.getElementById("jw-bill-input-pcs")) document.getElementById("jw-bill-input-pcs").value = "";
+    if (document.getElementById("jw-bill-input-amt")) document.getElementById("jw-bill-input-amt").value = "";
     toggleAddJwBillForm();
 
     renderJwBillsTable();
     updateJobWorkHubBadges();
-    alert("✅ Bill No. #" + billNo + " Darj ho gaya! 'Dena Baki Hai' list me aa gaya.");
+    alert("✅ Bill No: " + billNo + " Safalta-purvak save ho gaya!");
 }
 
 function getJwBillingStats() {
@@ -1253,7 +1253,7 @@ function switchJwBillTab(tab) {
     renderJwBillsTable();
 }
 
-// 🔍 LIVE SEARCH FUNCTION FOR BILLS (POINT 2)
+// 🔍 LIVE SEARCH FUNCTION FOR BILLS
 function filterJwBills() {
     var txt = (document.getElementById("jw-search-bill-input") && document.getElementById("jw-search-bill-input").value || "").toLowerCase().trim();
     var allBills = getJwBills();
@@ -1330,7 +1330,7 @@ function renderJwBillsTable(customList) {
 
         tbody.innerHTML += "<tr>" +
             "<td>" + formatDateDisplay(b.date) + "</td>" +
-            "<td><strong style='color:#7c3aed;'>#" + (b.billNo || "BILL") + "</strong></td>" +
+            "<td><strong style='color:#7c3aed; font-size:13px;'>" + (b.billNo || "-") + "</strong></td>" +
             "<td><strong>" + b.workerName + "</strong></td>" +
             "<td>" + (b.workType === "calender" ? "🎛️ Calender" : "✂️ Cutting") + "</td>" +
             "<td>" + (b.pcs > 0 ? (b.pcs + " Pcs") : "-") + "</td>" +
@@ -1343,7 +1343,6 @@ function renderJwBillsTable(customList) {
     });
 }
 
-// 💰 QUICK PAYMENT MODAL (WITH BILL NO. HIGHLIGHT)
 function openJwPayModal(billId) {
     var b = getJwBills().find(function(x) { return String(x.id) === String(billId); });
     if (!b) return;
@@ -1351,11 +1350,11 @@ function openJwPayModal(billId) {
     var baki = Math.max(0, (Number(b.billAmt) || 0) - (Number(b.paidAmt) || 0));
 
     document.getElementById("jw-pay-bill-id").value = b.id;
-    document.getElementById("jw-pay-modal-worker-text").textContent = "Bill #" + (b.billNo || "-") + " | " + b.workerName + " (" + b.workType + " Bill: ₹" + b.billAmt + ")";
+    document.getElementById("jw-pay-modal-worker-text").textContent = "Bill: " + (b.billNo || "-") + " | " + b.workerName + " (" + b.workType + " Bill: ₹" + b.billAmt + ")";
     document.getElementById("jw-pay-modal-baki-text").textContent = "Abhi Dena Baki: ₹ " + baki.toFixed(2);
     document.getElementById("jw-pay-date").value = getTodayDate();
     document.getElementById("jw-pay-amount").value = baki;
-    document.getElementById("jw-pay-note").value = "Payment for Bill #" + (b.billNo || "");
+    document.getElementById("jw-pay-note").value = "Payment for Bill " + (b.billNo || "");
 
     setDisplay("jw-pay-modal", "flex");
 }
@@ -1390,7 +1389,7 @@ function saveJobWorkPayment() {
     payments.push({
         id: "pay_" + Date.now(),
         billId: billId,
-        billNo: b.billNo || "BILL",
+        billNo: b.billNo || "-",
         date: d,
         workerName: b.workerName,
         amount: payAmt,
@@ -1402,7 +1401,7 @@ function saveJobWorkPayment() {
     closeJwPayModal();
     renderJwBillsTable();
     updateJobWorkHubBadges();
-    alert("✅ ₹" + payAmt + " Payment Bill #" + b.billNo + " par save ho gaya!");
+    alert("✅ ₹" + payAmt + " Payment Bill " + b.billNo + " par save ho gaya!");
 }
 
 function sendJwPaymentWhatsAppReceipt(billId) {
@@ -1414,7 +1413,7 @@ function sendJwPaymentWhatsAppReceipt(billId) {
 
     var text = "🧾 *JOB WORK PAYMENT RASEED* 🧾\n";
     text += "━━━━━━━━━━━━━━━━━━━━━\n";
-    text += "📄 *Bill No:* #" + (b.billNo || "BILL") + "\n";
+    text += "📄 *Bill No:* " + (b.billNo || "-") + "\n";
     text += "👤 *Job Worker:* " + b.workerName + "\n";
     text += "📦 *Kaam:* " + (b.workType === "calender" ? "Calender Finishing" : "Booti Cutting") + "\n";
     text += "📅 *Tarikh:* " + formatDateDisplay(getTodayDate()) + "\n";
@@ -1613,15 +1612,7 @@ function shareJobWorkOnWhatsApp() {
         if (!mobile) return;
         mobile = mobile.trim().replace(/[^0-9]/g, "");
     }
+    if (mobile.length === 10) mobile = "91" + mobile;
 
-    var targetUrl = "";
-    if (mobile.length === 10) {
-        targetUrl = "https://wa.me/91" + mobile + "?text=" + encodeURIComponent(text);
-    } else if (mobile.length > 10) {
-        targetUrl = "https://wa.me/" + mobile + "?text=" + encodeURIComponent(text);
-    } else {
-        targetUrl = "https://api.whatsapp.com/send?text=" + encodeURIComponent(text);
-    }
-
-    window.open(targetUrl, "_blank");
+    window.open("https://wa.me/" + mobile + "?text=" + encodeURIComponent(text), "_blank");
 }
