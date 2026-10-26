@@ -1,6 +1,6 @@
 /* ========================================================
    SIMPLICITY ERP - LIVE STOCK & MULTI-KARKHANA ENGINE
-   File 5 of 7 • Developed by Farhan Jawed (Multi-Karkhana Transfers Ready)
+   File 5 of 7 • Developed by Farhan Jawed (All Bugs Fixed & Locked)
 ======================================================== */
 
 var currentSareeStockTab = "fresh"; // "fresh", "finished", ya "lott"
@@ -97,7 +97,6 @@ function getBanaItemStats(itemName, targetKarkhanaId) {
     var allKarigers = (typeof sanitizeKarigerList === "function") ? sanitizeKarigerList() : [];
 
     if (isMain) {
-        // MAIN GODOWN: Godam Purchase (+)
         bStock.forEach(function(b) {
             if (b && b.name && b.name.trim().toLowerCase() === nameLower) {
                 totalAaya += (Number(b.aaya) || 0);
@@ -105,7 +104,6 @@ function getBanaItemStats(itemName, targetKarkhanaId) {
             }
         });
 
-        // Transferred out to other Karkhanas (-)
         transfers.forEach(function(t) {
             if (t && t.itemName && t.itemName.trim().toLowerCase() === nameLower) {
                 totalGaya += (Number(t.qty) || 0);
@@ -113,21 +111,19 @@ function getBanaItemStats(itemName, targetKarkhanaId) {
             }
         });
 
-        // Weavers working in Main Godown (-)
         allKarigers.filter(function(w) { return !w.karkhanaId || w.karkhanaId === "k_main"; }).forEach(function(k) {
             var sheets = (typeof getKarigerSheets === "function") ? getKarigerSheets(k.id) : [];
             sheets.forEach(function(sh) {
                 safeArray(sh.rows).forEach(function(r) {
                     if (!r) return;
                     var rName = (r.banaItemName || "").trim().toLowerCase();
-                    if (rName === nameLower || (!rName && bStock.length > 0 && bStock[0].name.trim().toLowerCase() === nameLower)) {
+                    if (rName === nameLower) {
                         totalGaya += ((Number(r.netBana) || 0) - (Number(r.retBana) || 0));
                     }
                 });
             });
         });
     } else {
-        // BRANCH KARKHANA: Transferred in from Main Godown (+)
         transfers.filter(function(t) { return String(t.toKarkhanaId) === String(kId); }).forEach(function(t) {
             if (t && t.itemName && t.itemName.trim().toLowerCase() === nameLower) {
                 totalAaya += (Number(t.qty) || 0);
@@ -135,14 +131,13 @@ function getBanaItemStats(itemName, targetKarkhanaId) {
             }
         });
 
-        // Consumed by weavers belonging to this specific Karkhana (-)
         allKarigers.filter(function(w) { return String(w.karkhanaId) === String(kId); }).forEach(function(k) {
             var sheets = (typeof getKarigerSheets === "function") ? getKarigerSheets(k.id) : [];
             sheets.forEach(function(sh) {
                 safeArray(sh.rows).forEach(function(r) {
                     if (!r) return;
                     var rName = (r.banaItemName || "").trim().toLowerCase();
-                    if (rName === nameLower || (!rName && bStock.length > 0 && bStock[0].name.trim().toLowerCase() === nameLower)) {
+                    if (rName === nameLower) {
                         totalGaya += ((Number(r.netBana) || 0) - (Number(r.retBana) || 0));
                     }
                 });
@@ -177,7 +172,6 @@ function getZariItemStats(itemName, targetKarkhanaId) {
     var allKarigers = (typeof sanitizeKarigerList === "function") ? sanitizeKarigerList() : [];
 
     if (isMain) {
-        // MAIN GODOWN: Godam Purchase (+)
         zStock.forEach(function(z) {
             if (z && z.name && z.name.trim().toLowerCase() === nameLower) {
                 totalAaya += (Number(z.aaya) || 0);
@@ -185,7 +179,6 @@ function getZariItemStats(itemName, targetKarkhanaId) {
             }
         });
 
-        // Transferred out to other Karkhanas (-)
         transfers.forEach(function(t) {
             if (t && t.itemName && t.itemName.trim().toLowerCase() === nameLower) {
                 totalGaya += (Number(t.qty) || 0);
@@ -193,21 +186,19 @@ function getZariItemStats(itemName, targetKarkhanaId) {
             }
         });
 
-        // Weavers in Main Godown (-)
         allKarigers.filter(function(w) { return !w.karkhanaId || w.karkhanaId === "k_main"; }).forEach(function(k) {
             var sheets = (typeof getKarigerSheets === "function") ? getKarigerSheets(k.id) : [];
             sheets.forEach(function(sh) {
                 safeArray(sh.rows).forEach(function(r) {
                     if (!r) return;
                     var rName = (r.zariItemName || "").trim().toLowerCase();
-                    if (rName === nameLower || (!rName && zStock.length > 0 && zStock[0].name.trim().toLowerCase() === nameLower)) {
+                    if (rName === nameLower) {
                         totalGaya += ((Number(r.netZari) || 0) - (Number(r.retZari) || 0));
                     }
                 });
             });
         });
     } else {
-        // BRANCH KARKHANA: Transferred in from Main Godown (+)
         transfers.filter(function(t) { return String(t.toKarkhanaId) === String(kId); }).forEach(function(t) {
             if (t && t.itemName && t.itemName.trim().toLowerCase() === nameLower) {
                 totalAaya += (Number(t.qty) || 0);
@@ -215,14 +206,13 @@ function getZariItemStats(itemName, targetKarkhanaId) {
             }
         });
 
-        // Consumed by weavers belonging to this Karkhana (-)
         allKarigers.filter(function(w) { return String(w.karkhanaId) === String(kId); }).forEach(function(k) {
             var sheets = (typeof getKarigerSheets === "function") ? getKarigerSheets(k.id) : [];
             sheets.forEach(function(sh) {
                 safeArray(sh.rows).forEach(function(r) {
                     if (!r) return;
                     var rName = (r.zariItemName || "").trim().toLowerCase();
-                    if (rName === nameLower || (!rName && zStock.length > 0 && zStock[0].name.trim().toLowerCase() === nameLower)) {
+                    if (rName === nameLower) {
                         totalGaya += ((Number(r.netZari) || 0) - (Number(r.retZari) || 0));
                     }
                 });
@@ -365,8 +355,10 @@ function viewBanaPassbook(banaName) {
             var sheets = (typeof getKarigerSheets === "function") ? getKarigerSheets(k.id) : [];
             sheets.forEach(function(sh) {
                 safeArray(sh.rows).forEach(function(r) {
-                    if (r && Number(r.netBana) > 0) entries.push({ id: r.id, date: r.date, type: "Net Diya", qty: "-" + Number(r.netBana).toFixed(2), kariger: k.name });
-                    if (r && Number(r.retBana) > 0) entries.push({ id: r.id, date: r.date, type: "Wapas Aaya", qty: "+" + Number(r.retBana).toFixed(2), kariger: k.name });
+                    if (r && r.banaItemName && r.banaItemName.trim().toLowerCase() === nameLower) {
+                        if (Number(r.netBana) > 0) entries.push({ id: r.id, refId: r.id, date: r.date, type: "Net Diya", qty: "-" + Number(r.netBana).toFixed(2), kariger: k.name });
+                        if (Number(r.retBana) > 0) entries.push({ id: r.id, refId: r.id, date: r.date, type: "Wapas Aaya", qty: "+" + Number(r.retBana).toFixed(2), kariger: k.name });
+                    }
                 });
             });
         });
@@ -497,8 +489,10 @@ function viewZariPassbook(zariName) {
             var sheets = (typeof getKarigerSheets === "function") ? getKarigerSheets(k.id) : [];
             sheets.forEach(function(sh) {
                 safeArray(sh.rows).forEach(function(r) {
-                    if (r && Number(r.netZari) > 0) entries.push({ id: r.id, date: r.date, type: "Net Diya", qty: "-" + Number(r.netZari).toFixed(2), kariger: k.name });
-                    if (r && Number(r.retZari) > 0) entries.push({ id: r.id, date: r.date, type: "Wapas Aayi", qty: "+" + Number(r.retZari).toFixed(2), kariger: k.name });
+                    if (r && r.zariItemName && r.zariItemName.trim().toLowerCase() === nameLower) {
+                        if (Number(r.netZari) > 0) entries.push({ id: r.id, refId: r.id, date: r.date, type: "Net Diya", qty: "-" + Number(r.netZari).toFixed(2), kariger: k.name });
+                        if (r && Number(r.retZari) > 0) entries.push({ id: r.id, refId: r.id, date: r.date, type: "Wapas Aayi", qty: "+" + Number(r.retZari).toFixed(2), kariger: k.name });
+                    }
                 });
             });
         });
@@ -507,7 +501,7 @@ function viewZariPassbook(zariName) {
     viewCustomDatePassbook("Zari Passbook: " + zariName, entries, "zari_history");
 }
 
-// ================= 5. 🚚 MATERIAL TRANSFER (GODAM SE BRANCH BHEJA) =================
+// ================= 5. 🚚 MATERIAL TRANSFER (MAIN GODOWN -> BRANCH) =================
 
 function openMaterialTransferModal(type) {
     var isZari = (type === "zari");
@@ -518,7 +512,6 @@ function openMaterialTransferModal(type) {
     document.getElementById("mat-transfer-qty").value = "";
     document.getElementById("mat-transfer-note").value = "";
 
-    // Destination karkhana select
     var sel = document.getElementById("mat-transfer-dest-karkhana");
     if (sel) {
         sel.innerHTML = "";
@@ -579,7 +572,7 @@ function saveMaterialTransferEntry() {
     alert("✅ " + qty + " Kg " + item + " Main Godam se " + destName + " ko bhej diya gaya!");
 }
 
-// ================= 6. 🥻 SAREE STOCK & 🚚 TRANSFER ENGINE =================
+// ================= 6. 🥻 SAREE STOCK & ID-LOCKED ACTIONS =================
 
 function openSareeModule() {
     if (typeof hideAllSections === "function") hideAllSections();
@@ -601,6 +594,15 @@ function switchSareeStockTab(tab) {
     if (btnL) btnL.className = (tab === "lott") ? "sheet-tab active" : "sheet-tab";
 
     renderSareeTable();
+}
+
+function getCleanFinishedSareeStock() {
+    var list = safeArray(getStore("finished_saree_stock"));
+    return list.filter(function(item) {
+        if (!item || Number(item.pcs) <= 0) return false;
+        var nameLower = String(item.name || "").toLowerCase();
+        return nameLower.indexOf("calender") !== -1;
+    });
 }
 
 function renderSareeTable(flist) {
@@ -625,21 +627,17 @@ function renderSareeTable(flist) {
     var kObj = getKarkhanasSafe().find(function(x) { return String(x.id) === String(kId); });
     var kName = kObj ? kObj.name : "Main Godown";
 
-    // 1. FRESH SAREE TAB (KACCHI SAREE STOCK)
+    // 1. FRESH SAREE TAB (KACCHI SAREE)
     if (currentSareeStockTab === "fresh") {
         thead.innerHTML = "<tr style='background:#2563eb; color:white;'>" +
             "<th>Date</th><th>S.No.</th><th>Saree Ka Naam</th><th>Kariger / Karkhana</th><th>Fresh Stock (Pcs)</th><th>Out / Transfer</th><th style='text-align:center;'>Action</th>" +
         "</tr>";
 
         var allSareeStock = safeArray(getStore("saree_stock"));
-        var transfers = safeArray(getStore("saree_transfers"));
-
         var list = [];
         if (isMain) {
-            // Main Godown: Main Weavers + Received from Branches
             list = allSareeStock.filter(function(s) { return !s.karkhanaId || s.karkhanaId === "k_main"; });
         } else {
-            // Branch: Produced at this branch
             list = allSareeStock.filter(function(s) { return String(s.karkhanaId) === String(kId); });
         }
 
@@ -654,6 +652,8 @@ function renderSareeTable(flist) {
         list.forEach(function(s, idx) {
             if (!s) return;
             totFresh += (Number(s.pcs) || 0);
+
+            // 🎯 ID-LOCKED BUTTONS: s.id se operate hoga, galat saree kabhi nahi kategi
             tbody.innerHTML += "<tr>" +
                 "<td>" + formatDateDisplay(s.date) + "</td>" +
                 "<td>" + (idx + 1) + "</td>" +
@@ -662,11 +662,11 @@ function renderSareeTable(flist) {
                 "<td><span class='badge-blue'>" + s.pcs + " pcs</span></td>" +
                 "<td>" +
                     "<div style='display:flex; gap:4px; align-items:center;'>" +
-                        "<input type='number' id='saree-out-input-" + idx + "' placeholder='Qty' style='width:60px; padding:4px; font-size:12px; border:1px solid #cbd5e1; border-radius:6px;' min='1'>" +
-                        "<button class='quick-btn btn-out' onclick='outSareeCustomQty(" + idx + ")'>📤 Out</button>" +
+                        "<input type='number' id='saree-out-input-" + s.id + "' placeholder='Qty' style='width:60px; padding:4px; font-size:12px; border:1px solid #cbd5e1; border-radius:6px;' min='1'>" +
+                        "<button class='quick-btn btn-out' onclick='outSareeById(\"" + s.id + "\")'>📤 Out</button>" +
                     "</div>" +
                 "</td>" +
-                "<td style='text-align:center;'><button class='detail-btn' onclick='viewFreshSareePassbook(\"" + s.name + "\")'>📖 Passbook</button> <button class='delete-btn' onclick='deleteSareeStock(" + idx + ")'>🗑️</button></td>" +
+                "<td style='text-align:center;'><button class='detail-btn' onclick='viewFreshSareePassbook(\"" + s.name + "\")'>📖 Passbook</button> <button class='delete-btn' onclick='deleteSareeById(\"" + s.id + "\")'>🗑️</button></td>" +
             "</tr>";
         });
 
@@ -684,10 +684,7 @@ function renderSareeTable(flist) {
             "<th>Date</th><th>S.No.</th><th>Tayaar Saree (Process)</th><th>Kahan Se Aayi (Source)</th><th>Finished Stock (Pcs)</th><th>Out (Bikri/Dukan)</th><th style='text-align:center;'>Action</th>" +
         "</tr>";
 
-        var finList = safeArray(getStore("finished_saree_stock")).filter(function(item) {
-            return item && Number(item.pcs) > 0 && String(item.name || "").toLowerCase().indexOf("calender") !== -1;
-        });
-
+        var finList = getCleanFinishedSareeStock();
         if (flist) finList = flist;
 
         if (!finList.length) {
@@ -709,11 +706,11 @@ function renderSareeTable(flist) {
                 "<td><span class='badge-green' style='font-size:13px; font-weight:800;'>" + pcs + " pcs</span></td>" +
                 "<td>" +
                     "<div style='display:flex; gap:4px; align-items:center;'>" +
-                        "<input type='number' id='fin-out-input-" + idx + "' placeholder='Qty' style='width:60px; padding:4px; font-size:12px; border:1px solid #cbd5e1; border-radius:6px;' min='1'>" +
-                        "<button class='quick-btn btn-out' style='background:#0d9488; color:white;' onclick='outFinishedSareeCustomQty(" + idx + ")'>📤 Out</button>" +
+                        "<input type='number' id='fin-out-input-" + f.id + "' placeholder='Qty' style='width:60px; padding:4px; font-size:12px; border:1px solid #cbd5e1; border-radius:6px;' min='1'>" +
+                        "<button class='quick-btn btn-out' style='background:#0d9488; color:white;' onclick='outFinishedSareeById(\"" + f.id + "\")'>📤 Out</button>" +
                     "</div>" +
                 "</td>" +
-                "<td style='text-align:center;'><button class='detail-btn' onclick='viewFinishedSareePassbook(\"" + (f.name || "Calender Finished Saree") + "\")'>📖 Passbook</button> <button class='delete-btn' onclick='deleteFinishedSareeStock(" + idx + ")'>🗑️</button></td>" +
+                "<td style='text-align:center;'><button class='detail-btn' onclick='viewFinishedSareePassbook(\"" + (f.name || "Calender Finished Saree") + "\")'>📖 Passbook</button> <button class='delete-btn' onclick='deleteFinishedSareeById(\"" + f.id + "\")'>🗑️</button></td>" +
             "</tr>";
         });
 
@@ -746,13 +743,14 @@ function renderSareeTable(flist) {
         lottList.forEach(function(l, idx) {
             if (!l) return;
             totLott += (Number(l.pcs) || 0);
+
             tbody.innerHTML += "<tr>" +
                 "<td>" + formatDateDisplay(l.date) + "</td>" +
                 "<td><strong>" + l.name + "</strong></td>" +
                 "<td>" + (l.source || "Loom / Job Work") + "</td>" +
                 "<td><span class='badge-red'>⚠️ " + (l.pcs || 0) + " pcs</span></td>" +
-                "<td><button class='quick-btn btn-out' style='background:#fef2f2; border:1px solid #fca5a5; font-size:12px; font-weight:700;' onclick='outLottSareeCustomQty(" + idx + ")'>📤 Out</button></td>" +
-                "<td style='text-align:center;'><button class='detail-btn' onclick='viewLottSareePassbook(\"" + l.name + "\")'>📖 Passbook</button> <button class='delete-btn' onclick='deleteLottSareeStock(" + idx + ")'>🗑️</button></td>" +
+                "<td><button class='quick-btn btn-out' style='background:#fef2f2; border:1px solid #fca5a5; font-size:12px; font-weight:700;' onclick='outLottSareeById(\"" + l.id + "\")'>📤 Out</button></td>" +
+                "<td style='text-align:center;'><button class='detail-btn' onclick='viewLottSareePassbook(\"" + l.name + "\")'>📖 Passbook</button> <button class='delete-btn' onclick='deleteLottSareeById(\"" + l.id + "\")'>🗑️</button></td>" +
             "</tr>";
         });
 
@@ -766,26 +764,164 @@ function renderSareeTable(flist) {
     }
 }
 
+// 🎯 ID-LOCKED OPERATIONS (EXACT SAREE OUT & DELETE)
+function outSareeById(sId) {
+    var inp = document.getElementById("saree-out-input-" + sId);
+    var qty = parseInt(inp ? inp.value : 0);
+
+    if (!qty || qty <= 0) return alert("Sahi quantity likhein!");
+
+    var stock = safeArray(getStore("saree_stock"));
+    var item = stock.find(function(x) { return x && String(x.id) === String(sId); });
+    if (!item) return alert("Saree item nahi mila!");
+
+    if (qty > item.pcs) {
+        return alert("Is item me sirf " + item.pcs + " saree bachi hai!");
+    }
+
+    item.pcs -= qty;
+    setStore("saree_stock", stock);
+
+    var h = safeArray(getStore("saree_history"));
+    h.push({
+        id: "sh_sale_" + Date.now(),
+        refId: sId,
+        date: getTodayDate(),
+        name: item.name,
+        kariger: item.kariger || "Godam",
+        type: "Out (Sale)",
+        pcs: qty,
+        note: (item.karkhanaName || "Main Godown") + " se Out (Bikri)"
+    });
+    setStore("saree_history", h);
+
+    renderSareeTable();
+    if (typeof updateDashboardBadgeTotals === "function") updateDashboardBadgeTotals();
+    alert("✅ " + qty + " Saree Out ho gayi!");
+}
+
+function deleteSareeById(sId) {
+    if (!confirm("Kya aap is saree record ko delete karna chahte hain?")) return;
+    var stock = safeArray(getStore("saree_stock")).filter(function(x) {
+        return !x || String(x.id) !== String(sId);
+    });
+    setStore("saree_stock", stock);
+    renderSareeTable();
+    if (typeof updateDashboardBadgeTotals === "function") updateDashboardBadgeTotals();
+}
+
+function outFinishedSareeById(fId) {
+    var inp = document.getElementById("fin-out-input-" + fId);
+    var qty = parseInt(inp ? inp.value : 0);
+
+    if (!qty || qty <= 0) return alert("Sahi quantity likhein!");
+
+    var stock = safeArray(getStore("finished_saree_stock"));
+    var item = stock.find(function(x) { return x && String(x.id) === String(fId); });
+    if (!item) return alert("Tayaar Saree item nahi mila!");
+
+    if (qty > item.pcs) {
+        return alert("Finished Stock me sirf " + item.pcs + " saree bachi hai!");
+    }
+
+    item.pcs -= qty;
+    setStore("finished_saree_stock", stock);
+
+    var h = safeArray(getStore("saree_history"));
+    h.push({
+        id: "sh_fin_out_" + Date.now(),
+        refId: fId,
+        date: getTodayDate(),
+        name: item.name || "Calender Finished Saree",
+        kariger: item.source || "Finished Stock",
+        type: "Out (Finished Sale)",
+        pcs: qty,
+        note: "Tayaar Saree Bikri / Dukan Bheja"
+    });
+    setStore("saree_history", h);
+
+    renderSareeTable();
+    if (typeof updateDashboardBadgeTotals === "function") updateDashboardBadgeTotals();
+    alert("✅ " + qty + " Tayaar Saree Out ho gayi!");
+}
+
+function deleteFinishedSareeById(fId) {
+    if (!confirm("Kya aap is Finished Saree record ko delete karna chahte hain?")) return;
+    var stock = safeArray(getStore("finished_saree_stock")).filter(function(x) {
+        return !x || String(x.id) !== String(fId);
+    });
+    setStore("finished_saree_stock", stock);
+    renderSareeTable();
+    if (typeof updateDashboardBadgeTotals === "function") updateDashboardBadgeTotals();
+}
+
+function outLottSareeById(lId) {
+    var stock = safeArray(getStore("lott_saree_stock"));
+    var item = stock.find(function(x) { return x && String(x.id) === String(lId); });
+    if (!item) return alert("Lott item nahi mila!");
+
+    var qty = parseInt(prompt("Saree: " + item.name + "\nLott Pcs Available: " + item.pcs + "\n\nKitne Pcs Out karne hain:", item.pcs));
+    if (!qty || isNaN(qty) || qty <= 0) return;
+    if (qty > item.pcs) return alert("Sirf " + item.pcs + " Pcs available hain!");
+
+    var note = prompt("Out Note / Vivran:", "Lott Saree Out") || "Lott Saree Out";
+    item.pcs -= qty;
+    setStore("lott_saree_stock", stock);
+
+    var h = safeArray(getStore("saree_history"));
+    h.push({
+        id: "sh_lott_" + Date.now(),
+        refId: lId,
+        date: getTodayDate(),
+        name: item.name,
+        kariger: item.source || "Lott Saree",
+        type: "Out (Lott Sale)",
+        pcs: qty,
+        note: note
+    });
+    setStore("saree_history", h);
+
+    renderSareeTable();
+    if (typeof updateDashboardBadgeTotals === "function") updateDashboardBadgeTotals();
+    alert("✅ " + qty + " Lott Saree Out ho gayi!");
+}
+
+function deleteLottSareeById(lId) {
+    if (!confirm("Kya aap is Lott Saree record ko delete karna chahte hain?")) return;
+    var stock = safeArray(getStore("lott_saree_stock")).filter(function(x) {
+        return !x || String(x.id) !== String(lId);
+    });
+    setStore("lott_saree_stock", stock);
+    renderSareeTable();
+    if (typeof updateDashboardBadgeTotals === "function") updateDashboardBadgeTotals();
+}
+
 function filterSaree() {
     var txt = (document.getElementById("search-saree-input").value || "").toLowerCase().trim();
     var fD = document.getElementById("saree-from-date").value;
     var tD = document.getElementById("saree-to-date").value;
 
     if (currentSareeStockTab === "fresh") {
-        var filteredFresh = safeArray(getStore("saree_stock")).filter(function(s) {
+        var kId = currentSareeKarkhanaFilter || "k_main";
+        var isMain = (kId === "k_main");
+        var allSareeStock = safeArray(getStore("saree_stock"));
+        var baseList = isMain ? allSareeStock.filter(function(s) { return !s.karkhanaId || s.karkhanaId === "k_main"; })
+                              : allSareeStock.filter(function(s) { return String(s.karkhanaId) === String(kId); });
+
+        var filteredFresh = baseList.filter(function(s) {
             return s && (String(s.name || "") + " " + String(s.kariger || "") + " " + formatDateDisplay(s.date)).toLowerCase().indexOf(txt) !== -1 && isDateInRange(s.date, fD, tD);
         });
         renderSareeTable(filteredFresh);
     } else if (currentSareeStockTab === "finished") {
-        var finList = safeArray(getStore("finished_saree_stock")).filter(function(f) {
+        var finList = getCleanFinishedSareeStock().filter(function(f) {
             return f && (String(f.name || "") + " " + String(f.source || "") + " " + formatDateDisplay(f.date)).toLowerCase().indexOf(txt) !== -1 && isDateInRange(f.date, fD, tD);
         });
-        renderSareeTable(filteredFin);
+        renderSareeTable(finList);
     } else if (currentSareeStockTab === "lott") {
         var lottList = safeArray(getStore("lott_saree_stock")).filter(function(l) {
             return l && (String(l.name || "") + " " + String(l.source || "") + " " + formatDateDisplay(l.date)).toLowerCase().indexOf(txt) !== -1 && isDateInRange(l.date, fD, tD);
         });
-        renderSareeTable(filteredLott);
+        renderSareeTable(lottList);
     }
 }
 
@@ -796,7 +932,7 @@ function resetSareeFilter() {
     renderSareeTable();
 }
 
-// ================= 7. 📥 SAREE INWARD / TRANSFER (BRANCH SE MAIN GODOWN AAYI) =================
+// ================= 7. 📥 SAREE INWARD / TRANSFER (BRANCH -> MAIN GODOWN) =================
 
 function openSareeTransferModal() {
     document.getElementById("saree-transfer-date").value = getTodayDate();
@@ -840,7 +976,7 @@ function saveSareeTransferEntry() {
     var sourceKarkhana = getKarkhanasSafe().find(function(x) { return String(x.id) === String(sourceId); });
     var sourceName = sourceKarkhana ? sourceKarkhana.name : "Branch Karkhana";
 
-    // 1. DEDUCT FROM BRANCH SAREE STOCK
+    // Deduct from branch saree stock
     var allSareeStock = safeArray(getStore("saree_stock"));
     var branchItems = allSareeStock.filter(function(s) { return String(s.karkhanaId) === String(sourceId); });
     var remToDeduct = pcs;
@@ -854,7 +990,7 @@ function saveSareeTransferEntry() {
         }
     }
 
-    // 2. ADD TO MAIN GODOWN FRESH SAREE STOCK
+    // Add to Main Godown Fresh Stock
     allSareeStock.push({
         id: "saree_tr_" + Date.now(),
         date: d,
@@ -867,7 +1003,6 @@ function saveSareeTransferEntry() {
     });
     setStore("saree_stock", allSareeStock);
 
-    // 3. LOG TRANSFER RECORD
     var transfers = safeArray(getStore("saree_transfers"));
     transfers.push({
         id: "st_" + Date.now(),
@@ -882,7 +1017,6 @@ function saveSareeTransferEntry() {
     });
     setStore("saree_transfers", transfers);
 
-    // Passbook Logging
     var sH = safeArray(getStore("saree_history"));
     sH.push({
         id: "sh_tr_" + Date.now(),
@@ -901,133 +1035,7 @@ function saveSareeTransferEntry() {
     alert("✅ " + pcs + " Saree " + sourceName + " se Main Godam me safalta-purvak receive ho gayi!");
 }
 
-// --- ACTIONS: OUT & DELETE ---
-function outSareeCustomQty(idx) {
-    var inp = document.getElementById("saree-out-input-" + idx);
-    var qty = parseInt(inp ? inp.value : 0);
-
-    if (!qty || qty <= 0) return alert("Sahi quantity likhein!");
-
-    var stock = getStore("saree_stock");
-    var item = stock[idx];
-    if (!item) return;
-
-    if (qty > item.pcs) {
-        return alert("Stock me sirf " + item.pcs + " saree bachi hai!");
-    }
-
-    item.pcs -= qty;
-    setStore("saree_stock", stock);
-
-    var h = getStore("saree_history");
-    h.push({
-        id: "sh_sale_" + Date.now(),
-        date: getTodayDate(),
-        name: item.name,
-        kariger: item.kariger || "Godam",
-        type: "Out (Sale / Job Work)",
-        pcs: qty,
-        note: "Stock se out"
-    });
-    setStore("saree_history", h);
-
-    renderSareeTable();
-    if (typeof updateDashboardBadgeTotals === "function") updateDashboardBadgeTotals();
-    alert("✅ " + qty + " Saree stock se minus ho gayi!");
-}
-
-function deleteSareeStock(idx) {
-    if (!confirm("Kya aap is saree record ko delete karna chahte hain?")) return;
-    var s = getStore("saree_stock");
-    s.splice(idx, 1);
-    setStore("saree_stock", s);
-    renderSareeTable();
-    if (typeof updateDashboardBadgeTotals === "function") updateDashboardBadgeTotals();
-}
-
-function outFinishedSareeCustomQty(idx) {
-    var inp = document.getElementById("fin-out-input-" + idx);
-    var qty = parseInt(inp ? inp.value : 0);
-
-    if (!qty || qty <= 0) return alert("Sahi quantity likhein!");
-
-    var stock = safeArray(getStore("finished_saree_stock"));
-    var item = stock[idx];
-    if (!item) return;
-
-    if (qty > item.pcs) {
-        return alert("Finished Stock me sirf " + item.pcs + " saree bachi hai!");
-    }
-
-    item.pcs -= qty;
-    setStore("finished_saree_stock", stock);
-
-    var h = getStore("saree_history");
-    h.push({
-        id: "sh_fin_out_" + Date.now(),
-        date: getTodayDate(),
-        name: item.name || "Calender Finished Saree",
-        kariger: item.source || "Finished Stock",
-        type: "Out (Finished Sale)",
-        pcs: qty,
-        note: (item.name || "Calender Finished Saree") + " Bikri / Dukan Bheja"
-    });
-    setStore("saree_history", h);
-
-    renderSareeTable();
-    if (typeof updateDashboardBadgeTotals === "function") updateDashboardBadgeTotals();
-    alert("✅ " + qty + " Tayaar Saree Out ho gayi!");
-}
-
-function deleteFinishedSareeStock(idx) {
-    if (!confirm("Kya aap is Finished Saree record ko delete karna chahte hain?")) return;
-    var stock = safeArray(getStore("finished_saree_stock"));
-    stock.splice(idx, 1);
-    setStore("finished_saree_stock", stock);
-    renderSareeTable();
-    if (typeof updateDashboardBadgeTotals === "function") updateDashboardBadgeTotals();
-}
-
-function outLottSareeCustomQty(idx) {
-    var stock = safeArray(getStore("lott_saree_stock"));
-    var item = stock[idx];
-    if (!item) return;
-
-    var qty = parseInt(prompt("Saree: " + item.name + "\nLott Pcs Available: " + item.pcs + "\n\nKitne Pcs Out karne hain:", item.pcs));
-    if (!qty || isNaN(qty) || qty <= 0) return;
-    if (qty > item.pcs) return alert("Sirf " + item.pcs + " Pcs available hain!");
-
-    var note = prompt("Out Note / Vivran:", "Lott Saree Out") || "Lott Saree Out";
-    item.pcs -= qty;
-    setStore("lott_saree_stock", stock);
-
-    var h = getStore("saree_history");
-    h.push({
-        id: "sh_lott_" + Date.now(),
-        date: getTodayDate(),
-        name: item.name,
-        kariger: item.source || "Lott Saree",
-        type: "Out (Lott Sale)",
-        pcs: qty,
-        note: note
-    });
-    setStore("saree_history", h);
-
-    renderSareeTable();
-    if (typeof updateDashboardBadgeTotals === "function") updateDashboardBadgeTotals();
-    alert("✅ " + qty + " Lott Saree Out ho gayi!");
-}
-
-function deleteLottSareeStock(idx) {
-    if (!confirm("Kya aap is Lott Saree record ko delete karna chahte hain?")) return;
-    var stock = safeArray(getStore("lott_saree_stock"));
-    stock.splice(idx, 1);
-    setStore("lott_saree_stock", stock);
-    renderSareeTable();
-    if (typeof updateDashboardBadgeTotals === "function") updateDashboardBadgeTotals();
-}
-
-// ================= 8. PASSBOOK WITH DATE RANGE FILTER =================
+// ================= 8. PASSBOOK WITH REVERSIBLE & GHOST-FREE DELETE =================
 
 function viewFreshSareePassbook(sareeName) {
     var entries = [];
@@ -1037,7 +1045,7 @@ function viewFreshSareePassbook(sareeName) {
         var nMatch = (it.name && it.name.toLowerCase() === String(sareeName || "").toLowerCase());
         var isFresh = !String(it.type || "").toLowerCase().includes("lott") && !String(it.type || "").toLowerCase().includes("finished");
         if (nMatch && isFresh) {
-            entries.push({ id: it.id, date: it.date, type: it.type || "-", qty: it.pcs || it.qty || 0, kariger: it.kariger || "-" });
+            entries.push({ id: it.id, refId: it.refId, date: it.date, type: it.type || "-", qty: it.pcs || it.qty || 0, kariger: it.kariger || "-" });
         }
     });
     viewCustomDatePassbook("Fresh Saree Passbook: " + sareeName, entries, "saree_history");
@@ -1050,7 +1058,7 @@ function viewFinishedSareePassbook(sareeName) {
         if (!it) return;
         var isFin = String(it.type || "").toLowerCase().includes("finished");
         if (isFin) {
-            entries.push({ id: it.id, date: it.date, type: it.type || "Finished", qty: it.pcs || it.qty || 0, kariger: it.kariger || "Job Work" });
+            entries.push({ id: it.id, refId: it.refId, date: it.date, type: it.type || "Finished", qty: it.pcs || it.qty || 0, kariger: it.kariger || "Job Work" });
         }
     });
     viewCustomDatePassbook("Finished Saree Passbook (Calender)", entries, "saree_history");
@@ -1064,7 +1072,7 @@ function viewLottSareePassbook(sareeName) {
         var nMatch = (it.name && it.name.toLowerCase() === String(sareeName || "").toLowerCase());
         var isLott = String(it.type || "").toLowerCase().includes("lott");
         if (nMatch && isLott) {
-            entries.push({ id: it.id, date: it.date, type: it.type || "Lott", qty: it.pcs || it.qty || 0, kariger: it.kariger || "Lott" });
+            entries.push({ id: it.id, refId: it.refId, date: it.date, type: it.type || "Lott", qty: it.pcs || it.qty || 0, kariger: it.kariger || "Lott" });
         }
     });
     viewCustomDatePassbook("Lott Saree Passbook: " + sareeName, entries, "saree_history");
@@ -1118,18 +1126,60 @@ function renderModalPassbookRows(list) {
     });
 }
 
+// 🎯 MASTER PASSBOOK DELETE: REVERSES STOCK & KILLS GHOST SHEET ROW
 function deletePassbookRowDirectly(entryId) {
-    if (!confirm("Kya aap is passbook entry ko delete karna chahte hain?")) return;
-    if (currentPassbookStoreKey) {
-        var list = getStore(currentPassbookStoreKey);
-        list = list.filter(function(x) { return !x || String(x.id) !== String(entryId); });
-        setStore(currentPassbookStoreKey, list);
+    if (!confirm("Kya aap is passbook entry ko delete karna chahte hain? Iska stock bhi wapas sahi jagah adjust ho jayega.")) return;
+
+    var historyKey = currentPassbookStoreKey || "saree_history";
+    var histList = safeArray(getStore(historyKey));
+    var entry = histList.find(function(x) { return x && String(x.id) === String(entryId); });
+
+    if (entry) {
+        var refId = entry.refId;
+        var pcs = Number(entry.pcs || entry.qty) || 0;
+        var typeStr = String(entry.type || "").toLowerCase();
+
+        // 1. REVERSE STOCK ACCORDING TO TYPE
+        if (historyKey === "saree_history") {
+            if (typeStr.indexOf("out") !== -1) {
+                // Out tha to wapas jod do (+)
+                if (typeStr.indexOf("finished") !== -1) {
+                    var fStock = safeArray(getStore("finished_saree_stock"));
+                    if (fStock.length) { fStock[0].pcs = (Number(fStock[0].pcs) || 0) + pcs; setStore("finished_saree_stock", fStock); }
+                } else if (typeStr.indexOf("lott") !== -1) {
+                    var lStock = safeArray(getStore("lott_saree_stock"));
+                    if (lStock.length) { lStock[0].pcs = (Number(lStock[0].pcs) || 0) + pcs; setStore("lott_saree_stock", lStock); }
+                } else {
+                    var sStock = safeArray(getStore("saree_stock"));
+                    if (sStock.length) { sStock[0].pcs = (Number(sStock[0].pcs) || 0) + pcs; setStore("saree_stock", sStock); }
+                }
+            } else if (typeStr.indexOf("in") !== -1) {
+                // In tha to wapas ghata do (-)
+                if (typeStr.indexOf("finished") !== -1) {
+                    var fStock = safeArray(getStore("finished_saree_stock"));
+                    if (fStock.length) { fStock[0].pcs = Math.max(0, (Number(fStock[0].pcs) || 0) - pcs); setStore("finished_saree_stock", fStock); }
+                } else {
+                    var sStock = safeArray(getStore("saree_stock"));
+                    if (sStock.length) { sStock[0].pcs = Math.max(0, (Number(sStock[0].pcs) || 0) - pcs); setStore("saree_stock", sStock); }
+                }
+            }
+        }
+
+        // 2. GHOST KILLER: Delete linked row from Kariger's Sheet so it never reappears
+        if (refId && typeof deleteSheetRowByRefId === "function") {
+            deleteSheetRowByRefId(refId);
+        }
     }
+
+    // Clean from history
+    histList = histList.filter(function(x) { return !x || String(x.id) !== String(entryId); });
+    setStore(historyKey, histList);
+
     rawModalPassbookEntries = rawModalPassbookEntries.filter(function(x) { return !x || String(x.id) !== String(entryId); });
     renderModalPassbookRows(rawModalPassbookEntries);
     renderSareeTable();
     if (typeof updateDashboardBadgeTotals === "function") updateDashboardBadgeTotals();
-    alert("🗑️ Passbook entry delete ho gayi!");
+    alert("🗑️ Passbook entry delete ho gayi aur Stock turant adjust ho gaya!");
 }
 
 function closeItemModal() {
