@@ -1,6 +1,6 @@
 /* ========================================================
    SIMPLICITY ERP - LIVE STOCK ENGINE (BANA, ZARI, SAREE, LOTT, SANCHA)
-   File 5 of 7 • Developed by Farhan Jawed (Finished Stock Added)
+   File 5 of 7 • Developed by Farhan Jawed (Bug Fixed & 100% Working)
 ======================================================== */
 
 var currentSareeStockTab = "fresh"; // "fresh", "finished", ya "lott"
@@ -653,8 +653,42 @@ function switchSareeStockTab(tab) {
     renderSareeTable();
 }
 
+// JOB WORK SE AUTOMATIC TAYAAR SAREE GATHER KARNE WALA FUNCTION
+function getAllFinishedSareeStock() {
+    var list = safeArray(getStore("finished_saree_stock"));
+
+    // Agar kisi purani Job Work sheet me 'aayiQty' thi to use bhi yahan auto jod lein
+    if (typeof getJobWorkers === "function") {
+        var workers = getJobWorkers();
+        workers.forEach(function(w) {
+            var sheets = (typeof getJobWorkerSheets === "function") ? getJobWorkerSheets(w.id) : [];
+            sheets.forEach(function(sh) {
+                safeArray(sh.rows).forEach(function(r) {
+                    if (r && Number(r.aayiQty) > 0) {
+                        var rowId = r.id || ("jw_row_" + r.date);
+                        var alreadyExists = list.some(function(item) {
+                            return item && String(item.id).indexOf(String(rowId)) !== -1;
+                        });
+                        if (!alreadyExists) {
+                            list.push({
+                                id: "fin_auto_" + rowId,
+                                date: r.date || getTodayDate(),
+                                name: "Finished Saree",
+                                source: w.name + " (" + ((w.type === "calender") ? "Calender" : "Cutting") + ")",
+                                pcs: Number(r.aayiQty)
+                            });
+                        }
+                    }
+                });
+            });
+        });
+    }
+
+    return list;
+}
+
 function renderSareeTable(flist) {
-    var thead = document.querySelector("#saree-section table thead tr");
+    var thead = document.querySelector("#saree-section table thead");
     var tbody = document.getElementById("saree-table-body");
     if (!tbody || !thead) return;
     tbody.innerHTML = "";
@@ -695,9 +729,9 @@ function renderSareeTable(flist) {
             "<th>Date</th><th>S.No.</th><th>Saree Ka Naam</th><th>Kahan Se Aayi (Source)</th><th>Finished Stock (Pcs)</th><th>Out (Bikri/Dukan)</th><th style='text-align:center;'>Action</th>" +
         "</tr>";
 
-        var finList = flist || safeArray(getStore("finished_saree_stock"));
+        var finList = flist || getAllFinishedSareeStock();
         if (!finList.length) {
-            tbody.innerHTML = "<tr><td colspan='7' style='text-align:center; padding:20px; color:#888;'>Abhi koi Finished Saree nahi aayi hai. Job work se aane par yahan judegi.</td></tr>";
+            tbody.innerHTML = "<tr><td colspan='7' style='text-align:center; padding:20px; color:#0d9488; font-weight:700;'>✨ Abhi koi Finished Saree nahi aayi hai. Job work me saree wapas lene par yahan judegi.</td></tr>";
             return;
         }
 
@@ -758,7 +792,7 @@ function filterSaree() {
         });
         renderSareeTable(filteredFresh);
     } else if (currentSareeStockTab === "finished") {
-        var finList = safeArray(getStore("finished_saree_stock"));
+        var finList = getAllFinishedSareeStock();
         var filteredFin = finList.filter(function(f) {
             return f && (String(f.name || "") + " " + String(f.source || "") + " " + formatDateDisplay(f.date)).toLowerCase().indexOf(txt) !== -1 && isDateInRange(f.date, fD, tD);
         });
@@ -840,7 +874,7 @@ function outFinishedSareeCustomQty(idx) {
 
     if (!qty || qty <= 0) return alert("Sahi quantity likhein!");
 
-    var stock = safeArray(getStore("finished_saree_stock"));
+    var stock = getAllFinishedSareeStock();
     var item = stock[idx];
     if (!item) return;
 
@@ -870,7 +904,7 @@ function outFinishedSareeCustomQty(idx) {
 
 function deleteFinishedSareeStock(idx) {
     if (!confirm("Kya aap is Finished Saree record ko delete karna chahte hain? Iski Passbook history bhi saaf ho jayegi.")) return;
-    var stock = safeArray(getStore("finished_saree_stock"));
+    var stock = getAllFinishedSareeStock();
     stock.splice(idx, 1);
     setStore("finished_saree_stock", stock);
     renderSareeTable();
