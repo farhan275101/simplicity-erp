@@ -130,7 +130,14 @@ function getStorageKey(key) {
     if (GLOBAL_APP_KEYS.indexOf(key) !== -1) {
         return currentUserId + "_" + key;
     }
-    var sess = (typeof getActiveFinancialSession === "function") ? getActiveFinancialSession() : "2026-2027";
+    var sess = "2026-2027";
+    if (typeof getActiveFinancialSession === "function") {
+        sess = getActiveFinancialSession();
+    } else {
+        var storedSess = localStorage.getItem(currentUserId + "_app_active_session");
+        if (storedSess) sess = String(storedSess).replace(/['"]+/g, '').trim();
+    }
+    sess = String(sess).replace(/['"]+/g, '').trim() || "2026-2027";
     return currentUserId + "_" + sess + "_" + key;
 }
 
@@ -150,8 +157,13 @@ function getStore(key) {
             }
         }
 
-        if (!raw) return [];
+        if (raw === null || raw === undefined || raw === "") return [];
         var parsed = JSON.parse(raw);
+
+        // Agar String ya Number ya Boolean hai to as-it-is return karein
+        if (typeof parsed === "string" || typeof parsed === "number" || typeof parsed === "boolean") {
+            return parsed;
+        }
         if (Array.isArray(parsed)) return safeArray(parsed);
         if (typeof parsed === "object" && parsed !== null) {
             return safeArray(parsed);
@@ -166,7 +178,10 @@ function setStore(key, data) {
     if (!currentUserId) return;
     try {
         var fullKey = getStorageKey(key);
-        var toSave = Array.isArray(data) ? safeArray(data) : data;
+        var toSave = data;
+        if (Array.isArray(data)) {
+            toSave = safeArray(data);
+        }
         localStorage.setItem(fullKey, JSON.stringify(toSave));
 
         if (db && !isRemoteUpdating && currentUserId) {
@@ -244,7 +259,7 @@ function initFirebaseLiveListeners() {
 }
 
 function sanitizeKarigerList() {
-    var list = getStore("kariger_list");
+    var list = safeArray(getStore("kariger_list"));
     var clean = list.filter(function(k) {
         return k && k.name && String(k.name).trim() !== "";
     });
@@ -362,7 +377,7 @@ function restoreBackupFile(e) {
     e.target.value = "";
 }
 
-// 5. AUTHENTICATION & LOGIN PRIVACY ENGINE
+// 5. AUTHENTICATION & LOGIN ENGINE
 function getUsersList() {
     var defaultAdmin = [{
         id: "farhan",
@@ -411,7 +426,9 @@ function syncUsersWithFirebase() {
                     db.ref("app_users/farhan").set(defaultAdmin);
                 }
                 localStorage.setItem("app_users", JSON.stringify(arr));
-                if (currentUserRole === "admin") renderAdminUsersTable();
+                if (currentUserRole === "admin" && typeof renderAdminUsersTable === "function") {
+                    renderAdminUsersTable();
+                }
             }
         });
     } catch (e) {}
@@ -808,7 +825,7 @@ function saveProfileSettings() {
     }
 
     var users = getUsersList();
-    var idx = users.findIndex(function(u) { return u.id === currentUserId; });
+    var idx = users.findIndex(function(x) { return x.id === currentUserId; });
 
     if (idx !== -1) {
         users[idx].name = n;
