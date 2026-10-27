@@ -169,14 +169,16 @@ function initFirebaseLiveListeners() {
                 }
                 isRemoteUpdating = false;
 
+                if (typeof populateSessionDropdown === "function") populateSessionDropdown();
+
                 var cur = getCurrentActiveSection();
                 if (cur === "dashboard-view") {
                     if (typeof renderDashboardDayBook === "function") renderDashboardDayBook();
                     if (typeof updateDashboardBadgeTotals === "function") updateDashboardBadgeTotals();
                 } else if (cur === "kariger-section" && typeof renderKarigerTable === "function") {
                     renderKarigerTable();
-                } else if (cur === "kariger-sheet-section" && activeKarigerId && typeof loadCurrentSheet === "function") {
-                    loadCurrentSheet();
+                } else if (cur === "kariger-sheet-section" && activeKarigerId && typeof loadCurrentSheetData === "function") {
+                    loadCurrentSheetData();
                 } else if (cur === "bana-section" && typeof renderBanaTable === "function") {
                     renderBanaTable();
                 } else if (cur === "zari-section" && typeof renderZariTable === "function") {
@@ -200,23 +202,27 @@ function initFirebaseLiveListeners() {
 }
 
 function sanitizeKarigerList() {
-    var list = getStore("karigers");
+    var list = getStore("kariger_list");
     var clean = list.filter(function(k) {
         return k && k.name && String(k.name).trim() !== "";
     });
     if (clean.length !== list.length) {
-        setStore("karigers", clean);
+        setStore("kariger_list", clean);
     }
     return clean;
 }
 
-// 4. DATA BACKUP & RESTORE
+// 4. DATA BACKUP & RESTORE (CONSISTENT WITH ALL MODULES)
 function exportUserFullData() {
     var keys = [
-        "karigers", "kariger_info_ledger", "bana_stock", "bana_history",
-        "zari_stock", "zari_history", "saree_stock", "lott_saree_stock", "saree_history",
-        "sancha_items", "sancha_history", "jobwork_workers", "dukan_transfer_history"
+        "kariger_list", "info_ledger", "karkhana_list", "app_sessions_list", "app_active_session",
+        "bana_stock", "bana_history", "zari_stock", "zari_history",
+        "saree_stock", "finished_saree_stock", "lott_saree_stock", "saree_history",
+        "material_transfers", "saree_transfers",
+        "sancha_items", "sancha_history",
+        "jobwork_workers", "jw_bills_list", "jw_payments_list", "dukan_transfer_history"
     ];
+
     var obj = {
         userId: currentUserId,
         exportDate: new Date().toISOString(),
@@ -225,11 +231,13 @@ function exportUserFullData() {
         jobwork_sheets: {}
     };
 
-    keys.forEach(function(k) { obj.data[k] = getStore(k); });
+    keys.forEach(function(k) { 
+        obj.data[k] = getStore(k); 
+    });
 
     var karigers = sanitizeKarigerList();
     karigers.forEach(function(k) {
-        if (typeof getKarigerSheets === "function") {
+        if (k && k.id && typeof getKarigerSheets === "function") {
             obj.sheets[k.id] = getKarigerSheets(k.id);
         }
     });
@@ -297,6 +305,7 @@ function restoreBackupFile(e) {
                     }
                 }
                 alert("✅ Data successfully restore ho gaya!");
+                if (typeof populateSessionDropdown === "function") populateSessionDropdown();
                 if (typeof backToDashboard === "function") backToDashboard();
             }
         } catch (err) {
@@ -441,7 +450,7 @@ function handleRegister() {
     }, 1200);
 }
 
-// STRICT CLEAN LOGIN (No Auto-Fill)
+// STRICT CLEAN LOGIN (Auto loads financial session)
 function handleLogin() {
     var idInput = document.getElementById("login-id");
     var passInput = document.getElementById("login-pass");
@@ -491,7 +500,9 @@ function handleLogin() {
             setDisplay("nav-admin-btn", "none");
         }
 
+        // Live Listeners & Session System Auto-Start
         initFirebaseLiveListeners();
+        if (typeof populateSessionDropdown === "function") populateSessionDropdown();
         if (typeof backToDashboard === "function") backToDashboard();
     } else {
         err.textContent = "Galat User ID ya Password!";
@@ -499,7 +510,6 @@ function handleLogin() {
     }
 }
 
-// LOGOUT BUG FIXED (passInput exact match)
 function logout() {
     currentUserId = null;
     currentUserRole = null;
@@ -511,7 +521,7 @@ function logout() {
     var err = document.getElementById("login-error");
 
     if (idInput) idInput.value = "";
-    if (passInput) passInput.value = ""; // FIXED TYPO
+    if (passInput) passInput.value = "";
     if (err) err.style.display = "none";
 
     setDisplay("desktop-screen", "none");
