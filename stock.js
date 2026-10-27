@@ -1,7 +1,7 @@
 /* ========================================================
    SIMPLICITY ERP - LIVE STOCK & MULTI-KARKHANA ENGINE
    File 3 of 5 • Developed by Farhan Jawed
-   (Multi-Godam Sancha, Auto-Adjust Stock, Returning Add & Stock Passbook)
+   (Multi-Godam Sancha Transfer, Passbook Origin & Karkhana Isolation)
 ======================================================== */
 
 var currentSareeStockTab = "fresh"; // "fresh", "finished", ya "lott"
@@ -68,7 +68,6 @@ function renderSareeKarkhanaTabs() {
     });
 }
 
-// POINT 6: SANCHA DYNAMIC GODAM TABS
 function renderSanchaKarkhanaTabs() {
     var bar = document.getElementById("sancha-karkhana-tabs-bar");
     if (!bar) return;
@@ -101,7 +100,7 @@ function switchStockKarkhana(section, kId) {
     }
 }
 
-// ================= 2. BANA MULTI-KARKHANA COMPUTATION (POINTS 3 & 4) =================
+// ================= 2. BANA MULTI-KARKHANA COMPUTATION =================
 
 function getBanaItemStats(itemName, targetKarkhanaId) {
     var kId = targetKarkhanaId || currentBanaKarkhanaFilter || "k_main";
@@ -131,7 +130,6 @@ function getBanaItemStats(itemName, targetKarkhanaId) {
             }
         });
 
-        // POINT 3 & 4: Net Diya (-) aur Returning Wapas (+)
         allKarigers.filter(function(w) { return !w.karkhanaId || w.karkhanaId === "k_main"; }).forEach(function(k) {
             var sheets = (typeof getKarigerSheets === "function") ? getKarigerSheets(k.id) : [];
             sheets.forEach(function(sh) {
@@ -140,7 +138,7 @@ function getBanaItemStats(itemName, targetKarkhanaId) {
                     var rName = (r.banaItemName || "").trim().toLowerCase();
                     if (rName === nameLower) {
                         totalGaya += (Number(r.netBana) || 0);
-                        totalAaya += (Number(r.retBana) || 0); // Point 4: Returning auto added
+                        totalAaya += (Number(r.retBana) || 0);
                         if (r.date) lastDate = r.date;
                     }
                 });
@@ -154,7 +152,6 @@ function getBanaItemStats(itemName, targetKarkhanaId) {
             }
         });
 
-        // Branch Karigers Net Diya (-) aur Returning Wapas (+)
         allKarigers.filter(function(w) { return String(w.karkhanaId) === String(kId); }).forEach(function(k) {
             var sheets = (typeof getKarigerSheets === "function") ? getKarigerSheets(k.id) : [];
             sheets.forEach(function(sh) {
@@ -163,7 +160,7 @@ function getBanaItemStats(itemName, targetKarkhanaId) {
                     var rName = (r.banaItemName || "").trim().toLowerCase();
                     if (rName === nameLower) {
                         totalGaya += (Number(r.netBana) || 0);
-                        totalAaya += (Number(r.retBana) || 0); // Point 4: Returning auto added
+                        totalAaya += (Number(r.retBana) || 0);
                         if (r.date) lastDate = r.date;
                     }
                 });
@@ -182,7 +179,7 @@ function getBanaItemStats(itemName, targetKarkhanaId) {
     };
 }
 
-// ================= 3. ZARI MULTI-KARKHANA COMPUTATION (POINTS 3 & 4) =================
+// ================= 3. ZARI MULTI-KARKHANA COMPUTATION =================
 
 function getZariItemStats(itemName, targetKarkhanaId) {
     var kId = targetKarkhanaId || currentZariKarkhanaFilter || "k_main";
@@ -212,7 +209,6 @@ function getZariItemStats(itemName, targetKarkhanaId) {
             }
         });
 
-        // POINT 3 & 4: Main Karigers Net Diya (-) aur Returning Wapas (+)
         allKarigers.filter(function(w) { return !w.karkhanaId || w.karkhanaId === "k_main"; }).forEach(function(k) {
             var sheets = (typeof getKarigerSheets === "function") ? getKarigerSheets(k.id) : [];
             sheets.forEach(function(sh) {
@@ -221,7 +217,7 @@ function getZariItemStats(itemName, targetKarkhanaId) {
                     var rName = (r.zariItemName || "").trim().toLowerCase();
                     if (rName === nameLower) {
                         totalGaya += (Number(r.netZari) || 0);
-                        totalAaya += (Number(r.retZari) || 0); // Point 4: Returning auto added
+                        totalAaya += (Number(r.retZari) || 0);
                         if (r.date) lastDate = r.date;
                     }
                 });
@@ -235,7 +231,6 @@ function getZariItemStats(itemName, targetKarkhanaId) {
             }
         });
 
-        // Branch Karigers Net Diya (-) aur Returning Wapas (+)
         allKarigers.filter(function(w) { return String(w.karkhanaId) === String(kId); }).forEach(function(k) {
             var sheets = (typeof getKarigerSheets === "function") ? getKarigerSheets(k.id) : [];
             sheets.forEach(function(sh) {
@@ -244,7 +239,7 @@ function getZariItemStats(itemName, targetKarkhanaId) {
                     var rName = (r.zariItemName || "").trim().toLowerCase();
                     if (rName === nameLower) {
                         totalGaya += (Number(r.netZari) || 0);
-                        totalAaya += (Number(r.retZari) || 0); // Point 4: Returning auto added
+                        totalAaya += (Number(r.retZari) || 0);
                         if (r.date) lastDate = r.date;
                     }
                 });
@@ -366,7 +361,6 @@ function resetBanaFilter() {
     renderBanaTable();
 }
 
-// 🎯 POINT 5: BANA STOCK PASSBOOK WITH EXACT KARIGAR & GODAM DETAILS
 function viewBanaPassbook(banaName) {
     var entries = [];
     var nameLower = (banaName || "").trim().toLowerCase();
@@ -516,7 +510,6 @@ function resetZariFilter() {
     renderZariTable();
 }
 
-// 🎯 POINT 5: ZARI STOCK PASSBOOK WITH EXACT KARIGAR & GODAM DETAILS
 function viewZariPassbook(zariName) {
     var entries = [];
     var nameLower = (zariName || "").trim().toLowerCase();
@@ -565,7 +558,7 @@ function viewZariPassbook(zariName) {
     viewCustomDatePassbook("Zari Passbook: " + zariName + " (" + kName + ")", entries, "zari_history");
 }
 
-// ================= 5. 🚚 MATERIAL & SANCHA TRANSFER (POINTS 5 & 6) =================
+// ================= 5. 🚚 MATERIAL & SANCHA TRANSFER =================
 
 function openMaterialTransferModal(type) {
     var isZari = (type === "zari");
@@ -644,7 +637,7 @@ function saveMaterialTransferEntry() {
         toKarkhanaName: destName,
         itemName: item,
         qty: qty,
-        note: note || "Tempo Challan"
+        note: note || "Challan / Tempo"
     });
     setStore("material_transfers", transfers);
 
@@ -711,7 +704,6 @@ function renderSareeTable(flist) {
     var kObj = getKarkhanasSafe().find(function(x) { return String(x.id) === String(kId); });
     var kName = kObj ? kObj.name : "Main Godown";
 
-    // 1. FRESH SAREE TAB
     if (currentSareeStockTab === "fresh") {
         thead.innerHTML = "<tr style='background:#2563eb; color:white;'>" +
             "<th>Date</th><th>S.No.</th><th>Saree Ka Naam</th><th>Kariger / Karkhana</th><th>Fresh Stock (Pcs)</th><th>Out / Transfer</th><th style='text-align:center;'>Action</th>" +
@@ -764,7 +756,6 @@ function renderSareeTable(flist) {
             "</tr>";
         }
 
-    // 2. FINISHED SAREE TAB
     } else if (currentSareeStockTab === "finished") {
         thead.innerHTML = "<tr style='background:#0d9488; color:white;'>" +
             "<th>Date</th><th>S.No.</th><th>Tayaar Saree (Process)</th><th>Kahan Se Aayi (Source)</th><th>Finished Stock (Pcs)</th><th>Out (Bikri/Dukan)</th><th style='text-align:center;'>Action</th>" +
@@ -811,7 +802,6 @@ function renderSareeTable(flist) {
             "</tr>";
         }
 
-    // 3. LOTT / DAMAGE SAREE TAB
     } else if (currentSareeStockTab === "lott") {
         thead.innerHTML = "<tr style='background:#dc2626; color:white;'>" +
             "<th>Date</th><th>Saree Ka Naam</th><th>Kahan Se Aayi</th><th>Lott Stock (Pcs)</th><th>Out</th><th style='text-align:center;'>Action</th>" +
@@ -856,7 +846,6 @@ function renderSareeTable(flist) {
     }
 }
 
-// 🎯 ID-LOCKED OPERATIONS
 function outSareeById(sId) {
     var inp = document.getElementById("saree-out-input-" + sId);
     var qty = parseInt(inp ? inp.value : 0, 10);
@@ -1236,7 +1225,7 @@ function renderModalPassbookRows(list) {
             "<td>" + formatDateDisplay(it.date) + "</td>" +
             "<td>" + (it.kariger || it.desc || "-") + " (" + (it.type || "-") + ")</td>" +
             "<td><strong>" + (it.qty || it.amount || 0) + "</strong></td>" +
-            "<td style='text-align:center;'>" + delBtn + "</td>" +
+            "<td style='text-align:center;'><button class='delete-btn' onclick='deletePassbookRowDirectly(\"" + it.id + "\")'>🗑️</button></td>" +
         "</tr>";
     });
 }
@@ -1253,7 +1242,6 @@ function deletePassbookRowDirectly(entryId) {
         var pcs = Number(entry.pcs || entry.qty) || 0;
         var typeStr = String(entry.type || "").toLowerCase();
 
-        // REVERSE STOCK ACCORDING TO TYPE
         if (historyKey === "saree_history") {
             if (typeStr.indexOf("out") !== -1) {
                 if (typeStr.indexOf("finished") !== -1) {
@@ -1277,7 +1265,6 @@ function deletePassbookRowDirectly(entryId) {
             }
         }
 
-        // Delete linked row from Kariger Sheet
         if (refId && typeof deleteSheetRowByRefId === "function") {
             deleteSheetRowByRefId(refId);
         }
@@ -1338,15 +1325,15 @@ function getSanchaItemStats(sanchaId, sanchaName, targetKarkhanaId) {
         });
         totalAaya = Math.max(itemRecordedAaya, histAaya);
 
-        // Main Godam se Branch ko gaya transfer
+        // Main Godam se Branch ko gaya transfer (-)
         safeArray(getStore("material_transfers")).filter(function(t) {
-            return t && t.type === "sancha" && t.itemName.toLowerCase() === nameLower;
+            return t && t.type === "sancha" && t.itemName && t.itemName.trim().toLowerCase() === nameLower;
         }).forEach(function(t) {
             totalGaya += (Number(t.qty) || 0);
             if (t.date) lastDate = t.date;
         });
 
-        // Main Godam Karigaron me Tani Gaya
+        // Main Godam Karigaron me Tani Gaya (-)
         var allKarigers = (typeof sanitizeKarigerList === "function") ? sanitizeKarigerList() : [];
         allKarigers.filter(function(w) { return !w.karkhanaId || w.karkhanaId === "k_main"; }).forEach(function(k) {
             var sheets = (typeof getKarigerSheets === "function") ? getKarigerSheets(k.id) : [];
@@ -1362,15 +1349,15 @@ function getSanchaItemStats(sanchaId, sanchaName, targetKarkhanaId) {
             });
         });
     } else {
-        // Branch Godam me Aaya (Transfer Received from Main)
+        // Branch Godam me Aaya (Transfer Received from Main) (+)
         safeArray(getStore("material_transfers")).filter(function(t) {
-            return t && t.type === "sancha" && String(t.toKarkhanaId) === String(kId) && t.itemName.toLowerCase() === nameLower;
+            return t && t.type === "sancha" && String(t.toKarkhanaId) === String(kId) && t.itemName && t.itemName.trim().toLowerCase() === nameLower;
         }).forEach(function(t) {
             totalAaya += (Number(t.qty) || 0);
             if (t.date) lastDate = t.date;
         });
 
-        // Branch Godam Karigaron me Tani Gaya
+        // Branch Godam Karigaron me Tani Gaya (-)
         var bKarigers = (typeof sanitizeKarigerList === "function") ? sanitizeKarigerList().filter(function(w) { return String(w.karkhanaId) === String(kId); }) : [];
         bKarigers.forEach(function(k) {
             var sheets = (typeof getKarigerSheets === "function") ? getKarigerSheets(k.id) : [];
@@ -1458,7 +1445,7 @@ function renderSanchaTable() {
             "<td><span class='badge-green'>+" + st.aaya.toFixed(2) + "</span></td>" +
             "<td><span class='badge-red'>-" + st.gaya.toFixed(2) + "</span></td>" +
             "<td><span class='badge-blue' style='font-size:13px; font-weight:800;'>" + st.bacha.toFixed(2) + "</span></td>" +
-            "<td style='text-align:center;'><button class='detail-btn' style='background:#0284c7;' onclick='openSanchaDetailModal(\"" + item.id + "\")'>Detail</button> <button class='delete-btn' onclick='deleteSanchaItem(\"" + item.id + "\")'>🗑️</button></td>" +
+            "<td style='text-align:center;'><button class='detail-btn' style='background:#0284c7;' onclick='openSanchaDetailModal(\"" + item.id + "\")'>📖 Passbook</button> <button class='delete-btn' onclick='deleteSanchaItem(\"" + item.id + "\")'>🗑️</button></td>" +
         "</tr>";
     });
 }
@@ -1477,7 +1464,10 @@ function openSanchaDetailModal(id) {
 
     activeSanchaItemId = it.id;
     var st = getSanchaItemStats(it.id, it.name, currentSanchaKarkhanaFilter);
-    document.getElementById("sancha-modal-title").innerHTML = "📦 " + it.name + " (Bacha: " + st.bacha.toFixed(2) + ")";
+    var kObj = getKarkhanasSafe().find(function(x) { return String(x.id) === String(currentSanchaKarkhanaFilter); });
+    var kName = kObj ? kObj.name : "Main Godown";
+
+    document.getElementById("sancha-modal-title").innerHTML = "📦 " + it.name + " (" + kName + " • Bacha: " + st.bacha.toFixed(2) + ")";
     document.getElementById("sancha-entry-date").value = getTodayDate();
     document.getElementById("sancha-entry-qty").value = "";
     document.getElementById("sancha-entry-note").value = "";
@@ -1513,49 +1503,130 @@ function addSanchaStockEntry() {
     document.getElementById("sancha-entry-note").value = "";
 
     var st = getSanchaItemStats(item.id, item.name, currentSanchaKarkhanaFilter);
-    document.getElementById("sancha-modal-title").innerHTML = "📦 " + item.name + " (Bacha: " + st.bacha.toFixed(2) + ")";
+    var kObj = getKarkhanasSafe().find(function(x) { return String(x.id) === String(currentSanchaKarkhanaFilter); });
+    var kName = kObj ? kObj.name : "Main Godown";
+
+    document.getElementById("sancha-modal-title").innerHTML = "📦 " + item.name + " (" + kName + " • Bacha: " + st.bacha.toFixed(2) + ")";
     renderSanchaHistoryTable();
     renderSanchaTable();
     if (typeof updateDashboardBadgeTotals === "function") updateDashboardBadgeTotals();
     alert("✅ " + q + " stock jud gaya!");
 }
 
-// 🎯 POINT 6 & BUG FIX: SANCHA TABLE WITH ACTIONCOL
+// 🎯 SANCHA PASSBOOK: KAHAN SE AAYA, KAHAN GAYA WITH EXACT ORIGIN DETAILS
 function renderSanchaHistoryTable() {
-    var hist = getStore("sancha_history");
     var tbody = document.getElementById("sancha-detail-table-body");
     if (!tbody) return;
     tbody.innerHTML = "";
 
     var currentItem = getSanchaItems().find(function(i) { return i && String(i.id) === String(activeSanchaItemId); });
     var currentItemName = currentItem ? currentItem.name.trim().toLowerCase() : "";
+    var kId = currentSanchaKarkhanaFilter || "k_main";
+    var isMain = (kId === "k_main");
     var entries = [];
 
-    hist.forEach(function(h, idx) {
-        if (!h) return;
-        var idMatch = (h.itemId && String(h.itemId) === String(activeSanchaItemId));
-        var nameMatch = (h.itemName && h.itemName.trim().toLowerCase() === currentItemName);
-        if (idMatch || nameMatch) {
-            entries.push({ histIndex: idx, date: h.date, type: h.type || "Aaya", qty: Number(h.qty) || 0, note: h.note || "-", isSheet: false });
-        }
-    });
-
-    var allKarigers = (typeof sanitizeKarigerList === "function") ? sanitizeKarigerList() : [];
-    allKarigers.forEach(function(k) {
-        var sheets = (typeof getKarigerSheets === "function") ? getKarigerSheets(k.id) : [];
-        sheets.forEach(function(sh) {
-            if (sh && sh.rows) {
-                safeArray(sh.rows).forEach(function(r) {
-                    if (r && r.sancha && r.sancha.trim().toLowerCase() === currentItemName && Number(r.taniWazan) > 0) {
-                        entries.push({ date: r.date, type: "Gaya (Tani)", qty: Number(r.taniWazan), note: k.name + " (" + (r.taniName || sh.title) + ")", isSheet: true });
-                    }
+    if (isMain) {
+        // 1. Main Godam Starting Stock / Purchases
+        var hist = getStore("sancha_history");
+        hist.forEach(function(h, idx) {
+            if (!h) return;
+            var idMatch = (h.itemId && String(h.itemId) === String(activeSanchaItemId));
+            var nameMatch = (h.itemName && h.itemName.trim().toLowerCase() === currentItemName);
+            if (idMatch || nameMatch) {
+                entries.push({
+                    histIndex: idx,
+                    date: h.date,
+                    type: h.type || "Aaya (Purchase)",
+                    qty: Number(h.qty) || 0,
+                    source: "Main Godam Inward",
+                    note: h.note || "Godam Stock",
+                    isSheet: false,
+                    isTransfer: false
                 });
             }
         });
-    });
+
+        // 2. Main Godam se Branch ko gaya Transfer (-)
+        safeArray(getStore("material_transfers")).filter(function(t) {
+            return t && t.type === "sancha" && t.itemName && t.itemName.trim().toLowerCase() === currentItemName;
+        }).forEach(function(t) {
+            entries.push({
+                date: t.date,
+                type: "Branch Ko Bheja",
+                qty: Number(t.qty) || 0,
+                source: "Bheja: " + (t.toKarkhanaName || "Branch"),
+                note: "Challan: " + (t.note || "-"),
+                isSheet: false,
+                isTransfer: true
+            });
+        });
+
+        // 3. Main Godam Karigaron me Tani Gaya (-)
+        var allKarigers = (typeof sanitizeKarigerList === "function") ? sanitizeKarigerList() : [];
+        allKarigers.filter(function(w) { return !w.karkhanaId || w.karkhanaId === "k_main"; }).forEach(function(k) {
+            var sheets = (typeof getKarigerSheets === "function") ? getKarigerSheets(k.id) : [];
+            sheets.forEach(function(sh) {
+                if (sh && sh.rows) {
+                    safeArray(sh.rows).forEach(function(r) {
+                        if (r && r.sancha && r.sancha.trim().toLowerCase() === currentItemName && Number(r.taniWazan) > 0) {
+                            entries.push({
+                                date: r.date,
+                                type: "Karigar Tani Gaya",
+                                qty: Number(r.taniWazan),
+                                source: k.name,
+                                note: (r.taniName || sh.title) + " me laga",
+                                isSheet: true,
+                                isTransfer: false
+                            });
+                        }
+                    });
+                }
+            });
+        });
+
+    } else {
+        // 🎯 BRANCH KARKHANA PASSBOOK (KAHAN SE AAYA):
+        // 1. Main Godown se Aaya (+)
+        safeArray(getStore("material_transfers")).filter(function(t) {
+            return t && t.type === "sancha" && String(t.toKarkhanaId) === String(kId) && t.itemName && t.itemName.trim().toLowerCase() === currentItemName;
+        }).forEach(function(t) {
+            entries.push({
+                date: t.date,
+                type: "Aaya (Transfer In)",
+                qty: Number(t.qty) || 0,
+                source: "Main Godam Se Aaya",
+                note: "Challan: " + (t.note || "-"),
+                isSheet: false,
+                isTransfer: true
+            });
+        });
+
+        // 2. Branch Karigaron me Tani Gaya (-)
+        var bKarigers = (typeof sanitizeKarigerList === "function") ? sanitizeKarigerList().filter(function(w) { return String(w.karkhanaId) === String(kId); }) : [];
+        bKarigers.forEach(function(k) {
+            var sheets = (typeof getKarigerSheets === "function") ? getKarigerSheets(k.id) : [];
+            sheets.forEach(function(sh) {
+                if (sh && sh.rows) {
+                    safeArray(sh.rows).forEach(function(r) {
+                        if (r && r.sancha && r.sancha.trim().toLowerCase() === currentItemName && Number(r.taniWazan) > 0) {
+                            entries.push({
+                                date: r.date,
+                                type: "Karigar Tani Gaya",
+                                qty: Number(r.taniWazan),
+                                source: k.name,
+                                note: (r.taniName || sh.title) + " me laga",
+                                isSheet: true,
+                                isTransfer: false
+                            });
+                        }
+                    });
+                }
+            });
+        });
+    }
 
     if (!entries.length) {
-        tbody.innerHTML = "<tr><td colspan='5' style='text-align:center; padding:15px; color:#888;'>Koi entry nahi mili.</td></tr>";
+        tbody.innerHTML = "<tr><td colspan='5' style='text-align:center; padding:15px; color:#888;'>Is Karkhane me koi len-den nahi mila.</td></tr>";
         return;
     }
 
@@ -1563,16 +1634,20 @@ function renderSanchaHistoryTable() {
     entries.forEach(function(e) {
         var isAaya = (String(e.type).indexOf("Aaya") !== -1);
         
-        // BUG FIX: Agar Sheet Entry hai to text dikhega, direct purchase hai to delete button
-        var actionCol = e.isSheet 
-            ? "<span style='color:#64748b; font-size:11px; font-weight:bold;'>Sheet Entry</span>" 
-            : ("<button class='delete-btn' onclick='deleteSanchaHistoryRow(" + e.histIndex + ")'>🗑️</button>");
+        var actionCol = "-";
+        if (!e.isSheet && !e.isTransfer && e.histIndex !== undefined) {
+            actionCol = "<button class='delete-btn' onclick='deleteSanchaHistoryRow(" + e.histIndex + ")'>🗑️</button>";
+        } else if (e.isSheet) {
+            actionCol = "<span style='color:#64748b; font-size:11px; font-weight:bold;'>Sheet Entry</span>";
+        } else if (e.isTransfer) {
+            actionCol = "<span style='color:#0284c7; font-size:11px; font-weight:bold;'>Transfer</span>";
+        }
 
         tbody.innerHTML += "<tr>" +
             "<td>" + formatDateDisplay(e.date) + "</td>" +
             "<td><span class='" + (isAaya ? "badge-green" : "badge-red") + "'>" + e.type + "</span></td>" +
             "<td><strong style='color:" + (isAaya ? "#059669" : "#dc2626") + ";'>" + (isAaya ? "+" : "-") + e.qty.toFixed(2) + "</strong></td>" +
-            "<td>" + e.note + "</td>" +
+            "<td><strong>" + e.source + "</strong> <span style='color:#64748b;'>(" + e.note + ")</span></td>" +
             "<td style='text-align:center;'>" + actionCol + "</td>" +
         "</tr>";
     });
