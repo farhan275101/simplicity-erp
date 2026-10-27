@@ -627,7 +627,7 @@ function renderSareeTable(flist) {
     var kObj = getKarkhanasSafe().find(function(x) { return String(x.id) === String(kId); });
     var kName = kObj ? kObj.name : "Main Godown";
 
-    // 1. FRESH SAREE TAB (KACCHI SAREE)
+    // 1. FRESH SAREE TAB
     if (currentSareeStockTab === "fresh") {
         thead.innerHTML = "<tr style='background:#2563eb; color:white;'>" +
             "<th>Date</th><th>S.No.</th><th>Saree Ka Naam</th><th>Kariger / Karkhana</th><th>Fresh Stock (Pcs)</th><th>Out / Transfer</th><th style='text-align:center;'>Action</th>" +
@@ -653,7 +653,6 @@ function renderSareeTable(flist) {
             if (!s) return;
             totFresh += (Number(s.pcs) || 0);
 
-            // 🎯 ID-LOCKED BUTTONS: s.id se operate hoga, galat saree kabhi nahi kategi
             tbody.innerHTML += "<tr>" +
                 "<td>" + formatDateDisplay(s.date) + "</td>" +
                 "<td>" + (idx + 1) + "</td>" +
@@ -678,7 +677,7 @@ function renderSareeTable(flist) {
             "</tr>";
         }
 
-    // 2. FINISHED SAREE TAB (CALENDER FINISHED)
+    // 2. FINISHED SAREE TAB
     } else if (currentSareeStockTab === "finished") {
         thead.innerHTML = "<tr style='background:#0d9488; color:white;'>" +
             "<th>Date</th><th>S.No.</th><th>Tayaar Saree (Process)</th><th>Kahan Se Aayi (Source)</th><th>Finished Stock (Pcs)</th><th>Out (Bikri/Dukan)</th><th style='text-align:center;'>Action</th>" +
@@ -1121,14 +1120,14 @@ function renderModalPassbookRows(list) {
             "<td>" + formatDateDisplay(it.date) + "</td>" +
             "<td>" + (it.kariger || it.desc || "-") + " (" + (it.type || "-") + ")</td>" +
             "<td><strong>" + (it.qty || it.amount || 0) + "</strong></td>" +
-            "<td style='text-align:center;'>" + delBtn + "</td>" +
+            "<td style='text-align:center;'><button class='delete-btn' style='padding:2px 6px; font-size:11px;' onclick='deletePassbookRowDirectly(\"" + it.id + "\")'>🗑️</button></td>" +
         "</tr>";
     });
 }
 
 // 🎯 MASTER PASSBOOK DELETE: REVERSES STOCK & KILLS GHOST SHEET ROW
 function deletePassbookRowDirectly(entryId) {
-    if (!confirm("Kya aap is passbook entry ko delete karna chahte hain? Iska stock bhi wapas sahi jagah adjust ho jayega.")) return;
+    if (!confirm("Kya aap is passbook entry ko delete karna chahte hain? Iska stock bhi wapas adjust ho jayega.")) return;
 
     var historyKey = currentPassbookStoreKey || "saree_history";
     var histList = safeArray(getStore(historyKey));
@@ -1142,7 +1141,6 @@ function deletePassbookRowDirectly(entryId) {
         // 1. REVERSE STOCK ACCORDING TO TYPE
         if (historyKey === "saree_history") {
             if (typeStr.indexOf("out") !== -1) {
-                // Out tha to wapas jod do (+)
                 if (typeStr.indexOf("finished") !== -1) {
                     var fStock = safeArray(getStore("finished_saree_stock"));
                     if (fStock.length) { fStock[0].pcs = (Number(fStock[0].pcs) || 0) + pcs; setStore("finished_saree_stock", fStock); }
@@ -1154,7 +1152,6 @@ function deletePassbookRowDirectly(entryId) {
                     if (sStock.length) { sStock[0].pcs = (Number(sStock[0].pcs) || 0) + pcs; setStore("saree_stock", sStock); }
                 }
             } else if (typeStr.indexOf("in") !== -1) {
-                // In tha to wapas ghata do (-)
                 if (typeStr.indexOf("finished") !== -1) {
                     var fStock = safeArray(getStore("finished_saree_stock"));
                     if (fStock.length) { fStock[0].pcs = Math.max(0, (Number(fStock[0].pcs) || 0) - pcs); setStore("finished_saree_stock", fStock); }
@@ -1165,13 +1162,12 @@ function deletePassbookRowDirectly(entryId) {
             }
         }
 
-        // 2. GHOST KILLER: Delete linked row from Kariger's Sheet so it never reappears
+        // 2. GHOST KILLER: Delete linked row from Kariger's Sheet
         if (refId && typeof deleteSheetRowByRefId === "function") {
             deleteSheetRowByRefId(refId);
         }
     }
 
-    // Clean from history
     histList = histList.filter(function(x) { return !x || String(x.id) !== String(entryId); });
     setStore(historyKey, histList);
 
@@ -1188,7 +1184,7 @@ function closeItemModal() {
     currentPassbookStoreKey = "";
 }
 
-// ================= 9. SANCHA STOCK MODULE =================
+// ================= 9. SANCHA STOCK MODULE (FIXED & SAFE) =================
 
 function getSanchaItems() {
     var items = getStore("sancha_items");
@@ -1317,7 +1313,7 @@ function openSanchaDetailModal(id) {
     if (!it) return;
 
     activeSanchaItemId = it.id;
-    var st = getSanchaItemStats(it.id, it.name);
+    var st = getSanchaItemStats(it.id, item.name);
     document.getElementById("sancha-modal-title").innerHTML = "📦 " + it.name + " (Bacha: " + st.bacha.toFixed(2) + ")";
     document.getElementById("sancha-entry-date").value = getTodayDate();
     document.getElementById("sancha-entry-qty").value = "";
@@ -1361,6 +1357,7 @@ function addSanchaStockEntry() {
     alert("✅ " + q + " stock jud gaya!");
 }
 
+// 🎯 SAFE SANCHA HISTORY: PREVENTS DELETING WRONG ROW ON SHEET ENTRIES
 function renderSanchaHistoryTable() {
     var hist = getStore("sancha_history");
     var tbody = document.getElementById("sancha-detail-table-body");
@@ -1376,7 +1373,7 @@ function renderSanchaHistoryTable() {
         var idMatch = (h.itemId && String(h.itemId) === String(activeSanchaItemId));
         var nameMatch = (h.itemName && h.itemName.trim().toLowerCase() === currentItemName);
         if (idMatch || nameMatch) {
-            entries.push({ idx: idx, date: h.date, type: h.type || "Aaya", qty: Number(h.qty) || 0, note: h.note || "-", isSheet: false });
+            entries.push({ histIndex: idx, date: h.date, type: h.type || "Aaya", qty: Number(h.qty) || 0, note: h.note || "-", isSheet: false });
         }
     });
 
@@ -1402,19 +1399,24 @@ function renderSanchaHistoryTable() {
     entries.sort(function(a, b) { return (b.date > a.date) ? 1 : -1; });
     entries.forEach(function(e) {
         var isAaya = (String(e.type).indexOf("Aaya") !== -1);
-        var actBtn = e.isSheet ? "<span style='color:#64748b; font-size:11px;'>Sheet Entry</span>" : ("<button class='delete-btn' onclick='deleteSanchaHistoryRow(" + e.idx + ")'>🗑️</button>");
+        
+        // 🎯 EXACT FIX: Agar Sheet Entry hai toh delete button hide rahega, wrong row delete nahi hogi
+        var actionCol = e.isSheet 
+            ? "<span style='color:#64748b; font-size:11px; font-weight:bold;'>Sheet Entry</span>" 
+            : ("<button class='delete-btn' onclick='deleteSanchaHistoryRow(" + e.histIndex + ")'>🗑️</button>");
 
         tbody.innerHTML += "<tr>" +
             "<td>" + formatDateDisplay(e.date) + "</td>" +
             "<td><span class='" + (isAaya ? "badge-green" : "badge-red") + "'>" + e.type + "</span></td>" +
             "<td><strong style='color:" + (isAaya ? "#059669" : "#dc2626") + ";'>" + (isAaya ? "+" : "-") + e.qty.toFixed(2) + "</strong></td>" +
             "<td>" + e.note + "</td>" +
-            "<td style='text-align:center;'><button class='delete-btn' onclick='deleteSanchaHistoryRow(" + e.idx + ")'>🗑️</button></td>" +
+            "<td style='text-align:center;'>" + actionCol + "</td>" +
         "</tr>";
     });
 }
 
 function deleteSanchaHistoryRow(idx) {
+    if (idx === undefined || idx === null || idx < 0) return;
     if (!confirm("Kya aap is entry ko delete karna chahte hain?")) return;
     var hist = getStore("sancha_history");
     hist.splice(idx, 1);
