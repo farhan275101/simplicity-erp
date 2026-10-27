@@ -233,7 +233,7 @@ function renderJobWorkWorkersTable() {
         });
     }
 
-    var minDays = parseInt(document.getElementById("jw-absent-filter") && document.getElementById("jw-absent-filter").value || 0) || 0;
+    var minDays = parseInt(document.getElementById("jw-absent-filter") && document.getElementById("jw-absent-filter").value || 0, 10) || 0;
     if (minDays > 0) {
         filtered = filtered.filter(function(w) {
             return getJobWorkerLastActiveInfo(w.id).daysAbsent >= minDays;
@@ -574,7 +574,7 @@ function saveJobWorkSheetConfig() {
     var sh = sheets.find(function(s) { return s && String(s.id) === String(activeJobSheetId); });
     if (!sh) return;
 
-    sh.closingPendingSaree = parseInt(document.getElementById("jw-top-pichli-saree").value) || 0;
+    sh.closingPendingSaree = parseInt(document.getElementById("jw-top-pichli-saree").value, 10) || 0;
     saveJobWorkerSheets(activeJobWorkerId, sheets);
     renderJobWorkSheetTable(sh);
 }
@@ -598,7 +598,7 @@ function populateKarigersDatalist() {
 
 function addDiyaBatchKarigarItem() {
     var kName = (document.getElementById("jw-diya-karigar").value || "").trim().toUpperCase();
-    var qty = parseInt(document.getElementById("jw-diya-qty").value) || 0;
+    var qty = parseInt(document.getElementById("jw-diya-qty").value, 10) || 0;
 
     if (!kName) return alert("Karigar ka naam daalein!");
     if (qty <= 0) return alert("Saree QTY bharein!");
@@ -643,7 +643,7 @@ function renderDiyaBatchChips() {
 
 function addAayiBatchKarigarItem() {
     var kName = (document.getElementById("jw-aayi-karigar").value || "").trim().toUpperCase();
-    var qty = parseInt(document.getElementById("jw-aayi-qty").value) || 0;
+    var qty = parseInt(document.getElementById("jw-aayi-qty").value, 10) || 0;
 
     if (!kName) return alert("Karigar ka naam daalein!");
     if (qty <= 0) return alert("Saree QTY bharein!");
@@ -702,7 +702,7 @@ function saveJobWorkBatchLine() {
     var totAayi = 0;
     currentAayiBatch.forEach(function(x) { totAayi += (Number(x.qty) || 0); });
 
-    var damagePcs = parseInt(document.getElementById("jw-form-damage-pcs").value) || 0;
+    var damagePcs = parseInt(document.getElementById("jw-form-damage-pcs").value, 10) || 0;
     var damageAmt = parseFloat(document.getElementById("jw-form-damage-amt").value) || 0;
 
     if (totGayi === 0 && totAayi === 0 && damagePcs === 0) {
@@ -961,7 +961,7 @@ function deleteJobWorkBatchRow(idx) {
     alert("🗑️ Batch line delete ho gayi!");
 }
 
-// ================= 6. BATCH PASSBOOK MODAL (WITH ✏️ EDIT & 🗑️ DELETE) =================
+// ================= 6. BATCH PASSBOOK MODAL (WITH EDIT & DELETE) =================
 
 function openJwBatchModal(sheetId, rowId, type) {
     activeBatchModalInfo = { sheetId: sheetId, rowId: rowId, type: type };
@@ -1040,7 +1040,7 @@ function editJwBatchItem(itemIdx) {
 
     var newKarName = prompt("Karigar Ka Naam:", it.karigar);
     if (newKarName === null) return;
-    var newQty = parseInt(prompt(newKarName + " Ki Saree Qty (Pcs):", it.qty));
+    var newQty = parseInt(prompt(newKarName + " Ki Saree Qty (Pcs):", it.qty), 10);
     if (isNaN(newQty) || newQty <= 0) return alert("Sahi Qty daalein!");
 
     var diff = newQty - it.qty;
@@ -1214,7 +1214,7 @@ function saveJobWorkNewBill() {
     }
 
     var wId = document.getElementById("jw-bill-input-worker") ? document.getElementById("jw-bill-input-worker").value : "";
-    var pcs = parseInt(document.getElementById("jw-bill-input-pcs") ? document.getElementById("jw-bill-input-pcs").value : 0) || 0;
+    var pcs = parseInt(document.getElementById("jw-bill-input-pcs") ? document.getElementById("jw-bill-input-pcs").value : 0, 10) || 0;
     var amt = parseFloat(document.getElementById("jw-bill-input-amt") ? document.getElementById("jw-bill-input-amt").value : 0) || 0;
 
     if (!wId) return alert("Worker chunein!");
@@ -1489,7 +1489,7 @@ function saveDukanTransfers(list) {
 
 function addDukanTransferEntry() {
     var d = document.getElementById("jw-dukan-date").value || getTodayDate();
-    var pcs = parseInt(document.getElementById("jw-dukan-pcs").value) || 0;
+    var pcs = parseInt(document.getElementById("jw-dukan-pcs").value, 10) || 0;
     var note = (document.getElementById("jw-dukan-note").value || "").trim();
 
     if (pcs <= 0) return alert("Pcs bharein!");
@@ -1556,7 +1556,6 @@ function renderDukanTransferTable() {
         });
     });
 
-    // Opening finished stock included
     safeArray(getStore("finished_saree_stock")).forEach(function(f) {
         if (f && f.isOpening) totCalenderFinished += (Number(f.pcs) || 0);
     });
