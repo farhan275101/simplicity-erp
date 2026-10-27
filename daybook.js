@@ -1,6 +1,7 @@
 /* ========================================================
    SIMPLICITY ERP - PAYMENT MODULE, DAYBOOK & APP STARTUP
-   File 6 of 7 • Developed by Farhan Jawed
+   File 5 of 5 • Developed by Farhan Jawed
+   (Session-Filtered Day-Book, Live Finance & Dynamic Startup)
 ======================================================== */
 
 // ================= 1. KARIGER FINANCE COMPUTATION ENGINE =================
@@ -56,7 +57,7 @@ function renderPaymentTable(flist) {
     var overallBaki = 0;
 
     if (!karigers.length) {
-        tbody.innerHTML = "<tr><td colspan='8' style='text-align:center; padding:20px; color:#888;'>Koi Kariger hisab nahi mila.</td></tr>";
+        tbody.innerHTML = "<tr><td colspan='8' style='text-align:center; padding:20px; color:#888;'>Is Session me koi Kariger hisab nahi mila.</td></tr>";
         var elP = document.getElementById("total-paid-display");
         var elB = document.getElementById("total-baki-display");
         if (elP) elP.textContent = "₹ 0";
@@ -293,7 +294,8 @@ function renderDashboardDayBook() {
 
         bStock.forEach(function(b) {
             if (b && b.date === d && Number(b.aaya) > 0) {
-                bDayRows.push({ name: b.name, desc: "Godam Stock Purchase", inQty: Number(b.aaya), outQty: 0 });
+                var desc = (b.isOpening || (b.note && b.note.indexOf("Opening") !== -1)) ? "📦 Opening Stock" : "Godam Stock Purchase";
+                bDayRows.push({ name: b.name, desc: desc, inQty: Number(b.aaya), outQty: 0 });
             }
         });
 
@@ -333,7 +335,8 @@ function renderDashboardDayBook() {
 
         zStock.forEach(function(z) {
             if (z && z.date === d && Number(z.aaya) > 0) {
-                zDayRows.push({ name: z.name, desc: "Godam Stock Purchase", inQty: Number(z.aaya), outQty: 0 });
+                var desc = (z.isOpening || (z.note && z.note.indexOf("Opening") !== -1)) ? "📦 Opening Stock" : "Godam Stock Purchase";
+                zDayRows.push({ name: z.name, desc: desc, inQty: Number(z.aaya), outQty: 0 });
             }
         });
 
@@ -472,7 +475,7 @@ function updateDashboardBadgeTotals() {
     });
     setT("btn-total-payment", "Baki: ₹ " + totalBakiAll.toFixed(0));
 
-    // Sancha Total Live Fix
+    // Sancha Total
     var tsc = 0;
     if (typeof getSanchaItems === "function") {
         getSanchaItems().forEach(function(s) {
