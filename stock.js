@@ -1,6 +1,7 @@
 /* ========================================================
    SIMPLICITY ERP - LIVE STOCK & MULTI-KARKHANA ENGINE
-   File 5 of 7 • Developed by Farhan Jawed (All Bugs Fixed & Locked)
+   File 3 of 5 • Developed by Farhan Jawed
+   (100% Session Aware, Opening Stock Badges & Reversible Actions)
 ======================================================== */
 
 var currentSareeStockTab = "fresh"; // "fresh", "finished", ya "lott"
@@ -257,9 +258,14 @@ function renderBanaTable(flist) {
     list.forEach(function(b, idx) {
         if (!b) return;
         var st = getBanaItemStats(b.name, currentBanaKarkhanaFilter);
+        
+        // Opening Stock Badge
+        var isOp = (b.isOpening || (b.note && b.note.indexOf("Opening") !== -1));
+        var opBadge = isOp ? "<span class='badge-blue' style='font-size:10px; display:block; margin-top:2px;'>📦 Pichle Saal Se Uth Kar Aaya</span>" : "";
+
         tbody.innerHTML += "<tr>" +
             "<td>" + formatDateDisplay(st.date) + "</td>" +
-            "<td><strong>" + b.name + " <span style='font-size:11px; color:#0284c7;'>(" + kName + ")</span></strong></td>" +
+            "<td><strong>" + b.name + " <span style='font-size:11px; color:#0284c7;'>(" + kName + ")</span></strong>" + opBadge + "</td>" +
             "<td><span class='badge-green'>+" + Number(st.aaya).toFixed(2) + "</span></td>" +
             "<td><span class='badge-red'>-" + Number(st.gaya).toFixed(2) + "</span></td>" +
             "<td><span class='badge-blue' style='font-size:13px; font-weight:800;'>" + Number(st.bacha).toFixed(2) + " Kg</span></td>" +
@@ -338,7 +344,8 @@ function viewBanaPassbook(banaName) {
     if (isMain) {
         getStore("bana_stock").forEach(function(b) {
             if (b && b.name && b.name.trim().toLowerCase() === nameLower && Number(b.aaya) > 0) {
-                entries.push({ id: b.id, date: b.date || getTodayDate(), type: "Godam Purchase", qty: "+" + Number(b.aaya).toFixed(2), kariger: "Supplier Stock In" });
+                var desc = (b.isOpening || (b.note && b.note.indexOf("Opening") !== -1)) ? "📦 Opening Stock (Pichle Saal Ki Closing Se Aaya)" : "Godam Purchase";
+                entries.push({ id: b.id, date: b.date || getTodayDate(), type: desc, qty: "+" + Number(b.aaya).toFixed(2), kariger: "Supplier / Opening" });
             }
         });
 
@@ -391,9 +398,13 @@ function renderZariTable(flist) {
     list.forEach(function(z, idx) {
         if (!z) return;
         var st = getZariItemStats(z.name, currentZariKarkhanaFilter);
+        
+        var isOp = (z.isOpening || (z.note && z.note.indexOf("Opening") !== -1));
+        var opBadge = isOp ? "<span class='badge-blue' style='font-size:10px; display:block; margin-top:2px;'>📦 Pichle Saal Se Uth Kar Aayi</span>" : "";
+
         tbody.innerHTML += "<tr>" +
             "<td>" + formatDateDisplay(st.date) + "</td>" +
-            "<td><strong>" + z.name + " <span style='font-size:11px; color:#ea580c;'>(" + kName + ")</span></strong></td>" +
+            "<td><strong>" + z.name + " <span style='font-size:11px; color:#ea580c;'>(" + kName + ")</span></strong>" + opBadge + "</td>" +
             "<td><span class='badge-green'>+" + Number(st.aaya).toFixed(2) + "</span></td>" +
             "<td><span class='badge-red'>-" + Number(st.gaya).toFixed(2) + "</span></td>" +
             "<td><span class='badge-blue' style='font-size:13px; font-weight:800;'>" + Number(st.bacha).toFixed(2) + " Kg</span></td>" +
@@ -472,7 +483,8 @@ function viewZariPassbook(zariName) {
     if (isMain) {
         getStore("zari_stock").forEach(function(z) {
             if (z && z.name && z.name.trim().toLowerCase() === nameLower && Number(z.aaya) > 0) {
-                entries.push({ id: z.id, date: z.date || getTodayDate(), type: "Godam Purchase", qty: "+" + Number(z.aaya).toFixed(2), kariger: "Supplier Stock In" });
+                var desc = (z.isOpening || (z.note && z.note.indexOf("Opening") !== -1)) ? "📦 Opening Stock (Pichle Saal Ki Closing Se Aayi)" : "Godam Purchase";
+                entries.push({ id: z.id, date: z.date || getTodayDate(), type: desc, qty: "+" + Number(z.aaya).toFixed(2), kariger: "Supplier / Opening" });
             }
         });
 
@@ -601,7 +613,7 @@ function getCleanFinishedSareeStock() {
     return list.filter(function(item) {
         if (!item || Number(item.pcs) <= 0) return false;
         var nameLower = String(item.name || "").toLowerCase();
-        return nameLower.indexOf("calender") !== -1;
+        return nameLower.indexOf("calender") !== -1 || (item.source && item.source.indexOf("Opening") !== -1);
     });
 }
 
@@ -653,10 +665,13 @@ function renderSareeTable(flist) {
             if (!s) return;
             totFresh += (Number(s.pcs) || 0);
 
+            var isOp = (s.isOpening || (s.kariger && s.kariger.indexOf("Opening Stock") !== -1));
+            var opBadge = isOp ? "<span class='badge-blue' style='font-size:10px; display:block; margin-top:2px;'>📦 Pichle Saal Se Uth Kar Aaya</span>" : "";
+
             tbody.innerHTML += "<tr>" +
                 "<td>" + formatDateDisplay(s.date) + "</td>" +
                 "<td>" + (idx + 1) + "</td>" +
-                "<td><strong>" + s.name + "</strong></td>" +
+                "<td><strong>" + s.name + "</strong>" + opBadge + "</td>" +
                 "<td>" + (s.kariger || "-") + " <span style='font-size:11px; color:#0284c7;'>(" + (s.karkhanaName || kName) + ")</span></td>" +
                 "<td><span class='badge-blue'>" + s.pcs + " pcs</span></td>" +
                 "<td>" +
@@ -697,10 +712,13 @@ function renderSareeTable(flist) {
             var pcs = Number(f.pcs) || 0;
             totFinished += pcs;
 
+            var isOp = (f.isOpening || (f.source && f.source.indexOf("Opening Stock") !== -1));
+            var opBadge = isOp ? "<span class='badge-blue' style='font-size:10px; display:block; margin-top:2px;'>📦 Pichle Saal Se Uth Kar Aaya</span>" : "";
+
             tbody.innerHTML += "<tr>" +
                 "<td>" + formatDateDisplay(f.date) + "</td>" +
                 "<td>" + (idx + 1) + "</td>" +
-                "<td><strong style='color:#0d9488;'>🎛️ " + (f.name || "Calender Finished Saree") + "</strong></td>" +
+                "<td><strong style='color:#0d9488;'>🎛️ " + (f.name || "Calender Finished Saree") + "</strong>" + opBadge + "</td>" +
                 "<td>" + (f.source || "Calender Finishing") + "</td>" +
                 "<td><span class='badge-green' style='font-size:13px; font-weight:800;'>" + pcs + " pcs</span></td>" +
                 "<td>" +
@@ -743,9 +761,12 @@ function renderSareeTable(flist) {
             if (!l) return;
             totLott += (Number(l.pcs) || 0);
 
+            var isOp = (l.isOpening || (l.source && l.source.indexOf("Opening Stock") !== -1));
+            var opBadge = isOp ? "<span class='badge-blue' style='font-size:10px; display:block; margin-top:2px;'>📦 Pichle Saal Se Uth Kar Aaya</span>" : "";
+
             tbody.innerHTML += "<tr>" +
                 "<td>" + formatDateDisplay(l.date) + "</td>" +
-                "<td><strong>" + l.name + "</strong></td>" +
+                "<td><strong>" + l.name + "</strong>" + opBadge + "</td>" +
                 "<td>" + (l.source || "Loom / Job Work") + "</td>" +
                 "<td><span class='badge-red'>⚠️ " + (l.pcs || 0) + " pcs</span></td>" +
                 "<td><button class='quick-btn btn-out' style='background:#fef2f2; border:1px solid #fca5a5; font-size:12px; font-weight:700;' onclick='outLottSareeById(\"" + l.id + "\")'>📤 Out</button></td>" +
@@ -975,7 +996,6 @@ function saveSareeTransferEntry() {
     var sourceKarkhana = getKarkhanasSafe().find(function(x) { return String(x.id) === String(sourceId); });
     var sourceName = sourceKarkhana ? sourceKarkhana.name : "Branch Karkhana";
 
-    // Deduct from branch saree stock
     var allSareeStock = safeArray(getStore("saree_stock"));
     var branchItems = allSareeStock.filter(function(s) { return String(s.karkhanaId) === String(sourceId); });
     var remToDeduct = pcs;
@@ -989,7 +1009,6 @@ function saveSareeTransferEntry() {
         }
     }
 
-    // Add to Main Godown Fresh Stock
     allSareeStock.push({
         id: "saree_tr_" + Date.now(),
         date: d,
@@ -1047,6 +1066,15 @@ function viewFreshSareePassbook(sareeName) {
             entries.push({ id: it.id, refId: it.refId, date: it.date, type: it.type || "-", qty: it.pcs || it.qty || 0, kariger: it.kariger || "-" });
         }
     });
+
+    var openItems = safeArray(getStore("saree_stock")).filter(function(s) {
+        return (s.isOpening || (s.kariger && s.kariger.indexOf("Opening Stock") !== -1)) &&
+               s.name.toLowerCase() === String(sareeName || "").toLowerCase();
+    });
+    openItems.forEach(function(op) {
+        entries.push({ id: op.id, date: op.date, type: "📦 Opening Stock", qty: op.pcs, kariger: "Pichle Saal Ki Closing Se Aaya" });
+    });
+
     viewCustomDatePassbook("Fresh Saree Passbook: " + sareeName, entries, "saree_history");
 }
 
@@ -1060,6 +1088,14 @@ function viewFinishedSareePassbook(sareeName) {
             entries.push({ id: it.id, refId: it.refId, date: it.date, type: it.type || "Finished", qty: it.pcs || it.qty || 0, kariger: it.kariger || "Job Work" });
         }
     });
+
+    var finOpen = safeArray(getStore("finished_saree_stock")).filter(function(f) {
+        return f.isOpening || (f.source && f.source.indexOf("Opening Stock") !== -1);
+    });
+    finOpen.forEach(function(op) {
+        entries.push({ id: op.id, date: op.date, type: "📦 Opening Stock", qty: op.pcs, kariger: "Pichle Saal Ki Closing Se Aaya" });
+    });
+
     viewCustomDatePassbook("Finished Saree Passbook (Calender)", entries, "saree_history");
 }
 
@@ -1074,6 +1110,14 @@ function viewLottSareePassbook(sareeName) {
             entries.push({ id: it.id, refId: it.refId, date: it.date, type: it.type || "Lott", qty: it.pcs || it.qty || 0, kariger: it.kariger || "Lott" });
         }
     });
+
+    var lottOpen = safeArray(getStore("lott_saree_stock")).filter(function(l) {
+        return l.isOpening || (l.source && l.source.indexOf("Opening Stock") !== -1);
+    });
+    lottOpen.forEach(function(op) {
+        entries.push({ id: op.id, date: op.date, type: "📦 Opening Stock", qty: op.pcs, kariger: "Pichle Saal Ki Closing Se Aaya" });
+    });
+
     viewCustomDatePassbook("Lott Saree Passbook: " + sareeName, entries, "saree_history");
 }
 
@@ -1120,12 +1164,11 @@ function renderModalPassbookRows(list) {
             "<td>" + formatDateDisplay(it.date) + "</td>" +
             "<td>" + (it.kariger || it.desc || "-") + " (" + (it.type || "-") + ")</td>" +
             "<td><strong>" + (it.qty || it.amount || 0) + "</strong></td>" +
-            "<td style='text-align:center;'><button class='delete-btn' style='padding:2px 6px; font-size:11px;' onclick='deletePassbookRowDirectly(\"" + it.id + "\")'>🗑️</button></td>" +
+            "<td style='text-align:center;'>" + delBtn + "</td>" +
         "</tr>";
     });
 }
 
-// 🎯 MASTER PASSBOOK DELETE: REVERSES STOCK & KILLS GHOST SHEET ROW
 function deletePassbookRowDirectly(entryId) {
     if (!confirm("Kya aap is passbook entry ko delete karna chahte hain? Iska stock bhi wapas adjust ho jayega.")) return;
 
@@ -1162,7 +1205,7 @@ function deletePassbookRowDirectly(entryId) {
             }
         }
 
-        // 2. GHOST KILLER: Delete linked row from Kariger's Sheet
+        // 2. Delete linked row from Kariger's Sheet
         if (refId && typeof deleteSheetRowByRefId === "function") {
             deleteSheetRowByRefId(refId);
         }
@@ -1184,7 +1227,7 @@ function closeItemModal() {
     currentPassbookStoreKey = "";
 }
 
-// ================= 9. SANCHA STOCK MODULE (FIXED & SAFE) =================
+// ================= 9. SANCHA STOCK MODULE =================
 
 function getSanchaItems() {
     var items = getStore("sancha_items");
@@ -1289,9 +1332,12 @@ function renderSanchaTable() {
     items.forEach(function(item) {
         if (!item) return;
         var st = getSanchaItemStats(item.id, item.name);
+        
+        var opTag = (item.note && item.note.indexOf("Opening") !== -1) ? "<span class='badge-blue' style='font-size:10px; display:block; margin-top:2px;'>📦 Pichle Saal Se Aaya</span>" : "";
+
         tbody.innerHTML += "<tr>" +
             "<td>" + formatDateDisplay(item.date) + "</td>" +
-            "<td><strong style='color:#0284c7;'>⚙️ " + item.name + "</strong></td>" +
+            "<td><strong style='color:#0284c7;'>⚙️ " + item.name + "</strong>" + opTag + "</td>" +
             "<td><span class='badge-green'>+" + st.aaya.toFixed(2) + "</span></td>" +
             "<td><span class='badge-red'>-" + st.gaya.toFixed(2) + "</span></td>" +
             "<td><span class='badge-blue'>" + st.bacha.toFixed(2) + "</span></td>" +
@@ -1313,7 +1359,7 @@ function openSanchaDetailModal(id) {
     if (!it) return;
 
     activeSanchaItemId = it.id;
-    var st = getSanchaItemStats(it.id, item.name);
+    var st = getSanchaItemStats(it.id, it.name);
     document.getElementById("sancha-modal-title").innerHTML = "📦 " + it.name + " (Bacha: " + st.bacha.toFixed(2) + ")";
     document.getElementById("sancha-entry-date").value = getTodayDate();
     document.getElementById("sancha-entry-qty").value = "";
@@ -1357,7 +1403,6 @@ function addSanchaStockEntry() {
     alert("✅ " + q + " stock jud gaya!");
 }
 
-// 🎯 SAFE SANCHA HISTORY: PREVENTS DELETING WRONG ROW ON SHEET ENTRIES
 function renderSanchaHistoryTable() {
     var hist = getStore("sancha_history");
     var tbody = document.getElementById("sancha-detail-table-body");
@@ -1399,8 +1444,6 @@ function renderSanchaHistoryTable() {
     entries.sort(function(a, b) { return (b.date > a.date) ? 1 : -1; });
     entries.forEach(function(e) {
         var isAaya = (String(e.type).indexOf("Aaya") !== -1);
-        
-        // 🎯 EXACT FIX: Agar Sheet Entry hai toh delete button hide rahega, wrong row delete nahi hogi
         var actionCol = e.isSheet 
             ? "<span style='color:#64748b; font-size:11px; font-weight:bold;'>Sheet Entry</span>" 
             : ("<button class='delete-btn' onclick='deleteSanchaHistoryRow(" + e.histIndex + ")'>🗑️</button>");
@@ -1410,7 +1453,7 @@ function renderSanchaHistoryTable() {
             "<td><span class='" + (isAaya ? "badge-green" : "badge-red") + "'>" + e.type + "</span></td>" +
             "<td><strong style='color:" + (isAaya ? "#059669" : "#dc2626") + ";'>" + (isAaya ? "+" : "-") + e.qty.toFixed(2) + "</strong></td>" +
             "<td>" + e.note + "</td>" +
-            "<td style='text-align:center;'>" + actionCol + "</td>" +
+            "<td style='text-align:center;'><button class='delete-btn' onclick='deleteSanchaHistoryRow(" + e.histIndex + ")'>🗑️</button></td>" +
         "</tr>";
     });
 }
