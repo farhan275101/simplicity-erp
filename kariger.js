@@ -1,6 +1,7 @@
 /* ========================================================
    SIMPLICITY ERP - KARIGER MASTER, DYNAMIC MULTI-KARKHANA & SESSION ENGINE
-   File 2 of 7 • Developed by Farhan Jawed (All Bugs Fixed & Year-End Ready)
+   File 2 of 5 • Developed by Farhan Jawed
+   (100% Locked Session Switching & 1 April Opening Carry Forward)
 ======================================================== */
 
 var activeKarigerId = null;
@@ -10,10 +11,16 @@ var currentKarigerKarkhanaFilter = "all"; // "all" ya specific karkhanaId
 // ================= 1. 📅 FINANCIAL YEAR SESSION SYSTEM (1 APRIL CLOSING) =================
 
 function getAppSessions() {
-    var list = safeArray(getStore("app_sessions_list"));
-    if (!list.length) {
+    var userKey = (currentUserId || "app") + "_app_sessions_list";
+    var raw = localStorage.getItem(userKey);
+    var list = [];
+    try {
+        list = JSON.parse(raw) || [];
+    } catch (e) {}
+
+    if (!Array.isArray(list) || !list.length) {
         list = ["2026-2027"];
-        setStore("app_sessions_list", list);
+        localStorage.setItem(userKey, JSON.stringify(list));
     }
     return list;
 }
@@ -21,16 +28,10 @@ function getAppSessions() {
 function getActiveFinancialSession() {
     var userKey = (currentUserId || "app") + "_app_active_session";
     var sess = localStorage.getItem(userKey);
-    if (!sess) {
-        var storeSess = getStore("app_active_session");
-        if (storeSess && typeof storeSess === "string") {
-            sess = storeSess;
-        } else {
-            var list = getAppSessions();
-            sess = list[list.length - 1] || "2026-2027";
-        }
+    if (!sess || typeof sess !== "string" || sess === "[]") {
+        var list = getAppSessions();
+        sess = list[list.length - 1] || "2026-2027";
         localStorage.setItem(userKey, sess);
-        setStore("app_active_session", sess);
     }
     return sess;
 }
@@ -46,7 +47,7 @@ function populateSessionDropdown() {
     sessions.forEach(function(s) {
         var opt = document.createElement("option");
         opt.value = s;
-        opt.textContent = s;
+        opt.textContent = "📅 " + s;
         if (String(s) === String(activeSess)) {
             opt.selected = true;
         }
@@ -58,87 +59,24 @@ function switchAppFinancialSession(targetSession) {
     var activeSess = getActiveFinancialSession();
     if (!targetSession || targetSession === activeSess) return;
 
-    if (!confirm("Kya aap Session badal kar '" + targetSession + "' me jana chahte hain?")) {
+    if (!confirm("Kya aap Session badal kar '" + targetSession + "' me jana chahte hain?\nIs session ka pura hisab khul jayega.")) {
         populateSessionDropdown();
         return;
     }
 
-    // 1. Current Session Data ko Backup karein
-    backupCurrentSessionData(activeSess);
-
-    // 2. Target Session Data ko Load karein
-    restoreSessionData(targetSession);
-
     var userKey = (currentUserId || "app") + "_app_active_session";
     localStorage.setItem(userKey, targetSession);
-    setStore("app_active_session", targetSession);
-    populateSessionDropdown();
 
-    // Re-render all views safely
+    // Dropdown & UI refresh for target session
+    populateSessionDropdown();
+    if (typeof backToDashboard === "function") backToDashboard();
     if (typeof renderKarigerKarkhanaTabs === "function") renderKarigerKarkhanaTabs();
     if (typeof renderKarigerTable === "function") renderKarigerTable();
     if (typeof renderStockKarkhanaTabs === "function") renderStockKarkhanaTabs();
     if (typeof updateDashboardBadgeTotals === "function") updateDashboardBadgeTotals();
     if (typeof renderDashboardDayBook === "function") renderDashboardDayBook();
 
-    alert("📅 Session badal gaya: Ab aap '" + targetSession + "' me hain!");
-}
-
-function backupCurrentSessionData(sessionName) {
-    var snapshot = {
-        kariger_list: getStore("kariger_list"),
-        karkhana_list: getStore("karkhana_list"),
-        bana_stock: getStore("bana_stock"),
-        zari_stock: getStore("zari_stock"),
-        saree_stock: getStore("saree_stock"),
-        finished_saree_stock: getStore("finished_saree_stock"),
-        lott_saree_stock: getStore("lott_saree_stock"),
-        jw_bills_list: getStore("jw_bills_list"),
-        jw_payments_list: getStore("jw_payments_list"),
-        saree_history: getStore("saree_history"),
-        bana_history: getStore("bana_history"),
-        zari_history: getStore("zari_history"),
-        material_transfers: getStore("material_transfers"),
-        saree_transfers: getStore("saree_transfers")
-    };
-
-    // Kariger sheets backup
-    var karigers = safeArray(getStore("kariger_list"));
-    var sheetsMap = {};
-    karigers.forEach(function(k) {
-        if (k && k.id) {
-            sheetsMap[k.id] = getStore("kariger_sheets_" + k.id);
-        }
-    });
-    snapshot.sheetsMap = sheetsMap;
-
-    setStore("session_backup_" + sessionName, snapshot);
-}
-
-function restoreSessionData(targetSession) {
-    var snapshot = getStore("session_backup_" + targetSession);
-    if (!snapshot || typeof snapshot !== "object") return;
-
-    setStore("kariger_list", snapshot.kariger_list || []);
-    setStore("karkhana_list", snapshot.karkhana_list || []);
-    setStore("bana_stock", snapshot.bana_stock || []);
-    setStore("zari_stock", snapshot.zari_stock || []);
-    setStore("saree_stock", snapshot.saree_stock || []);
-    setStore("finished_saree_stock", snapshot.finished_saree_stock || []);
-    setStore("lott_saree_stock", snapshot.lott_saree_stock || []);
-    setStore("jw_bills_list", snapshot.jw_bills_list || []);
-    setStore("jw_payments_list", snapshot.jw_payments_list || []);
-    setStore("saree_history", snapshot.saree_history || []);
-    setStore("bana_history", snapshot.bana_history || []);
-    setStore("zari_history", snapshot.zari_history || []);
-    setStore("material_transfers", snapshot.material_transfers || []);
-    setStore("saree_transfers", snapshot.saree_transfers || []);
-
-    if (snapshot.sheetsMap) {
-        for (var kId in snapshot.sheetsMap) {
-            setStore("kariger_sheets_" + kId, snapshot.sheetsMap[kId]);
-        }
-    }
+    alert("📅 Session badal gaya: Ab aap '" + targetSession + "' me hain! Sabhi hisab is saal ke dikhenge.");
 }
 
 function openSessionClosingModal() {
@@ -166,13 +104,13 @@ function closeSessionClosingModal() {
     setDisplay("session-closing-modal", "none");
 }
 
-// 🚀 1 APRIL YEAR-END CLOSING PROCESS (CARRY FORWARD CLOSING TO OPENING)
+// 🚀 1 APRIL YEAR-END CLOSING PROCESS (31st March Closing -> 1st April Opening)
 function executeYearEndClosingProcess() {
     var curSess = getActiveFinancialSession();
     var newSessEl = document.getElementById("session-new-input");
     var newSess = (newSessEl ? newSessEl.value : "").trim();
 
-    if (!newSess) return alert("Naye Saal (Session) ka naam daalein!");
+    if (!newSess) return alert("Naye Saal (Session) ka naam daalein! Jaise: 2027-2028");
     if (newSess === curSess) return alert("Naya session purane se alag hona chahiye!");
 
     var sessions = getAppSessions();
@@ -180,16 +118,20 @@ function executeYearEndClosingProcess() {
         return alert("Ye Session '" + newSess + "' pehle se bana hua hai! Upar dropdown se switch karein.");
     }
 
-    if (!confirm("⚠️ KYA AAP 1 APRIL / YEAR-END CLOSING CHALU KARNA CHAHTE HAIN?\n\n• Purana saal (" + curSess + ") hamesha ke liye सुरक्षित (Locked) ho jayega.\n• Sabhi Karigaron ki closing nayi Tani 1 me OPENING ban jayegi.\n• Sabhi Stock ka bacha hua maal naye saal ka OPENING STOCK ban jayegi.\n• Naye saal me app bilkul halka aur fresh khulega!")) {
+    if (!confirm("⚠️ KYA AAP 1 APRIL / YEAR-END CLOSING KARNA CHAHTE HAIN?\n\n" +
+        "• Purana saal (" + curSess + ") hamesha ke liye सुरक्षित (Locked) rahega.\n" +
+        "• 31st March ki closing naye saal (" + newSess + ") ki 1st April OPENING ban jayegi.\n" +
+        "• Kariger, Stock aur Jobwork me saaf dikhega ki maal pichle saal se uth ke aaya hai.\n" +
+        "• Naye saal me app bilkul halka aur fresh khulega!\n" +
+        "• Aap jab chahein upar session dropdown se purane saal me jakar purana hisab dekh sakte hain.")) {
         return;
     }
 
-    // STEP 1: Purane saal ka pura backup lein
-    backupCurrentSessionData(curSess);
+    // ================= STEP 1: KARIGAR CLOSING TO OPENING =================
+    var oldKarigers = safeArray(getStore("kariger_list"));
+    var newKarigerSheetsMap = {};
 
-    // STEP 2: Naye saal ke liye Opening Balances calculate karein
-    var karigers = safeArray(getStore("kariger_list"));
-    karigers.forEach(function(k) {
+    oldKarigers.forEach(function(k) {
         if (!k || !k.id) return;
         var sheets = (typeof getKarigerSheets === "function") ? getKarigerSheets(k.id) : [];
         var lastSheet = sheets.length ? sheets[sheets.length - 1] : null;
@@ -197,8 +139,7 @@ function executeYearEndClosingProcess() {
             ? calculateSheetTotals(lastSheet)
             : { remainingBana: 0, remainingZari: 0, remainingAmt: 0 };
 
-        // Naye saal me sirf 1 Tani Sheet khulegi (Exact Opening Balance ke sath)
-        var newSheet = [{
+        newKarigerSheetsMap[k.id] = [{
             id: "tani_1",
             title: "Tani 1 (Opening " + newSess + ")",
             pichlaBana: Number((calc.remainingBana || 0).toFixed(2)),
@@ -207,15 +148,12 @@ function executeYearEndClosingProcess() {
             rateBana: lastSheet ? (Number(lastSheet.rateBana) || 0.311) : 0.311,
             rateZari: lastSheet ? (Number(lastSheet.rateZari) || 0.110) : 0.110,
             rateBani: lastSheet ? (Number(lastSheet.rateBani) || 240) : 240,
-            note: "Year-End Opening Balance from " + curSess,
+            note: "📦 31st March (" + curSess + ") Closing se Aaya Opening Balance",
             rows: []
         }];
-        if (typeof saveKarigerSheets === "function") {
-            saveKarigerSheets(k.id, newSheet);
-        }
     });
 
-    // STEP 3: SAREE STOCKS CARRY FORWARD
+    // ================= STEP 2: SAREE STOCKS CARRY FORWARD =================
     var freshTotalPcs = 0;
     safeArray(getStore("saree_stock")).forEach(function(s) { freshTotalPcs += (Number(s.pcs) || 0); });
     var newSareeStock = [];
@@ -224,16 +162,15 @@ function executeYearEndClosingProcess() {
             id: "saree_open_" + Date.now(),
             date: getTodayDate(),
             name: "Fresh Saree Opening Stock",
-            kariger: "Opening Balance (" + curSess + ")",
+            kariger: "📦 Opening Stock (" + curSess + " Se Uth Kar Aaya)",
             karkhanaId: "k_main",
             karkhanaName: "Main Godown",
             pcs: freshTotalPcs,
-            outPcs: 0
+            outPcs: 0,
+            isOpening: true
         });
     }
-    setStore("saree_stock", newSareeStock);
 
-    // Finished Calender Saree Opening
     var finTotalPcs = 0;
     safeArray(getStore("finished_saree_stock")).forEach(function(f) { finTotalPcs += (Number(f.pcs) || 0); });
     var newFinStock = [];
@@ -242,13 +179,12 @@ function executeYearEndClosingProcess() {
             id: "fin_open_" + Date.now(),
             date: getTodayDate(),
             name: "Calender Finished Saree",
-            source: "Opening Balance (" + curSess + ")",
-            pcs: finTotalPcs
+            source: "📦 Opening Stock (" + curSess + " Se Uth Kar Aaya)",
+            pcs: finTotalPcs,
+            isOpening: true
         });
     }
-    setStore("finished_saree_stock", newFinStock);
 
-    // Lott Saree Opening
     var lottTotalPcs = 0;
     safeArray(getStore("lott_saree_stock")).forEach(function(l) { lottTotalPcs += (Number(l.pcs) || 0); });
     var newLottStock = [];
@@ -257,22 +193,19 @@ function executeYearEndClosingProcess() {
             id: "lott_open_" + Date.now(),
             date: getTodayDate(),
             name: "Damage Saree Opening Stock",
-            source: "Opening Balance (" + curSess + ")",
-            pcs: lottTotalPcs
+            source: "📦 Opening Stock (" + curSess + " Se Uth Kar Aaya)",
+            pcs: lottTotalPcs,
+            isOpening: true
         });
     }
-    setStore("lott_saree_stock", newLottStock);
 
-    // STEP 4: BANA & ZARI STOCK CARRY FORWARD (Safe with fallback)
-    var banaItems = safeArray(getStore("bana_stock"));
+    // ================= STEP 3: BANA & ZARI STOCK CARRY FORWARD =================
     var newBanaStock = [];
-    banaItems.forEach(function(b) {
+    safeArray(getStore("bana_stock")).forEach(function(b) {
         if (!b || !b.name) return;
         var bachaQty = Number(b.bacha || b.aaya || 0);
         if (typeof getBanaItemStats === "function") {
-            try {
-                bachaQty = getBanaItemStats(b.name, "k_main").bacha;
-            } catch(e) {}
+            try { bachaQty = getBanaItemStats(b.name, "k_main").bacha; } catch(e) {}
         }
         if (bachaQty > 0) {
             newBanaStock.push({
@@ -281,21 +214,19 @@ function executeYearEndClosingProcess() {
                 date: getTodayDate(),
                 aaya: Number(bachaQty.toFixed(2)),
                 gaya: 0,
-                bacha: Number(bachaQty.toFixed(2))
+                bacha: Number(bachaQty.toFixed(2)),
+                note: "📦 Opening Stock (" + curSess + " Se Aaya)",
+                isOpening: true
             });
         }
     });
-    setStore("bana_stock", newBanaStock);
 
-    var zariItems = safeArray(getStore("zari_stock"));
     var newZariStock = [];
-    zariItems.forEach(function(z) {
+    safeArray(getStore("zari_stock")).forEach(function(z) {
         if (!z || !z.name) return;
         var bachaQty = Number(z.bacha || z.aaya || 0);
         if (typeof getZariItemStats === "function") {
-            try {
-                bachaQty = getZariItemStats(z.name, "k_main").bacha;
-            } catch(e) {}
+            try { bachaQty = getZariItemStats(z.name, "k_main").bacha; } catch(e) {}
         }
         if (bachaQty > 0) {
             newZariStock.push({
@@ -304,46 +235,106 @@ function executeYearEndClosingProcess() {
                 date: getTodayDate(),
                 aaya: Number(bachaQty.toFixed(2)),
                 gaya: 0,
-                bacha: Number(bachaQty.toFixed(2))
+                bacha: Number(bachaQty.toFixed(2)),
+                note: "📦 Opening Stock (" + curSess + " Se Aayi)",
+                isOpening: true
             });
         }
     });
-    setStore("zari_stock", newZariStock);
 
-    // STEP 5: JOB WORK PENDING BILLS CARRY FORWARD (Only Unpaid bills remain)
+    // ================= STEP 4: SANCHA ITEMS CARRY FORWARD =================
+    var sanchaItems = safeArray(getStore("sancha_items"));
+    var newSanchaItems = [];
+    sanchaItems.forEach(function(item) {
+        if (!item || !item.name) return;
+        var bachaQty = 0;
+        if (typeof getSanchaItemStats === "function") {
+            try { bachaQty = getSanchaItemStats(item.id, item.name).bacha; } catch(e) {}
+        } else {
+            bachaQty = Number(item.aaya || 0);
+        }
+        newSanchaItems.push({
+            id: item.id || ("sancha_" + Date.now()),
+            name: item.name,
+            date: getTodayDate(),
+            aaya: Math.max(0, bachaQty),
+            note: "📦 Opening Stock (" + curSess + " Se Aaya)"
+        });
+    });
+
+    // ================= STEP 5: JOB WORK CARRY FORWARD =================
+    var oldJwWorkers = safeArray(getStore("jobwork_workers"));
+    var newJwSheetsMap = {};
+    oldJwWorkers.forEach(function(w) {
+        if (!w || !w.id) return;
+        var sheets = (typeof getJobWorkerSheets === "function") ? getJobWorkerSheets(w.id) : [];
+        var lastSh = sheets.length ? sheets[sheets.length - 1] : null;
+        var calc = (lastSh && typeof calculateJobWorkSheetTotals === "function")
+            ? calculateJobWorkSheetTotals(lastSh)
+            : { pendingSaree: 0 };
+
+        newJwSheetsMap[w.id] = [{
+            id: "jw_sh_" + Date.now() + "_" + w.id,
+            title: "Month 1 (Opening " + newSess + ")",
+            closingPendingSaree: calc.pendingSaree || 0,
+            closingBakiAmt: 0,
+            note: "📦 Pichle Saal (" + curSess + ") ki Baki Saree",
+            rows: []
+        }];
+    });
+
     var pendingBills = safeArray(getStore("jw_bills_list")).filter(function(b) {
         var baki = Math.max(0, (Number(b.billAmt) || 0) - (Number(b.paidAmt) || 0));
         return baki > 0;
+    }).map(function(b) {
+        return Object.assign({}, b, { note: (b.note || "") + " (Opening Bill from " + curSess + ")" });
     });
+
+    // ================= STEP 6: ACTIVATE NEW SESSION =================
+    sessions.push(newSess);
+    localStorage.setItem((currentUserId || "app") + "_app_sessions_list", JSON.stringify(sessions));
+    localStorage.setItem((currentUserId || "app") + "_app_active_session", newSess);
+
+    // Save Opening Data into New Session
+    setStore("kariger_list", oldKarigers);
+    for (var kId in newKarigerSheetsMap) {
+        setStore("kariger_sheets_" + kId, newKarigerSheetsMap[kId]);
+    }
+    setStore("saree_stock", newSareeStock);
+    setStore("finished_saree_stock", newFinStock);
+    setStore("lott_saree_stock", newLottStock);
+    setStore("bana_stock", newBanaStock);
+    setStore("zari_stock", newZariStock);
+    setStore("sancha_items", newSanchaItems);
+    setStore("sancha_history", []);
+    setStore("jobwork_workers", oldJwWorkers);
+    for (var wId in newJwSheetsMap) {
+        setStore("jobwork_sheets_" + wId, newJwSheetsMap[wId]);
+    }
     setStore("jw_bills_list", pendingBills);
     setStore("jw_payments_list", []);
-
-    // Clean Daily Histories for New Year
     setStore("saree_history", []);
     setStore("bana_history", []);
     setStore("zari_history", []);
     setStore("material_transfers", []);
     setStore("saree_transfers", []);
-
-    // STEP 6: Sessions List me naya saal jod kar activate karein
-    sessions.push(newSess);
-    setStore("app_sessions_list", sessions);
-
-    var userKey = (currentUserId || "app") + "_app_active_session";
-    localStorage.setItem(userKey, newSess);
-    setStore("app_active_session", newSess);
+    setStore("dukan_transfer_history", []);
 
     closeSessionClosingModal();
     populateSessionDropdown();
 
-    // Refresh UI
+    // UI Refresh
+    if (typeof backToDashboard === "function") backToDashboard();
     if (typeof renderKarigerKarkhanaTabs === "function") renderKarigerKarkhanaTabs();
     if (typeof renderKarigerTable === "function") renderKarigerTable();
     if (typeof renderStockKarkhanaTabs === "function") renderStockKarkhanaTabs();
     if (typeof updateDashboardBadgeTotals === "function") updateDashboardBadgeTotals();
     if (typeof renderDashboardDayBook === "function") renderDashboardDayBook();
 
-    alert("🎉 MUBARAK HO! 1 April Year-End Closing safalta-purvak poori hui!\n\nNaya Saal '" + newSess + "' bilkul fresh aur opening balance ke sath chalu ho gaya hai!");
+    alert("🎉 MUBARAK HO! 1 April Year-End Closing safalta-purvak poori hui!\n\n" +
+          "• Pichla saal (" + curSess + ") hamesha ke liye safe ho gaya hai.\n" +
+          "• Naya Saal '" + newSess + "' opening stock ke sath chalu ho gaya hai!\n" +
+          "• Karkhana, Stock aur Job Work me saaf dikhega ki pichle saal se kitna maal uth kar aaya hai.");
 }
 
 // ================= 2. DYNAMIC KARKHANA MASTER (ADD, EDIT & SYNC) =================
@@ -397,7 +388,6 @@ function renderKarkhanaManagerTable() {
     });
 }
 
-// SAVE & AUTO-UPDATE KARIGER KARKHANA NAME ON EDIT
 function saveKarkhanaFromManager() {
     var editId = document.getElementById("karkhana-edit-id").value;
     var name = (document.getElementById("karkhana-input-name").value || "").trim();
@@ -413,7 +403,6 @@ function saveKarkhanaFromManager() {
             it.name = name;
             it.location = loc;
 
-            // AUTO-SYNC: Purane sabhi Karigaron par naya Karkhana Name update karein
             var karigers = safeArray(getStore("kariger_list"));
             karigers.forEach(function(w) {
                 if (String(w.karkhanaId) === String(editId)) {
@@ -456,14 +445,12 @@ function editKarkhanaFromManager(id) {
     document.getElementById("karkhana-input-name").focus();
 }
 
-// DELETE PROTECTION: Shift karigers to Main Godown
 function deleteKarkhanaFromManager(id) {
     var k = getKarkhanas().find(function(x) { return String(x.id) === String(id); });
     if (!k || k.isDefault) return alert("Default Godown delete nahi ho sakta!");
 
     if (!confirm("⚠️ Kya aap '" + k.name + "' ko delete karna chahte hain?\nIs karkhane ke sabhi kariger safe hokar 'Main Godown' me shift ho jayenge.")) return;
 
-    // Shift karigers safely
     var karigers = safeArray(getStore("kariger_list"));
     karigers.forEach(function(w) {
         if (String(w.karkhanaId) === String(id)) {
@@ -568,7 +555,6 @@ function saveKarigerSheets(karigerId, sheets) {
     setStore("kariger_sheets_" + karigerId, clean);
 }
 
-// 🎯 MASTER CASCADING DELETE: DELETES ROW FROM SHEET WHEN DELETED FROM PASSBOOK
 function deleteSheetRowByRefId(refId) {
     if (!refId) return false;
     var karigers = sanitizeKarigerList();
@@ -782,7 +768,8 @@ function openKarigerSheet(id) {
     activeKarigerId = k.id;
     activeSheetIndex = 0;
 
-    document.getElementById("sheet-banner-name").textContent = k.name + " • 🏭 " + (k.karkhanaName || "Main Godown") + " (Khata Sheet)";
+    var sess = getActiveFinancialSession();
+    document.getElementById("sheet-banner-name").textContent = k.name + " • 🏭 " + (k.karkhanaName || "Main Godown") + " (" + sess + " Khata)";
 
     var dToday = getTodayDate();
     if (document.getElementById("line-date")) document.getElementById("line-date").value = dToday;
@@ -1048,7 +1035,7 @@ function addSheetLineRow() {
     sh.rows.push(newRow);
     saveKarigerSheets(activeKarigerId, sheets);
 
-    // 1. Saree Stock auto-entry
+    // 1. Saree Stock Entry
     if (saree > 0) {
         var sStock = safeArray(getStore("saree_stock"));
         sStock.push({
@@ -1078,7 +1065,7 @@ function addSheetLineRow() {
         setStore("saree_history", sH);
     }
 
-    // 2. Lott Saree Stock
+    // 2. Lott Saree Stock Entry
     if (lott > 0) {
         var lottStock = safeArray(getStore("lott_saree_stock"));
         lottStock.push({
@@ -1094,7 +1081,7 @@ function addSheetLineRow() {
         setStore("lott_saree_stock", lottStock);
     }
 
-    // Reset inputs
+    // Reset Form
     document.getElementById("line-saree").value = "";
     document.getElementById("line-tani-wazan").value = "";
     document.getElementById("line-bana-cone").value = "";
@@ -1126,7 +1113,6 @@ function deleteSheetLineRow(idx) {
     var r = sh.rows[idx];
     if (!r) return;
 
-    // Clean linked Saree Stock
     if (Number(r.saree) > 0) {
         var sStock = safeArray(getStore("saree_stock")).filter(function(x) {
             return !x || String(x.refId) !== String(r.id);
@@ -1139,7 +1125,6 @@ function deleteSheetLineRow(idx) {
         setStore("saree_history", sH);
     }
 
-    // Clean linked Lott Stock
     if (Number(r.lott) > 0) {
         var lStock = safeArray(getStore("lott_saree_stock")).filter(function(x) {
             return !x || String(x.refId) !== String(r.id);
@@ -1166,7 +1151,8 @@ function renderSheetTable(sh) {
     var totS = 0, totW = 0, totB = 0, totZ = 0, totP = 0, totL = 0, totRB = 0, totRZ = 0;
 
     if (!rows.length) {
-        tbody.innerHTML = "<tr><td colspan='12' style='text-align:center; padding:15px; color:#888;'>Is Tani me koi entry nahi hai. Upar se line jodein.</td></tr>";
+        var openingNote = sh.note ? ("<div style='color:#0284c7; font-weight:bold; margin-bottom:6px;'>" + sh.note + "</div>") : "";
+        tbody.innerHTML = "<tr><td colspan='12' style='text-align:center; padding:15px; color:#888;'>" + openingNote + "Is Tani me koi rozana entry nahi hai. Upar se line jodein.</td></tr>";
     } else {
         rows.forEach(function(r, idx) {
             if (!r) return;
@@ -1234,7 +1220,6 @@ function renderSheetTable(sh) {
     setEl("calc-remaining-zari", c.remainingZari.toFixed(2));
 }
 
-// 🎯 LIVE STOCK BADGE FIX
 function updateLiveStockDisplay() {
     var bName = (document.getElementById("line-bana-name") && document.getElementById("line-bana-name").value || "").trim();
     var zName = (document.getElementById("line-zari-name") && document.getElementById("line-zari-name").value || "").trim();
