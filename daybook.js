@@ -1,8 +1,10 @@
 /* ========================================================
    SIMPLICITY ERP - PAYMENT MODULE, DAYBOOK & APP STARTUP
    File 5 of 5 • Developed by Farhan Jawed
-   (Session-Filtered Day-Book, Live Finance & Dynamic Startup)
+   (Point 7: Multi-Godam Payment Engine, Live Finance & Dynamic Startup)
 ======================================================== */
+
+var currentPaymentKarkhanaFilter = "all"; // "all" ya specific karkhanaId
 
 // ================= 1. KARIGER FINANCE COMPUTATION ENGINE =================
 
@@ -39,25 +41,68 @@ function getKarigerFinanceSummary(karId) {
     };
 }
 
-// ================= 2. PAYMENT MODULE (HISAB) =================
+// ================= 2. PAYMENT MODULE (POINT 7: MULTI-GODAM SYSTEM) =================
 
 function openPaymentModule() {
     if (typeof hideAllSections === "function") hideAllSections();
     setDisplay("payment-section", "block");
+    renderPaymentKarkhanaTabs();
+    renderPaymentTable();
+}
+
+// POINT 7: PAYMENT KARKHANA TABS (BANA & ZARI KI TARAH)
+function renderPaymentKarkhanaTabs() {
+    var bar = document.getElementById("payment-karkhana-tabs-bar");
+    if (!bar) return;
+    bar.innerHTML = "";
+
+    var kList = (typeof getKarkhanasSafe === "function") ? getKarkhanasSafe() : (typeof getKarkhanas === "function" ? getKarkhanas() : []);
+    var allKarigers = (typeof sanitizeKarigerList === "function") ? sanitizeKarigerList() : [];
+
+    var allActive = (currentPaymentKarkhanaFilter === "all") ? " active" : "";
+    bar.innerHTML += "<button class='sheet-tab" + allActive + "' onclick='switchPaymentKarkhanaTab(\"all\")'>👥 Sabhi Karkhane (" + allKarigers.length + ")</button>";
+
+    kList.forEach(function(k) {
+        var count = allKarigers.filter(function(w) { 
+            return String(w.karkhanaId) === String(k.id) || (!w.karkhanaId && k.isDefault); 
+        }).length;
+
+        var isActive = (String(currentPaymentKarkhanaFilter) === String(k.id)) ? " active" : "";
+        bar.innerHTML += "<button class='sheet-tab" + isActive + "' onclick='switchPaymentKarkhanaTab(\"" + k.id + "\")'>🏭 " + k.name + " (" + count + ")</button>";
+    });
+}
+
+function switchPaymentKarkhanaTab(kId) {
+    currentPaymentKarkhanaFilter = kId;
+    renderPaymentKarkhanaTabs();
     renderPaymentTable();
 }
 
 function renderPaymentTable(flist) {
-    var karigers = flist || ((typeof sanitizeKarigerList === "function") ? sanitizeKarigerList() : []);
+    var allKarigers = flist || ((typeof sanitizeKarigerList === "function") ? sanitizeKarigerList() : []);
     var tbody = document.getElementById("payment-table-body");
     if (!tbody) return;
     tbody.innerHTML = "";
 
+    var list = allKarigers;
+    if (currentPaymentKarkhanaFilter !== "all") {
+        list = list.filter(function(k) {
+            return String(k.karkhanaId) === String(currentPaymentKarkhanaFilter) || (!k.karkhanaId && currentPaymentKarkhanaFilter === "k_main");
+        });
+    }
+
+    var txt = (document.getElementById("search-payment-input") && document.getElementById("search-payment-input").value || "").toLowerCase().trim();
+    if (txt) {
+        list = list.filter(function(k) {
+            return (String(k.name || "") + " " + String(k.saree || "") + " " + String(k.karkhanaName || "")).toLowerCase().indexOf(txt) !== -1;
+        });
+    }
+
     var overallPaid = 0;
     var overallBaki = 0;
 
-    if (!karigers.length) {
-        tbody.innerHTML = "<tr><td colspan='8' style='text-align:center; padding:20px; color:#888;'>Is Session me koi Kariger hisab nahi mila.</td></tr>";
+    if (!list.length) {
+        tbody.innerHTML = "<tr><td colspan='9' style='text-align:center; padding:20px; color:#888;'>Is Godam/Karkhane me koi Kariger hisab nahi mila.</td></tr>";
         var elP = document.getElementById("total-paid-display");
         var elB = document.getElementById("total-baki-display");
         if (elP) elP.textContent = "₹ 0";
@@ -65,16 +110,18 @@ function renderPaymentTable(flist) {
         return;
     }
 
-    karigers.forEach(function(k, idx) {
+    list.forEach(function(k, idx) {
         if (!k) return;
         var fin = getKarigerFinanceSummary(k.id);
         overallPaid += fin.totalPaid;
         overallBaki += fin.currentBakaya;
 
         var bakiBadgeClass = fin.currentBakaya > 0 ? "badge-red" : "badge-green";
+        var kNameBadge = "<span class='badge-blue' style='font-size:11px; font-weight:700;'>🏭 " + (k.karkhanaName || "Main Godown") + "</span>";
 
         tbody.innerHTML += "<tr>" +
             "<td>" + (idx + 1) + "</td>" +
+            "<td>" + kNameBadge + "</td>" +
             "<td><strong>" + k.name + "</strong></td>" +
             "<td>" + (k.saree || "-") + "</td>" +
             "<td style='font-weight:700;'>₹ " + fin.totalMazdoori.toFixed(2) + "</td>" +
@@ -92,11 +139,7 @@ function renderPaymentTable(flist) {
 }
 
 function filterPayment() {
-    var txt = (document.getElementById("search-payment-input").value || "").toLowerCase().trim();
-    var list = ((typeof sanitizeKarigerList === "function") ? sanitizeKarigerList() : []).filter(function(k) {
-        return k && (String(k.name || "") + " " + String(k.saree || "")).toLowerCase().indexOf(txt) !== -1;
-    });
-    renderPaymentTable(list);
+    renderPaymentTable();
 }
 
 function quickPayToKariger(karId) {
@@ -104,7 +147,7 @@ function quickPayToKariger(karId) {
     var kar = karList.find(function(x) { return x && String(x.id) === String(karId); });
     if (!kar) return;
 
-    var amt = parseFloat(prompt("Kariger " + kar.name + " ko kitna paisa diya (₹):"));
+    var amt = parseFloat(prompt("Kariger " + kar.name + " (" + (kar.karkhanaName || "Main Godown") + ") ko kitna paisa diya (₹):"));
     if (!amt || isNaN(amt) || amt <= 0) return;
 
     var payDate = prompt("Tarikh (YYYY-MM-DD):", getTodayDate()) || getTodayDate();
@@ -151,7 +194,7 @@ function viewKarigerPaymentPassbook(karId) {
     var kar = karList.find(function(x) { return x && String(x.id) === String(karId); });
     if (!kar) return;
 
-    document.getElementById("modal-item-title").textContent = "📖 Payment Passbook: " + kar.name;
+    document.getElementById("modal-item-title").textContent = "📖 Payment Passbook: " + kar.name + " (" + (kar.karkhanaName || "Main Godown") + ")";
     var tbody = document.getElementById("modal-history-body");
     if (!tbody) return;
     tbody.innerHTML = "";
@@ -212,7 +255,7 @@ function deletePaymentFromSheet(karId, sheetId, rowId) {
     }
 }
 
-// ================= 3. ROZANA DAY-BOOK MODULE =================
+// ================= 3. ROZANA DAY-BOOK MODULE (WITH RETURNING IN) =================
 
 function setDashboardToday() {
     var dateInput = document.getElementById("dash-day-date");
@@ -264,9 +307,9 @@ function renderDashboardDayBook() {
                 rows.forEach(function(r) {
                     if (r && r.date === d) {
                         if (Number(r.netBana) > 0) bOut += Number(r.netBana);
-                        if (Number(r.retBana) > 0) bIn += Number(r.retBana);
+                        if (Number(r.retBana) > 0) bIn += Number(r.retBana); // Returning adds to In
                         if (Number(r.netZari) > 0) zOut += Number(r.netZari);
-                        if (Number(r.retZari) > 0) zIn += Number(r.retZari);
+                        if (Number(r.retZari) > 0) zIn += Number(r.retZari); // Returning adds to In
                         if (Number(r.paid) > 0) pOut += Number(r.paid);
                     }
                 });
@@ -482,7 +525,7 @@ function updateDashboardBadgeTotals() {
             if (s) {
                 if (typeof getSanchaItemStats === "function") {
                     try {
-                        var st = getSanchaItemStats(s.id, s.name);
+                        var st = getSanchaItemStats(s.id, s.name, "k_main");
                         tsc += (Number(st.bacha) || 0);
                     } catch(e) {}
                 } else {
@@ -518,7 +561,7 @@ function backToDashboard() {
     updateDashboardBadgeTotals();
 }
 
-// ================= 5. APP INITIALIZATION & AUTO CLEAN =================
+// ================= 5. APP INITIALIZATION & STARTUP =================
 
 function initApp() {
     var dEl = document.getElementById("dash-day-date");
