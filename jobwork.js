@@ -1,6 +1,7 @@
 /* ========================================================
-   SIMPLICITY ERP - JOB WORK (BATCH BUILDER, BILLING & SEARCH)
-   File 7 of 7 • Developed by Farhan Jawed (All Bugs Fixed & Locked)
+   SIMPLICITY ERP - JOB WORK (BATCH BUILDER, BILLING & OPENING ENGINE)
+   File 4 of 5 • Developed by Farhan Jawed
+   (Session Aware, Opening Pending Badges & Carry Forward)
 ======================================================== */
 
 var currentJobWorkMode = "hub"; // "hub", "cutting", "calender", "dukan", "billing"
@@ -188,7 +189,6 @@ function saveNewJobWorker() {
     if (typeof updateDashboardBadgeTotals === "function") updateDashboardBadgeTotals();
 }
 
-// 🎯 EXACT FIX: Missing Edit & Delete Workers functions
 function editJobWorker(workerId) {
     var w = getJobWorkers().find(function(x) { return String(x.id) === String(workerId); });
     if (!w) return;
@@ -442,7 +442,8 @@ function openJobWorkerSheet(workerId) {
 
     activeJobWorkerId = w.id;
     var typeTitle = (w.type === "calender") ? "Calender" : "Booti Cutting";
-    document.getElementById("jw-sheet-banner-name").textContent = w.name + " (" + typeTitle + " Khata)";
+    var sess = (typeof getActiveFinancialSession === "function") ? getActiveFinancialSession() : "2026-2027";
+    document.getElementById("jw-sheet-banner-name").textContent = w.name + " (" + typeTitle + " • " + sess + " Khata)";
 
     var dToday = getTodayDate();
     if (document.getElementById("jw-form-diya-date")) document.getElementById("jw-form-diya-date").value = dToday;
@@ -736,7 +737,7 @@ function saveJobWorkBatchLine() {
     sh.rows.push(newRow);
     saveJobWorkerSheets(activeJobWorkerId, sheets);
 
-    // Stock Deduction (Safe across multi-karkhana)
+    // Stock Deduction
     if (totGayi > 0) {
         if (stockSource === "cutting") {
             var cStock = safeArray(getStore("finished_saree_stock"));
@@ -852,7 +853,10 @@ function renderJobWorkSheetTable(sh) {
     var rows = safeArray(sh.rows);
 
     if (!rows.length) {
-        tbody.innerHTML = "<tr><td colspan='8' style='text-align:center; padding:15px; color:#888;'>Is Mahine me abhi koi entry nahi hui hai. Upar se batch line jodein.</td></tr>";
+        var opInfo = (sh.note && sh.note.indexOf("Pichle Saal") !== -1)
+            ? ("<div style='color:#c2410c; font-weight:bold; margin-bottom:6px;'>" + sh.note + " (Pichli Baki: " + (sh.closingPendingSaree || 0) + " Pcs)</div>")
+            : "";
+        tbody.innerHTML = "<tr><td colspan='8' style='text-align:center; padding:15px; color:#888;'>" + opInfo + "Is Mahine me abhi koi nayi entry nahi hui hai. Upar se batch line jodein.</td></tr>";
     } else {
         rows.forEach(function(r, idx) {
             if (!r) return;
@@ -1343,6 +1347,10 @@ function renderJwBillsTable(customList) {
             ("<span class='badge-red'>Baki: ₹ " + baki.toFixed(2) + "</span>") :
             ("<span class='badge-green'>✅ Purana Clear</span>");
 
+        var opTag = (b.note && b.note.indexOf("Opening Bill") !== -1)
+            ? "<span class='badge-blue' style='font-size:10px; display:block;'>📦 Pichle Saal Se Baki</span>"
+            : "";
+
         var payBtn = (baki > 0) ?
             ("<button class='quick-btn btn-in' style='background:#059669; color:white; font-size:11px;' onclick='openJwPayModal(\"" + b.id + "\")'>💰 Pay Karein</button> ") : "";
 
@@ -1351,7 +1359,7 @@ function renderJwBillsTable(customList) {
 
         tbody.innerHTML += "<tr>" +
             "<td>" + formatDateDisplay(b.date) + "</td>" +
-            "<td><strong style='color:#7c3aed; font-size:13px;'>" + (b.billNo || "-") + "</strong></td>" +
+            "<td><strong style='color:#7c3aed; font-size:13px;'>" + (b.billNo || "-") + "</strong>" + opTag + "</td>" +
             "<td><strong>" + b.workerName + "</strong></td>" +
             "<td>" + (b.workType === "calender" ? "🎛️ Calender" : "✂️ Cutting") + "</td>" +
             "<td>" + (b.pcs > 0 ? (b.pcs + " Pcs") : "-") + "</td>" +
@@ -1546,6 +1554,11 @@ function renderDukanTransferTable() {
                 totCalenderFinished += (Number(r.aayiQty) || 0);
             });
         });
+    });
+
+    // Opening finished stock included
+    safeArray(getStore("finished_saree_stock")).forEach(function(f) {
+        if (f && f.isOpening) totCalenderFinished += (Number(f.pcs) || 0);
     });
 
     var totDukanSent = 0;
