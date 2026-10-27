@@ -1,6 +1,6 @@
 /* ========================================================
    SIMPLICITY ERP - JOB WORK (BATCH BUILDER, BILLING & SEARCH)
-   File 7 of 7 • Developed by Farhan Jawed (Exact Bill No. Fixed)
+   File 7 of 7 • Developed by Farhan Jawed (All Bugs Fixed & Locked)
 ======================================================== */
 
 var currentJobWorkMode = "hub"; // "hub", "cutting", "calender", "dukan", "billing"
@@ -188,6 +188,32 @@ function saveNewJobWorker() {
     if (typeof updateDashboardBadgeTotals === "function") updateDashboardBadgeTotals();
 }
 
+// 🎯 EXACT FIX: Missing Edit & Delete Workers functions
+function editJobWorker(workerId) {
+    var w = getJobWorkers().find(function(x) { return String(x.id) === String(workerId); });
+    if (!w) return;
+
+    var f = document.getElementById("add-jw-worker-form");
+    if (f) f.style.display = "block";
+
+    document.getElementById("jw-worker-edit-id").value = w.id;
+    document.getElementById("jw-worker-date").value = w.date || getTodayDate();
+    document.getElementById("jw-worker-name").value = w.name;
+    document.getElementById("jw-worker-address").value = w.address || "";
+    document.getElementById("jw-worker-mobile").value = w.mobile || "";
+    document.getElementById("jw-worker-save-btn").textContent = "Update Kariger";
+    setDisplay("jw-worker-cancel-btn", "inline-block");
+}
+
+function deleteJobWorker(workerId) {
+    if (!confirm("Kya aap is Job Worker ko delete karna chahte hain?")) return;
+    var list = getJobWorkers().filter(function(x) { return String(x.id) !== String(workerId); });
+    saveJobWorkers(list);
+    renderJobWorkWorkersTable();
+    updateJobWorkHubBadges();
+    if (typeof updateDashboardBadgeTotals === "function") updateDashboardBadgeTotals();
+}
+
 function filterJobWorkWorkers() {
     renderJobWorkWorkersTable();
 }
@@ -323,7 +349,9 @@ function viewJobWorkSummaryPassbook(boxCategory) {
         });
     });
 
-    viewCustomDatePassbook(typeTitle + " - " + catTitle, entries, "saree_history");
+    if (typeof viewCustomDatePassbook === "function") {
+        viewCustomDatePassbook(typeTitle + " - " + catTitle, entries, "saree_history");
+    }
 }
 
 // ================= 4. WORKER MONTHLY KHATA SHEET CONTROLLER =================
@@ -708,7 +736,7 @@ function saveJobWorkBatchLine() {
     sh.rows.push(newRow);
     saveJobWorkerSheets(activeJobWorkerId, sheets);
 
-    // Stock Deduction
+    // Stock Deduction (Safe across multi-karkhana)
     if (totGayi > 0) {
         if (stockSource === "cutting") {
             var cStock = safeArray(getStore("finished_saree_stock"));
@@ -719,19 +747,17 @@ function saveJobWorkBatchLine() {
             }
         } else {
             var sStock = safeArray(getStore("saree_stock"));
-            if (sStock.length > 0) {
-                var rem = totGayi;
-                for (var i = 0; i < sStock.length; i++) {
-                    if (rem <= 0) break;
-                    var cur = Number(sStock[i].pcs) || 0;
-                    if (cur > 0) {
-                        var take = Math.min(cur, rem);
-                        sStock[i].pcs -= take;
-                        rem -= take;
-                    }
+            var rem = totGayi;
+            for (var i = 0; i < sStock.length; i++) {
+                if (rem <= 0) break;
+                var cur = Number(sStock[i].pcs) || 0;
+                if (cur > 0) {
+                    var take = Math.min(cur, rem);
+                    sStock[i].pcs -= take;
+                    rem -= take;
                 }
-                setStore("saree_stock", sStock);
             }
+            setStore("saree_stock", sStock);
         }
 
         var sH = safeArray(getStore("saree_history"));
@@ -882,6 +908,7 @@ function deleteJobWorkBatchRow(idx) {
     var worker = getJobWorkers().find(function(x) { return String(x.id) === String(activeJobWorkerId); });
     var isCalender = (worker && worker.type === "calender");
 
+    // Stock Reversal
     if (Number(r.gayiQty) > 0) {
         if (r.stockSource === "cutting") {
             var cStock = safeArray(getStore("finished_saree_stock"));
@@ -1114,7 +1141,7 @@ function deleteJwBatchItem(itemIdx) {
     alert("🗑️ Karigar item delete ho gaya aur stock theek ho gaya!");
 }
 
-// ================= 7. 💳 JOB WORK BILLS & PAYMENT ENGINE (EXACT BILL NO. FIXED) =================
+// ================= 7. 💳 JOB WORK BILLS & PAYMENT ENGINE =================
 
 function getJwBills() {
     return safeArray(getStore("jw_bills_list"));
@@ -1166,23 +1193,18 @@ function toggleAddJwBillForm() {
     document.getElementById("jw-bill-input-date").value = getTodayDate();
 }
 
-// EXACT BILL NO. SAVING LOGIC (NO OVERWRITING)
 function saveJobWorkNewBill() {
     var d = document.getElementById("jw-bill-input-date") ? document.getElementById("jw-bill-input-date").value : getTodayDate();
-    
-    // Read Bill No.
     var bNoEl = document.getElementById("jw-bill-input-no");
     var noteEl = document.getElementById("jw-bill-input-note");
     
     var billNo = bNoEl ? bNoEl.value.trim() : "";
     var note = noteEl ? noteEl.value.trim() : "";
     
-    // Agar user ne note wale box me likha ho to wahan se utha lein
     if (!billNo && note) {
         billNo = note;
     }
     
-    // Agar bilkul khali ho to hi default "Bill" likhein, koi ajeeb number nahi banega
     if (!billNo) {
         billNo = "-";
     }
@@ -1201,7 +1223,7 @@ function saveJobWorkNewBill() {
     var bills = getJwBills();
     bills.push({
         id: "bill_" + Date.now(),
-        billNo: billNo, // EXACTLY what user typed
+        billNo: billNo,
         date: d || getTodayDate(),
         workerId: wId,
         workerName: workerName,
@@ -1253,7 +1275,6 @@ function switchJwBillTab(tab) {
     renderJwBillsTable();
 }
 
-// 🔍 LIVE SEARCH FUNCTION FOR BILLS
 function filterJwBills() {
     var txt = (document.getElementById("jw-search-bill-input") && document.getElementById("jw-search-bill-input").value || "").toLowerCase().trim();
     var allBills = getJwBills();
@@ -1603,10 +1624,6 @@ function shareJobWorkOnWhatsApp() {
     text += "_Simplicity ERP • Developed by Farhan Jawed_";
 
     var mobile = (w.mobile || "").trim().replace(/[^0-9]/g, "");
-    if (!mobile && typeof getClientMobileNumber === "function") {
-        mobile = getClientMobileNumber();
-    }
-
     if (!mobile) {
         mobile = prompt("WhatsApp Mobile Number daalein (10-digit):");
         if (!mobile) return;
