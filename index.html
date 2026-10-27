@@ -96,11 +96,10 @@
             </div>
             <div class="navbar-user-area" style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
                 
-                <!-- 📅 FINANCIAL YEAR SESSION SWITCHER (TOP NAVBAR - FIXED FOR DESKTOP & MOBILE) -->
+                <!-- 📅 FINANCIAL YEAR SESSION SWITCHER (TOP NAVBAR) -->
                 <div class="session-dropdown-wrap" style="display:inline-flex; align-items:center; gap:6px; background:#1e293b; padding:4px 8px; border-radius:6px; border:1px solid #475569; position:relative; z-index:9999;">
                     <span style="font-size:12px; color:#94a3b8; font-weight:700;">📅 Session:</span>
                     <select id="app-session-select" 
-                            onfocus="if(typeof populateSessionDropdown==='function') populateSessionDropdown();"
                             onchange="switchAppFinancialSession(this.value)" 
                             style="background:#0f172a; color:#38bdf8; border:1px solid #334155; padding:4px 8px; border-radius:4px; font-weight:bold; font-size:12px; cursor:pointer; pointer-events:auto; position:relative; z-index:10000;">
                     </select>
@@ -241,15 +240,22 @@
                 </div>
             </div>
 
-            <!-- MODULE: SANCHA -->
+            <!-- MODULE: SANCHA (WITH MULTI-GODAM & TRANSFER TABS) -->
             <div id="sancha-section" class="module-section">
                 <div class="module-header">
                     <button class="back-btn" onclick="backToDashboard()">← Dashboard Wapas</button>
                     <h2 style="color:#0284c7; font-size:19px; font-weight:700;">⚙️ Sancha Stock</h2>
-                    <button class="add-btn" style="background:#0284c7;" onclick="toggleAddSanchaItemForm()">+ Naya Item</button>
+                    <div style="display:flex; gap:8px;">
+                        <button class="add-btn" style="background:#0284c7;" onclick="openMaterialTransferModal('sancha')">🚚 Karkhane Ko Sancha Bheja</button>
+                        <button class="add-btn" style="background:#0284c7;" onclick="toggleAddSanchaItemForm()">+ Naya Item</button>
+                    </div>
                 </div>
+
+                <!-- DYNAMIC SANCHA KARKHANA TABS -->
+                <div id="sancha-karkhana-tabs-bar" class="sheet-tabs-bar" style="margin-bottom:12px; overflow-x:auto;"></div>
+
                 <div id="add-sancha-item-form" class="custom-form">
-                    <h4 style="color:#0284c7; margin-bottom:10px;">➕ Naya Sancha Item Banayein:</h4>
+                    <h4 style="color:#0284c7; margin-bottom:10px;">➕ Naya Sancha Item Banayein (Main Godown):</h4>
                     <div class="form-row-3">
                         <div class="input-group"><label>Date</label><input type="date" id="sancha-new-item-date"></div>
                         <div class="input-group"><label>Naam</label><input type="text" id="sancha-new-item-name" placeholder="Jaise: Fancy, Resham"></div>
@@ -260,7 +266,7 @@
                 <div class="table-responsive">
                     <table>
                         <thead>
-                            <tr style="background:#0284c7;"><th>Date</th><th>Item Naam</th><th>Aaya</th><th>Tani Gaya</th><th>Bacha</th><th style="text-align:center;">Action</th></tr>
+                            <tr style="background:#0284c7;"><th>Date</th><th>Item Naam</th><th>Kul Aaya</th><th>Tani Gaya</th><th>Bacha Stock</th><th style="text-align:center;">Action</th></tr>
                         </thead>
                         <tbody id="sancha-table-body"></tbody>
                     </table>
@@ -401,11 +407,13 @@
                         <div><label>PICHLA BAKI (₹ Bani):</label><input type="number" step="any" id="tani-bani" value="0" oninput="saveCurrentSheetConfig()"></div>
                         <div><label>NOTE:</label><input type="text" id="tani-note" oninput="saveCurrentSheetConfig()"></div>
                     </div>
+                    
+                    <!-- MANUAL RATES ROW (POINT 1) -->
                     <div style="display:flex; gap:12px; background:#f8fafc; padding:10px 14px; border-radius:8px; font-size:13px; margin-bottom:12px; align-items:center; flex-wrap:wrap; border:1px solid #e2e8f0;">
-                        <strong style="color:#1e3a8a;">⚙️ Rate:</strong>
-                        <div>Bana/Saree: <input type="number" step="any" id="rate-bana" style="width:70px; padding:4px;" value="0.311" oninput="saveCurrentSheetConfig()"></div>
-                        <div>Zari/Saree: <input type="number" step="any" id="rate-zari" style="width:70px; padding:4px;" value="0.110" oninput="saveCurrentSheetConfig()"></div>
-                        <div>Bani/Saree: <input type="number" step="any" id="rate-bani" style="width:70px; padding:4px; font-weight:700; color:#b91c1c;" value="240" oninput="saveCurrentSheetConfig()"></div>
+                        <strong style="color:#1e3a8a;">⚙️ Manual Rate Set Karein:</strong>
+                        <div>Bana/Saree: <input type="number" step="any" id="rate-bana" style="width:85px; padding:6px; font-weight:bold; border:1px solid #cbd5e1; border-radius:4px;" value="0.311" oninput="saveCurrentSheetConfig()"></div>
+                        <div>Zari/Saree: <input type="number" step="any" id="rate-zari" style="width:85px; padding:6px; font-weight:bold; border:1px solid #cbd5e1; border-radius:4px;" value="0.110" oninput="saveCurrentSheetConfig()"></div>
+                        <div>Bani/Saree: <input type="number" step="any" id="rate-bani" style="width:85px; padding:6px; font-weight:bold; color:#b91c1c; border:1px solid #cbd5e1; border-radius:4px;" value="240" oninput="saveCurrentSheetConfig()"></div>
                     </div>
 
                     <div style="background:#f0f9ff; border:1px solid #bae6fd; border-radius:10px; padding:12px; margin-bottom:14px; display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:10px;">
@@ -440,25 +448,28 @@
                             <div><label style="font-size:11px; font-weight:700;">TANI NAME</label><input type="text" id="line-tani-name" placeholder="Tani-1" style="width:100%; padding:7px; font-size:12px; border:1px solid #cbd5e1; border-radius:6px;"></div>
                         </div>
                         <div style="margin-bottom:10px;"><label style="font-size:11px; font-weight:700;">TANI WAZAN (Kg)</label><input type="number" step="any" id="line-tani-wazan" placeholder="0" style="width:100%; padding:7px; font-size:12px; border:1px solid #cbd5e1; border-radius:6px;"></div>
-                        <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-bottom:10px; background:#f0fdf4; padding:8px; border-radius:8px;">
-                            <div><label style="font-size:10px; font-weight:700;">BANA CONE</label><input type="number" step="any" id="line-bana-cone" placeholder="0" style="width:100%; padding:6px; border:1px solid #cbd5e1; border-radius:6px;"></div>
-                            <div><label style="font-size:10px; font-weight:700;">BANA TP</label><input type="number" step="any" id="line-bana-tp" placeholder="0" style="width:100%; padding:6px; border:1px solid #cbd5e1; border-radius:6px;"></div>
-                            <div><label style="font-size:10px; font-weight:700; color:#dc2626;">LESS TP</label><input type="number" step="any" id="line-bana-less" placeholder="0" style="width:100%; padding:6px; border:1px solid #cbd5e1; border-radius:6px;"></div>
+                        
+                        <!-- BANA ROW (POINT 2: NET = CONE - LESS TP) -->
+                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:10px; background:#f0fdf4; padding:8px; border-radius:8px;">
+                            <div><label style="font-size:11px; font-weight:700; color:#059669;">BANA CONE</label><input type="number" step="any" id="line-bana-cone" placeholder="0" style="width:100%; padding:6px; border:1px solid #cbd5e1; border-radius:6px;"></div>
+                            <div><label style="font-size:11px; font-weight:700; color:#dc2626;">LESS TP</label><input type="number" step="any" id="line-bana-less" placeholder="0" style="width:100%; padding:6px; border:1px solid #cbd5e1; border-radius:6px;"></div>
                         </div>
-                        <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-bottom:10px; background:#fff7ed; padding:8px; border-radius:8px;">
-                            <div><label style="font-size:10px; font-weight:700;">ZARI QTY</label><input type="number" step="any" id="line-zari" placeholder="0" style="width:100%; padding:6px; border:1px solid #cbd5e1; border-radius:6px;"></div>
-                            <div><label style="font-size:10px; font-weight:700;">ZARI TP</label><input type="number" step="any" id="line-zari-tp" placeholder="0" style="width:100%; padding:6px; border:1px solid #cbd5e1; border-radius:6px;"></div>
-                            <div><label style="font-size:10px; font-weight:700; color:#dc2626;">TOPI</label><input type="number" step="any" id="line-zari-topi" placeholder="0" style="width:100%; padding:6px; border:1px solid #cbd5e1; border-radius:6px;"></div>
+                        
+                        <!-- ZARI ROW (POINT 2: NET = QTY - TOPI) -->
+                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:10px; background:#fff7ed; padding:8px; border-radius:8px;">
+                            <div><label style="font-size:11px; font-weight:700; color:#ea580c;">ZARI QTY</label><input type="number" step="any" id="line-zari" placeholder="0" style="width:100%; padding:6px; border:1px solid #cbd5e1; border-radius:6px;"></div>
+                            <div><label style="font-size:11px; font-weight:700; color:#dc2626;">TOPI</label><input type="number" step="any" id="line-zari-topi" placeholder="0" style="width:100%; padding:6px; border:1px solid #cbd5e1; border-radius:6px;"></div>
                         </div>
+                        
                         <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px;">
                             <div><label style="font-size:11px; font-weight:700; color:#059669;">PAID (₹ Diya)</label><input type="number" id="line-paid" placeholder="0" style="width:100%; padding:7px; border:1px solid #cbd5e1; border-radius:6px;"></div>
                             <div><label style="font-size:11px; font-weight:700; color:#dc2626;">LOTT (Damage)</label><input type="number" id="line-lott" placeholder="0" style="width:100%; padding:7px; border:1px solid #cbd5e1; border-radius:6px;"></div>
                         </div>
                         <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:12px;">
-                            <div><label style="font-size:11px; font-weight:700;">RET. BANA</label><input type="number" step="any" id="line-ret-bana" placeholder="0" style="width:100%; padding:7px; border:1px solid #cbd5e1; border-radius:6px;"></div>
-                            <div><label style="font-size:11px; font-weight:700;">RET. ZARI</label><input type="number" step="any" id="line-ret-zari" placeholder="0" style="width:100%; padding:7px; border:1px solid #cbd5e1; border-radius:6px;"></div>
+                            <div><label style="font-size:11px; font-weight:700; color:#059669;">RET. BANA (Wapas Aaya)</label><input type="number" step="any" id="line-ret-bana" placeholder="0" style="width:100%; padding:7px; border:1px solid #cbd5e1; border-radius:6px;"></div>
+                            <div><label style="font-size:11px; font-weight:700; color:#ea580c;">RET. ZARI (Wapas Aayi)</label><input type="number" step="any" id="line-ret-zari" placeholder="0" style="width:100%; padding:7px; border:1px solid #cbd5e1; border-radius:6px;"></div>
                         </div>
-                        <button class="add-btn" style="background:#2563eb; width:100%; padding:10px; font-weight:700;" onclick="addSheetLineRow()">+ Line Jodein & Stock Adjust Karein</button>
+                        <button class="add-btn" style="background:#2563eb; width:100%; padding:10px; font-weight:700;" onclick="addSheetLineRow()">+ Line Jodein & Karkhana Stock Adjust Karein</button>
                     </div>
 
                     <div class="table-responsive">
@@ -633,13 +644,17 @@
                 </div>
             </div>
 
-            <!-- MODULE: PAYMENT -->
+            <!-- MODULE: PAYMENT (POINT 7: WITH MULTI-GODAM/KARKHANA TABS) -->
             <div id="payment-section" class="module-section">
                 <div class="module-header">
                     <button class="back-btn" onclick="backToDashboard()">← Dashboard Wapas</button>
                     <h2 style="color:#7c3aed; font-size:19px; font-weight:700;">💳 Kariger Payment & Bakaya Hisab</h2>
                     <button class="add-btn" style="background:#7c3aed;" onclick="renderPaymentTable()">🔄 Refresh Live Hisab</button>
                 </div>
+
+                <!-- DYNAMIC PAYMENT KARKHANA TABS -->
+                <div id="payment-karkhana-tabs-bar" class="sheet-tabs-bar" style="margin-bottom:14px; overflow-x:auto;"></div>
+
                 <div class="summary-bar">
                     <div class="summary-box" style="border-top:4px solid #059669;">
                         <span>KUL DIYA GAYA (TOTAL PAID)</span>
@@ -658,6 +673,7 @@
                         <thead>
                             <tr style="background:#7c3aed; color:white;">
                                 <th>S.No.</th>
+                                <th>Karkhana</th>
                                 <th>Kariger Ka Naam</th>
                                 <th>Saree Design</th>
                                 <th>Kul Mazdoori</th>
@@ -1214,7 +1230,7 @@
         </div>
     </div>
 
-    <!-- MODAL 7: 🚚 RAW MATERIAL TRANSFER MODAL -->
+    <!-- MODAL 7: 🚚 RAW MATERIAL & SANCHA TRANSFER MODAL (POINT 6) -->
     <div id="material-transfer-modal" class="modal-overlay">
         <div class="modal-card" style="max-width:480px;">
             <div class="modal-header" style="background:#0284c7; color:white;">
@@ -1233,7 +1249,7 @@
                     <input type="text" id="mat-transfer-item-name" placeholder="Item Name">
                 </div>
                 <div class="input-group">
-                    <label style="color:#b91c1c; font-weight:800;">Kitna Bheja (Qty in Kg)</label>
+                    <label style="color:#b91c1c; font-weight:800;" id="mat-transfer-qty-label">Kitna Bheja (Qty)</label>
                     <input type="number" step="any" id="mat-transfer-qty" placeholder="0.00" style="font-weight:bold; font-size:15px; border-color:#fca5a5;">
                 </div>
                 <div class="input-group"><label>Gaadi / Challan Note</label><input type="text" id="mat-transfer-note" placeholder="Challan No. / Tempo Note"></div>
@@ -1303,9 +1319,9 @@
 
     <!-- JAVASCRIPT SCRIPTS -->
     <script src="auth.js"></script>
-    <script src="kariger.js?v=25"></script>
-    <script src="stock.js?v=25"></script>
-    <script src="daybook.js"></script>
-    <script src="jobwork.js?v=25"></script>
+    <script src="kariger.js?v=26"></script>
+    <script src="stock.js?v=26"></script>
+    <script src="jobwork.js?v=26"></script>
+    <script src="daybook.js?v=26"></script>
 </body>
 </html>
