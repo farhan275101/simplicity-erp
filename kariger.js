@@ -1,7 +1,7 @@
 /* ========================================================
    SIMPLICITY ERP - KARIGER MASTER, DYNAMIC MULTI-KARKHANA & SESSION ENGINE
    File 2 of 5 • Developed by Farhan Jawed
-   (100% Locked Session Switching & 1 April Opening Carry Forward)
+   (Manual Rates, Net Formula, Karkhana Stock Auto-Adjust & Session Isolation)
 ======================================================== */
 
 var activeKarigerId = null;
@@ -22,7 +22,8 @@ function getAppSessions() {
         list = ["2026-2027"];
         localStorage.setItem(userKey, JSON.stringify(list));
     }
-    return list;
+    // Extra quotes clean karein
+    return list.map(function(s) { return String(s).replace(/['"]+/g, '').trim(); });
 }
 
 function getActiveFinancialSession() {
@@ -33,7 +34,9 @@ function getActiveFinancialSession() {
         sess = list[list.length - 1] || "2026-2027";
         localStorage.setItem(userKey, sess);
     }
-    return sess;
+    // Clean extra quotes from Firebase/storage
+    sess = String(sess).replace(/['"]+/g, '').trim();
+    return sess || "2026-2027";
 }
 
 function populateSessionDropdown() {
@@ -64,10 +67,11 @@ function switchAppFinancialSession(targetSession) {
         return;
     }
 
+    var cleanTarget = String(targetSession).replace(/['"]+/g, '').trim();
     var userKey = (currentUserId || "app") + "_app_active_session";
-    localStorage.setItem(userKey, targetSession);
+    localStorage.setItem(userKey, cleanTarget);
+    setStore("app_active_session", cleanTarget);
 
-    // Dropdown & UI refresh for target session
     populateSessionDropdown();
     if (typeof backToDashboard === "function") backToDashboard();
     if (typeof renderKarigerKarkhanaTabs === "function") renderKarigerKarkhanaTabs();
@@ -76,7 +80,7 @@ function switchAppFinancialSession(targetSession) {
     if (typeof updateDashboardBadgeTotals === "function") updateDashboardBadgeTotals();
     if (typeof renderDashboardDayBook === "function") renderDashboardDayBook();
 
-    alert("📅 Session badal gaya: Ab aap '" + targetSession + "' me hain! Sabhi hisab is saal ke dikhenge.");
+    alert("📅 Session badal gaya: Ab aap '" + cleanTarget + "' me hain! Sabhi hisab is saal ke dikhenge.");
 }
 
 function openSessionClosingModal() {
@@ -88,8 +92,8 @@ function openSessionClosingModal() {
     // Suggest Next Year (Jaise 2026-2027 -> 2027-2028)
     var parts = String(cur).split("-");
     var nextYear = "";
-    if (parts.length === 2 && !isNaN(parseInt(parts[0])) && !isNaN(parseInt(parts[1]))) {
-        nextYear = (parseInt(parts[0]) + 1) + "-" + (parseInt(parts[1]) + 1);
+    if (parts.length === 2 && !isNaN(parseInt(parts[0], 10)) && !isNaN(parseInt(parts[1], 10))) {
+        nextYear = (parseInt(parts[0], 10) + 1) + "-" + (parseInt(parts[1], 10) + 1);
     } else {
         nextYear = "2027-2028";
     }
@@ -249,16 +253,19 @@ function executeYearEndClosingProcess() {
         if (!item || !item.name) return;
         var bachaQty = 0;
         if (typeof getSanchaItemStats === "function") {
-            try { bachaQty = getSanchaItemStats(item.id, item.name).bacha; } catch(e) {}
+            try { bachaQty = getSanchaItemStats(item.id, item.name, "k_main").bacha; } catch(e) {}
         } else {
             bachaQty = Number(item.aaya || 0);
         }
         newSanchaItems.push({
             id: item.id || ("sancha_" + Date.now()),
             name: item.name,
+            karkhanaId: "k_main",
+            karkhanaName: "Main Godown",
             date: getTodayDate(),
             aaya: Math.max(0, bachaQty),
-            note: "📦 Opening Stock (" + curSess + " Se Aaya)"
+            note: "📦 Opening Stock (" + curSess + " Se Aaya)",
+            isOpening: true
         });
     });
 
@@ -294,8 +301,10 @@ function executeYearEndClosingProcess() {
     sessions.push(newSess);
     localStorage.setItem((currentUserId || "app") + "_app_sessions_list", JSON.stringify(sessions));
     localStorage.setItem((currentUserId || "app") + "_app_active_session", newSess);
+    setStore("app_sessions_list", sessions);
+    setStore("app_active_session", newSess);
 
-    // Save Opening Data into New Session
+    // Save Opening Data into New Session namespace
     setStore("kariger_list", oldKarigers);
     for (var kId in newKarigerSheetsMap) {
         setStore("kariger_sheets_" + kId, newKarigerSheetsMap[kId]);
@@ -337,7 +346,7 @@ function executeYearEndClosingProcess() {
           "• Karkhana, Stock aur Job Work me saaf dikhega ki pichle saal se kitna maal uth kar aaya hai.");
 }
 
-// ================= 2. DYNAMIC KARKHANA MASTER (ADD, EDIT & SYNC) =================
+// ================= 2. DYNAMIC KARKHANA MASTER =================
 
 function getKarkhanas() {
     var list = safeArray(getStore("karkhana_list"));
@@ -723,7 +732,7 @@ function renderKarigerTable() {
         });
     }
 
-    var minDays = parseInt(document.getElementById("kariger-absent-filter") && document.getElementById("kariger-absent-filter").value || 0) || 0;
+    var minDays = parseInt(document.getElementById("kariger-absent-filter") && document.getElementById("kariger-absent-filter").value || 0, 10) || 0;
     if (minDays > 0) {
         list = list.filter(function(k) {
             return getKarigerLastActiveInfo(k.id).daysAbsent >= minDays;
@@ -759,7 +768,7 @@ function renderKarigerTable() {
     });
 }
 
-// ================= 5. KARIGER KHATA SHEET ENGINE =================
+// ================= 5. KARIGER KHATA SHEET ENGINE (MANUAL RATES & FORMULA) =================
 
 function openKarigerSheet(id) {
     var k = sanitizeKarigerList().find(function(x) { return String(x.id) === String(id); });
@@ -836,9 +845,9 @@ function addNewTaniSheet() {
     var newS = {
         id: "tani_" + nextNum,
         title: "Tani " + nextNum,
-        pichlaBana: Number(calc.remainingBana.toFixed(2)),
-        pichlaZari: Number(calc.remainingZari.toFixed(2)),
-        pichlaBani: Number(calc.remainingAmt.toFixed(2)),
+        pichlaBana: Number((calc.remainingBana || 0).toFixed(2)),
+        pichlaZari: Number((calc.remainingZari || 0).toFixed(2)),
+        pichlaBani: Number((calc.remainingAmt || 0).toFixed(2)),
         rateBana: cur ? (Number(cur.rateBana) || 0.311) : 0.311,
         rateZari: cur ? (Number(cur.rateZari) || 0.110) : 0.110,
         rateBani: cur ? (Number(cur.rateBani) || 240) : 240,
@@ -879,14 +888,16 @@ function loadCurrentSheetData() {
     document.getElementById("tani-bani").value = sh.pichlaBani || 0;
     document.getElementById("tani-note").value = sh.note || "";
 
-    document.getElementById("rate-bana").value = sh.rateBana || 0.311;
-    document.getElementById("rate-zari").value = sh.rateZari || 0.110;
-    document.getElementById("rate-bani").value = sh.rateBani || 240;
+    // Point 1: Sheet me saved manual rate input me load honge
+    document.getElementById("rate-bana").value = (sh.rateBana !== undefined && sh.rateBana !== null) ? sh.rateBana : 0.311;
+    document.getElementById("rate-zari").value = (sh.rateZari !== undefined && sh.rateZari !== null) ? sh.rateZari : 0.110;
+    document.getElementById("rate-bani").value = (sh.rateBani !== undefined && sh.rateBani !== null) ? sh.rateBani : 240;
 
     renderSheetTable(sh);
     if (typeof updateLiveStockDisplay === "function") updateLiveStockDisplay();
 }
 
+// Point 1: Rate badalte hi manual value sheet me save ho jayegi
 function saveCurrentSheetConfig() {
     if (!activeKarigerId) return;
     var sheets = getKarigerSheets(activeKarigerId);
@@ -898,9 +909,9 @@ function saveCurrentSheetConfig() {
     sh.pichlaBani = parseFloat(document.getElementById("tani-bani").value) || 0;
     sh.note = document.getElementById("tani-note").value || "";
 
-    sh.rateBana = parseFloat(document.getElementById("rate-bana").value) || 0.311;
-    sh.rateZari = parseFloat(document.getElementById("rate-zari").value) || 0.110;
-    sh.rateBani = parseFloat(document.getElementById("rate-bani").value) || 240;
+    sh.rateBana = parseFloat(document.getElementById("rate-bana").value) || 0;
+    sh.rateZari = parseFloat(document.getElementById("rate-zari").value) || 0;
+    sh.rateBani = parseFloat(document.getElementById("rate-bani").value) || 0;
 
     saveKarigerSheets(activeKarigerId, sheets);
     renderSheetTable(sh);
@@ -942,17 +953,17 @@ function calculateSheetTotals(sh) {
     });
 
     var netSaree = Math.max(0, saree - lott);
-    var rateBani = Number(sh.rateBani) || 240;
+    var rateBani = (sh.rateBani !== undefined && sh.rateBani !== null) ? Number(sh.rateBani) : 240;
     var grossBani = netSaree * rateBani;
     var pichlaBani = Number(sh.pichlaBani) || 0;
     var remAmt = (grossBani + pichlaBani) - paid;
 
-    var rateB = Number(sh.rateBana) || 0.311;
+    var rateB = (sh.rateBana !== undefined && sh.rateBana !== null) ? Number(sh.rateBana) : 0.311;
     var banaCons = saree * rateB;
     var pichlaB = Number(sh.pichlaBana) || 0;
     var remBana = (pichlaB + netB) - (retB + banaCons);
 
-    var rateZ = Number(sh.rateZari) || 0.110;
+    var rateZ = (sh.rateZari !== undefined && sh.rateZari !== null) ? Number(sh.rateZari) : 0.110;
     var zariCons = saree * rateZ;
     var pichlaZ = Number(sh.pichlaZari) || 0;
     var remZari = (pichlaZ + netZ) - (retZ + zariCons);
@@ -975,6 +986,7 @@ function calculateSheetTotals(sh) {
     };
 }
 
+// 🎯 POINT 2 & 3: FORMULA (CONE - LESS TP) & (QTY - TOPI) + KARKHANA STOCK ADJUST
 function addSheetLineRow() {
     if (!activeKarigerId) return;
     var sheets = getKarigerSheets(activeKarigerId);
@@ -987,23 +999,23 @@ function addSheetLineRow() {
     var kKarkhanaName = kariger ? (kariger.karkhanaName || "Main Godown") : "Main Godown";
 
     var d = document.getElementById("line-date").value || getTodayDate();
-    var saree = parseInt(document.getElementById("line-saree").value) || 0;
+    var saree = parseInt(document.getElementById("line-saree").value, 10) || 0;
     var sancha = (document.getElementById("line-entry-sancha").value || "").trim();
     var taniName = (document.getElementById("line-tani-name").value || "").trim();
     var taniWazan = parseFloat(document.getElementById("line-tani-wazan").value) || 0;
 
+    // POINT 2: NET BANA = BANA CONE - LESS TP
     var bCone = parseFloat(document.getElementById("line-bana-cone").value) || 0;
-    var bTp = parseFloat(document.getElementById("line-bana-tp").value) || 0;
     var bLess = parseFloat(document.getElementById("line-bana-less").value) || 0;
-    var netBana = Math.max(0, (bCone + bTp) - bLess);
+    var netBana = Math.max(0, bCone - bLess);
 
+    // POINT 2: NET ZARI = ZARI QTY - TOPI
     var zQty = parseFloat(document.getElementById("line-zari").value) || 0;
-    var zTp = parseFloat(document.getElementById("line-zari-tp").value) || 0;
     var zTopi = parseFloat(document.getElementById("line-zari-topi").value) || 0;
-    var netZari = Math.max(0, (zQty + zTp) - zTopi);
+    var netZari = Math.max(0, zQty - zTopi);
 
     var paid = parseFloat(document.getElementById("line-paid").value) || 0;
-    var lott = parseInt(document.getElementById("line-lott").value) || 0;
+    var lott = parseInt(document.getElementById("line-lott").value, 10) || 0;
     var retBana = parseFloat(document.getElementById("line-ret-bana").value) || 0;
     var retZari = parseFloat(document.getElementById("line-ret-zari").value) || 0;
 
@@ -1019,7 +1031,11 @@ function addSheetLineRow() {
         sancha: sancha,
         taniName: taniName,
         taniWazan: taniWazan,
+        banaCone: bCone,
+        banaLess: bLess,
         netBana: netBana,
+        zariQty: zQty,
+        zariTopi: zTopi,
         netZari: netZari,
         paid: paid,
         lott: lott,
@@ -1035,7 +1051,7 @@ function addSheetLineRow() {
     sh.rows.push(newRow);
     saveKarigerSheets(activeKarigerId, sheets);
 
-    // 1. Saree Stock Entry
+    // POINT 3: SAREE STOCK ENTRY IN SPECIFIC KARKHANA
     if (saree > 0) {
         var sStock = safeArray(getStore("saree_stock"));
         sStock.push({
@@ -1060,12 +1076,13 @@ function addSheetLineRow() {
             kariger: kName + " (" + kKarkhanaName + ")",
             type: "In (Kariger Weave)",
             pcs: saree,
+            karkhanaId: kKarkhanaId,
             note: "Loom se tayyar aayi"
         });
         setStore("saree_history", sH);
     }
 
-    // 2. Lott Saree Stock Entry
+    // POINT 3: LOTT SAREE STOCK IN SPECIFIC KARKHANA
     if (lott > 0) {
         var lottStock = safeArray(getStore("lott_saree_stock"));
         lottStock.push({
@@ -1081,14 +1098,12 @@ function addSheetLineRow() {
         setStore("lott_saree_stock", lottStock);
     }
 
-    // Reset Form
+    // Reset Form Inputs
     document.getElementById("line-saree").value = "";
     document.getElementById("line-tani-wazan").value = "";
     document.getElementById("line-bana-cone").value = "";
-    document.getElementById("line-bana-tp").value = "";
     document.getElementById("line-bana-less").value = "";
     document.getElementById("line-zari").value = "";
-    document.getElementById("line-zari-tp").value = "";
     document.getElementById("line-zari-topi").value = "";
     document.getElementById("line-paid").value = "";
     document.getElementById("line-lott").value = "";
@@ -1099,11 +1114,12 @@ function addSheetLineRow() {
     if (typeof updateLiveStockDisplay === "function") updateLiveStockDisplay();
     if (typeof updateDashboardBadgeTotals === "function") updateDashboardBadgeTotals();
     if (typeof renderDashboardDayBook === "function") renderDashboardDayBook();
-    alert("✅ Line jud gayi aur " + kKarkhanaName + " ke hisab me darj ho gayi!");
+    alert("✅ Line jud gayi aur " + kKarkhanaName + " ke stock me auto-adjust ho gayi!");
 }
 
+// 🎯 POINT 3: REVERSIBLE DELETE (STOCK AUTO REVERSED)
 function deleteSheetLineRow(idx) {
-    if (!confirm("Kya aap is line entry ko delete karna chahte hain?")) return;
+    if (!confirm("Kya aap is line entry ko delete karna chahte hain?\nIska kata hua stock wapas godam me jud jayega.")) return;
 
     var sheets = getKarigerSheets(activeKarigerId);
     var sh = sheets[activeSheetIndex];
@@ -1139,7 +1155,7 @@ function deleteSheetLineRow(idx) {
     if (typeof updateLiveStockDisplay === "function") updateLiveStockDisplay();
     if (typeof updateDashboardBadgeTotals === "function") updateDashboardBadgeTotals();
     if (typeof renderDashboardDayBook === "function") renderDashboardDayBook();
-    alert("🗑️ Line delete ho gayi!");
+    alert("🗑️ Line delete ho gayi aur Godam ka Stock wapas restore ho gaya!");
 }
 
 function renderSheetTable(sh) {
@@ -1175,8 +1191,8 @@ function renderSheetTable(sh) {
                 "<td><strong style='color:#ea580c;'>" + (r.netZari ? Number(r.netZari).toFixed(2) : "-") + "</strong></td>" +
                 "<td>" + (r.paid ? ("₹ " + r.paid) : "-") + "</td>" +
                 "<td>" + (r.lott ? ("⚠️ " + r.lott) : "-") + "</td>" +
-                "<td>" + (r.retBana || "-") + "</td>" +
-                "<td>" + (r.retZari || "-") + "</td>" +
+                "<td>" + (r.retBana ? Number(r.retBana).toFixed(2) : "-") + "</td>" +
+                "<td>" + (r.retZari ? Number(r.retZari).toFixed(2) : "-") + "</td>" +
                 "<td style='text-align:center;'><button class='delete-btn' onclick='deleteSheetLineRow(" + idx + ")'>🗑️</button></td>" +
             "</tr>";
         });
@@ -1201,7 +1217,7 @@ function renderSheetTable(sh) {
     setEl("calc-tot-saree", c.totSaree);
     setEl("calc-tot-lott", "- " + c.totLott);
     setEl("calc-net-saree", c.netSaree);
-    setEl("calc-bani-rate", "₹ " + (sh.rateBani || 240));
+    setEl("calc-bani-rate", "₹ " + (sh.rateBani !== undefined ? sh.rateBani : 240));
     setEl("calc-gross-bani", "₹ " + c.grossBani.toFixed(2));
     setEl("calc-last-tani-bani", "+ ₹ " + (sh.pichlaBani || 0));
     setEl("calc-tot-paid", "- ₹ " + c.totPaid.toFixed(2));
@@ -1220,6 +1236,7 @@ function renderSheetTable(sh) {
     setEl("calc-remaining-zari", c.remainingZari.toFixed(2));
 }
 
+// POINT 3: KARIGAR KE APNE GODAM KA LIVE STOCK DIKHAYEGA
 function updateLiveStockDisplay() {
     var bName = (document.getElementById("line-bana-name") && document.getElementById("line-bana-name").value || "").trim();
     var zName = (document.getElementById("line-zari-name") && document.getElementById("line-zari-name").value || "").trim();
@@ -1269,7 +1286,7 @@ function shareSheetOnWhatsApp() {
     text += "• Kul Saree Aayi: " + c.totSaree + " Pcs\n";
     if (c.totLott > 0) text += "• Damage / Lott: -" + c.totLott + " Pcs\n";
     text += "• Net Saree: *" + c.netSaree + " Pcs*\n";
-    text += "• Bani Rate: ₹" + (sh.rateBani || 240) + " / Saree\n";
+    text += "• Bani Rate: ₹" + (sh.rateBani !== undefined ? sh.rateBani : 240) + " / Saree\n";
     text += "• Gross Bani: ₹" + c.grossBani.toFixed(2) + "\n";
     if (sh.pichlaBani) text += "• Pichla Baki: +₹" + sh.pichlaBani + "\n";
     text += "• Paid (Diya): -₹" + c.totPaid.toFixed(2) + "\n";
@@ -1278,10 +1295,12 @@ function shareSheetOnWhatsApp() {
     text += "━━━━━━━━━━━━━━━━━━━━━\n";
     text += "🧶 *BANA HISAB:*\n";
     text += "• Diya: " + c.totBana.toFixed(2) + " Kg | Khapat: " + c.banaConsumption.toFixed(2) + " Kg\n";
+    if (c.retBana > 0) text += "• Returning Wapas: +" + c.retBana.toFixed(2) + " Kg\n";
     text += "🟢 *Bacha Bana:* *" + c.remainingBana.toFixed(2) + " Kg*\n";
     text += "━━━━━━━━━━━━━━━━━━━━━\n";
     text += "✨ *ZARI HISAB:*\n";
     text += "• Diya: " + c.totZari.toFixed(2) + " Kg | Khapat: " + c.zariConsumption.toFixed(2) + " Kg\n";
+    if (c.retZari > 0) text += "• Returning Wapas: +" + c.retZari.toFixed(2) + " Kg\n";
     text += "🟠 *Bachi Zari:* *" + c.remainingZari.toFixed(2) + " Kg*\n";
     text += "━━━━━━━━━━━━━━━━━━━━━\n";
     text += "_Simplicity ERP • Developed by Farhan Jawed_";
