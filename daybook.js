@@ -6,7 +6,7 @@
 // ================= 1. KARIGER FINANCE COMPUTATION ENGINE =================
 
 function getKarigerFinanceSummary(karId) {
-    var sheets = getKarigerSheets(karId);
+    var sheets = (typeof getKarigerSheets === "function") ? getKarigerSheets(karId) : [];
     var totalMazdoori = 0;
     var totalPaidEver = 0;
     var currentBakaya = 0;
@@ -17,18 +17,18 @@ function getKarigerFinanceSummary(karId) {
 
     sheets.forEach(function(sh, sIdx) {
         if (!sh) return;
-        var c = calculateSheetTotals(sh);
-        totalMazdoori += c.grossBani;
+        var c = (typeof calculateSheetTotals === "function") ? calculateSheetTotals(sh) : { grossBani: 0, totPaid: 0, remainingAmt: 0 };
+        totalMazdoori += (Number(c.grossBani) || 0);
         if (sIdx === 0) {
-            totalMazdoori += (Number(sh.closingBani) || 0);
+            totalMazdoori += (Number(sh.pichlaBani) || Number(sh.closingBani) || 0);
         }
-        totalPaidEver += c.totPaid;
+        totalPaidEver += (Number(c.totPaid) || 0);
     });
 
     var latestSheet = sheets[sheets.length - 1];
     if (latestSheet) {
-        var latestCalc = calculateSheetTotals(latestSheet);
-        currentBakaya = latestCalc.remBani;
+        var latestCalc = (typeof calculateSheetTotals === "function") ? calculateSheetTotals(latestSheet) : { remainingAmt: 0 };
+        currentBakaya = (Number(latestCalc.remainingAmt) || Number(latestCalc.remBani) || 0);
     }
 
     return {
@@ -47,7 +47,7 @@ function openPaymentModule() {
 }
 
 function renderPaymentTable(flist) {
-    var karigers = flist || sanitizeKarigerList();
+    var karigers = flist || ((typeof sanitizeKarigerList === "function") ? sanitizeKarigerList() : []);
     var tbody = document.getElementById("payment-table-body");
     if (!tbody) return;
     tbody.innerHTML = "";
@@ -57,8 +57,10 @@ function renderPaymentTable(flist) {
 
     if (!karigers.length) {
         tbody.innerHTML = "<tr><td colspan='8' style='text-align:center; padding:20px; color:#888;'>Koi Kariger hisab nahi mila.</td></tr>";
-        document.getElementById("total-paid-display").textContent = "₹ 0";
-        document.getElementById("total-baki-display").textContent = "₹ 0";
+        var elP = document.getElementById("total-paid-display");
+        var elB = document.getElementById("total-baki-display");
+        if (elP) elP.textContent = "₹ 0";
+        if (elB) elB.textContent = "₹ 0";
         return;
     }
 
@@ -82,30 +84,33 @@ function renderPaymentTable(flist) {
         "</tr>";
     });
 
-    document.getElementById("total-paid-display").textContent = "₹ " + overallPaid.toFixed(2);
-    document.getElementById("total-baki-display").textContent = "₹ " + overallBaki.toFixed(2);
+    var dispP = document.getElementById("total-paid-display");
+    var dispB = document.getElementById("total-baki-display");
+    if (dispP) dispP.textContent = "₹ " + overallPaid.toFixed(2);
+    if (dispB) dispB.textContent = "₹ " + overallBaki.toFixed(2);
 }
 
 function filterPayment() {
     var txt = (document.getElementById("search-payment-input").value || "").toLowerCase().trim();
-    var list = sanitizeKarigerList().filter(function(k) {
+    var list = ((typeof sanitizeKarigerList === "function") ? sanitizeKarigerList() : []).filter(function(k) {
         return k && (String(k.name || "") + " " + String(k.saree || "")).toLowerCase().indexOf(txt) !== -1;
     });
     renderPaymentTable(list);
 }
 
 function quickPayToKariger(karId) {
-    var kar = sanitizeKarigerList().find(function(x) { return x && String(x.id) === String(karId); });
+    var karList = (typeof sanitizeKarigerList === "function") ? sanitizeKarigerList() : [];
+    var kar = karList.find(function(x) { return x && String(x.id) === String(karId); });
     if (!kar) return;
 
     var amt = parseFloat(prompt("Kariger " + kar.name + " ko kitna paisa diya (₹):"));
     if (!amt || isNaN(amt) || amt <= 0) return;
 
     var payDate = prompt("Tarikh (YYYY-MM-DD):", getTodayDate()) || getTodayDate();
-    var sheets = getKarigerSheets(karId);
+    var sheets = (typeof getKarigerSheets === "function") ? getKarigerSheets(karId) : [];
 
     if (!sheets || !sheets.length) {
-        sheets = [{ id: "tani_1", title: "Tani 1", banaRate: 0.311, zariRate: 0.110, baniRate: 240, closingBana: 0, closingZari: 0, closingBani: 0, note: "", rows: [] }];
+        sheets = [{ id: "tani_1", title: "Tani 1", pichlaBana: 0, pichlaZari: 0, pichlaBani: 0, rateBana: 0.311, rateZari: 0.110, rateBani: 240, note: "", rows: [] }];
     }
 
     var targetSheet = sheets[sheets.length - 1];
@@ -119,15 +124,20 @@ function quickPayToKariger(karId) {
         sancha: "",
         taniName: targetSheet.title,
         taniWazan: 0,
-        banaCone: 0, banaTp: 0, banaLess: 0, netBana: 0,
-        zariQty: 0, zariTp: 0, zariTopi: 0, netZari: 0,
+        netBana: 0,
+        netZari: 0,
         paid: amt,
-        lott: 0, retBana: 0, retZari: 0,
-        banaItemName: "", zariItemName: ""
+        lott: 0,
+        retBana: 0,
+        retZari: 0,
+        banaItemName: "",
+        zariItemName: "",
+        karkhanaId: kar.karkhanaId || "k_main",
+        karkhanaName: kar.karkhanaName || "Main Godown"
     };
 
     targetSheet.rows.push(newRow);
-    saveKarigerSheets(karId, sheets);
+    if (typeof saveKarigerSheets === "function") saveKarigerSheets(karId, sheets);
 
     renderPaymentTable();
     renderDashboardDayBook();
@@ -136,7 +146,8 @@ function quickPayToKariger(karId) {
 }
 
 function viewKarigerPaymentPassbook(karId) {
-    var kar = sanitizeKarigerList().find(function(x) { return x && String(x.id) === String(karId); });
+    var karList = (typeof sanitizeKarigerList === "function") ? sanitizeKarigerList() : [];
+    var kar = karList.find(function(x) { return x && String(x.id) === String(karId); });
     if (!kar) return;
 
     document.getElementById("modal-item-title").textContent = "📖 Payment Passbook: " + kar.name;
@@ -144,7 +155,7 @@ function viewKarigerPaymentPassbook(karId) {
     if (!tbody) return;
     tbody.innerHTML = "";
 
-    var sheets = getKarigerSheets(karId);
+    var sheets = (typeof getKarigerSheets === "function") ? getKarigerSheets(karId) : [];
     var paymentsFound = 0;
 
     sheets.forEach(function(sh) {
@@ -173,7 +184,7 @@ function viewKarigerPaymentPassbook(karId) {
 function deletePaymentFromSheet(karId, sheetId, rowId) {
     if (!confirm("Kya aap is payment entry ko delete karna chahte hain?\nIs se kariger ka bakaya wapas badh jayega.")) return;
 
-    var sheets = getKarigerSheets(karId);
+    var sheets = (typeof getKarigerSheets === "function") ? getKarigerSheets(karId) : [];
     var targetSheet = sheets.find(function(s) { return s && String(s.id) === String(sheetId); });
     if (!targetSheet || !targetSheet.rows) return;
 
@@ -187,14 +198,14 @@ function deletePaymentFromSheet(karId, sheetId, rowId) {
         } else {
             r.paid = 0;
         }
-        saveKarigerSheets(karId, sheets);
+        if (typeof saveKarigerSheets === "function") saveKarigerSheets(karId, sheets);
 
         viewKarigerPaymentPassbook(karId);
         renderPaymentTable();
         renderDashboardDayBook();
         updateDashboardBadgeTotals();
-        if (activeKarigerId === karId && activeSheetId === sheetId) {
-            loadCurrentSheet();
+        if (activeKarigerId === karId && typeof loadCurrentSheetData === "function") {
+            loadCurrentSheetData();
         }
         alert("✅ Payment entry delete ho gayi aur hisab turant theek ho gaya!");
     }
@@ -243,8 +254,9 @@ function renderDashboardDayBook() {
     zStock.forEach(function(z) { if (z && z.date === d) zIn += (Number(z.aaya) || 0); });
 
     // Sheets Out & Return Calculation
-    sanitizeKarigerList().forEach(function(k) {
-        var sheets = getKarigerSheets(k.id);
+    var karList = (typeof sanitizeKarigerList === "function") ? sanitizeKarigerList() : [];
+    karList.forEach(function(k) {
+        var sheets = (typeof getKarigerSheets === "function") ? getKarigerSheets(k.id) : [];
         sheets.forEach(function(sh) {
             if (sh && sh.rows) {
                 var rows = safeArray(sh.rows);
@@ -285,8 +297,8 @@ function renderDashboardDayBook() {
             }
         });
 
-        sanitizeKarigerList().forEach(function(k) {
-            var sheets = getKarigerSheets(k.id);
+        karList.forEach(function(k) {
+            var sheets = (typeof getKarigerSheets === "function") ? getKarigerSheets(k.id) : [];
             sheets.forEach(function(sh) {
                 if (sh && sh.rows) {
                     var rows = safeArray(sh.rows);
@@ -325,8 +337,8 @@ function renderDashboardDayBook() {
             }
         });
 
-        sanitizeKarigerList().forEach(function(k) {
-            var sheets = getKarigerSheets(k.id);
+        karList.forEach(function(k) {
+            var sheets = (typeof getKarigerSheets === "function") ? getKarigerSheets(k.id) : [];
             sheets.forEach(function(sh) {
                 if (sh && sh.rows) {
                     var rows = safeArray(sh.rows);
@@ -378,8 +390,8 @@ function renderDashboardDayBook() {
         thead.innerHTML = "<tr style='background:#7c3aed;'><th style='width:35%;'>Kariger</th><th style='width:35%;'>Tani / Vivran</th><th style='background:#b91c1c; color:#fecaca; width:30%;'>📤 Payment Diya (Out)</th></tr>";
         var dayPayments = [];
 
-        sanitizeKarigerList().forEach(function(k) {
-            var sheets = getKarigerSheets(k.id);
+        karList.forEach(function(k) {
+            var sheets = (typeof getKarigerSheets === "function") ? getKarigerSheets(k.id) : [];
             sheets.forEach(function(sh) {
                 if (sh && sh.rows) {
                     var rows = safeArray(sh.rows);
@@ -415,15 +427,18 @@ function updateDashboardBadgeTotals() {
         if (el) el.textContent = v;
     };
 
-    setT("btn-total-kariger", "Total: " + sanitizeKarigerList().length);
-    setT("btn-total-info", "Total: " + getStore("kariger_info_ledger").length);
+    var karList = (typeof sanitizeKarigerList === "function") ? sanitizeKarigerList() : [];
+    setT("btn-total-kariger", "Total: " + karList.length);
+    setT("btn-total-info", "Total: " + safeArray(getStore("info_ledger")).length);
 
     // Live Bana Total
     var tb = 0;
     getStore("bana_stock").forEach(function(b) {
         if (b && b.name && typeof getBanaItemStats === "function") {
-            var st = getBanaItemStats(b.name);
-            tb += st.bacha;
+            try {
+                var st = getBanaItemStats(b.name, "k_main");
+                tb += Number(st.bacha || 0);
+            } catch(e) {}
         }
     });
     setT("btn-total-bana", "Bacha: " + tb.toFixed(2));
@@ -432,8 +447,10 @@ function updateDashboardBadgeTotals() {
     var tz = 0;
     getStore("zari_stock").forEach(function(z) {
         if (z && z.name && typeof getZariItemStats === "function") {
-            var st = getZariItemStats(z.name);
-            tz += st.bacha;
+            try {
+                var st = getZariItemStats(z.name, "k_main");
+                tz += Number(st.bacha || 0);
+            } catch(e) {}
         }
     });
     setT("btn-total-zari", "Bacha: " + tz.toFixed(2));
@@ -447,7 +464,7 @@ function updateDashboardBadgeTotals() {
 
     // Total Bakaya
     var totalBakiAll = 0;
-    sanitizeKarigerList().forEach(function(k) {
+    karList.forEach(function(k) {
         if (k && k.id) {
             var fin = getKarigerFinanceSummary(k.id);
             totalBakiAll += fin.currentBakaya;
@@ -461,8 +478,10 @@ function updateDashboardBadgeTotals() {
         getSanchaItems().forEach(function(s) {
             if (s) {
                 if (typeof getSanchaItemStats === "function") {
-                    var st = getSanchaItemStats(s.id, s.name);
-                    tsc += (Number(st.bacha) || 0);
+                    try {
+                        var st = getSanchaItemStats(s.id, s.name);
+                        tsc += (Number(st.bacha) || 0);
+                    } catch(e) {}
                 } else {
                     tsc += (Number(s.totalQty) || 0);
                 }
@@ -491,6 +510,7 @@ function hideAllSections() {
 function backToDashboard() {
     hideAllSections();
     setDisplay("dashboard-view", "block");
+    if (typeof populateSessionDropdown === "function") populateSessionDropdown();
     renderDashboardDayBook();
     updateDashboardBadgeTotals();
 }
@@ -500,6 +520,7 @@ function backToDashboard() {
 function initApp() {
     var dEl = document.getElementById("dash-day-date");
     if (dEl) dEl.value = getTodayDate();
+    if (typeof populateSessionDropdown === "function") populateSessionDropdown();
     renderDashboardDayBook();
     updateDashboardBadgeTotals();
     syncUsersWithFirebase();
