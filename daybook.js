@@ -1,7 +1,7 @@
 /* ========================================================
    SIMPLICITY ERP - PAYMENT MODULE, DAYBOOK & APP STARTUP
    File 5 of 5 • Developed by Farhan Jawed
-   (Point 7: Multi-Godam Payment Engine, Live Finance & Dynamic Startup)
+   (Multi-Godam Payment Engine, Live Finance & Dynamic Startup)
 ======================================================== */
 
 var currentPaymentKarkhanaFilter = "all"; // "all" ya specific karkhanaId
@@ -50,7 +50,6 @@ function openPaymentModule() {
     renderPaymentTable();
 }
 
-// POINT 7: PAYMENT KARKHANA TABS (BANA & ZARI KI TARAH)
 function renderPaymentKarkhanaTabs() {
     var bar = document.getElementById("payment-karkhana-tabs-bar");
     if (!bar) return;
@@ -255,7 +254,7 @@ function deletePaymentFromSheet(karId, sheetId, rowId) {
     }
 }
 
-// ================= 3. ROZANA DAY-BOOK MODULE (WITH RETURNING IN) =================
+// ================= 3. ROZANA DAY-BOOK MODULE =================
 
 function setDashboardToday() {
     var dateInput = document.getElementById("dash-day-date");
@@ -307,9 +306,9 @@ function renderDashboardDayBook() {
                 rows.forEach(function(r) {
                     if (r && r.date === d) {
                         if (Number(r.netBana) > 0) bOut += Number(r.netBana);
-                        if (Number(r.retBana) > 0) bIn += Number(r.retBana); // Returning adds to In
+                        if (Number(r.retBana) > 0) bIn += Number(r.retBana);
                         if (Number(r.netZari) > 0) zOut += Number(r.netZari);
-                        if (Number(r.retZari) > 0) zIn += Number(r.retZari); // Returning adds to In
+                        if (Number(r.retZari) > 0) zIn += Number(r.retZari);
                         if (Number(r.paid) > 0) pOut += Number(r.paid);
                     }
                 });
@@ -536,9 +535,12 @@ function updateDashboardBadgeTotals() {
     }
     setT("btn-total-sancha", "Bacha: " + tsc.toFixed(2));
 
-    // Job Work Total Workers
+    // Job Work Total Workers & Live Cutting Register
     if (typeof getJobWorkers === "function") {
         setT("btn-total-jobwork", "Workers: " + getJobWorkers().length);
+    }
+    if (typeof updateJobWorkHubBadges === "function") {
+        updateJobWorkHubBadges();
     }
 }
 
