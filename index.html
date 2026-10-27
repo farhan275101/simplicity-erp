@@ -86,7 +86,7 @@
 
     <!-- 2. DESKTOP WORKSPACE -->
     <div id="desktop-screen" style="display:none;">
-        <div class="navbar">
+        <div class="navbar" style="position:relative; z-index:1000;">
             <div class="navbar-brand">
                 <span style="font-size:24px;">✨</span>
                 <div>
@@ -96,11 +96,15 @@
             </div>
             <div class="navbar-user-area" style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
                 
-                <!-- 📅 FINANCIAL YEAR SESSION SWITCHER (TOP NAVBAR) -->
-                <div class="session-dropdown-wrap" style="display:inline-flex; align-items:center; gap:6px; background:#1e293b; padding:4px 8px; border-radius:6px; border:1px solid #475569;">
+                <!-- 📅 FINANCIAL YEAR SESSION SWITCHER (TOP NAVBAR - FIXED FOR DESKTOP & MOBILE) -->
+                <div class="session-dropdown-wrap" style="display:inline-flex; align-items:center; gap:6px; background:#1e293b; padding:4px 8px; border-radius:6px; border:1px solid #475569; position:relative; z-index:9999;">
                     <span style="font-size:12px; color:#94a3b8; font-weight:700;">📅 Session:</span>
-                    <select id="app-session-select" onchange="switchAppFinancialSession(this.value)" style="background:#0f172a; color:#38bdf8; border:1px solid #334155; padding:4px 8px; border-radius:4px; font-weight:bold; font-size:12px;"></select>
-                    <button class="add-btn" style="padding:4px 8px; font-size:11px; background:#7c3aed;" onclick="openSessionClosingModal()" title="1 April Year-End Closing">➕ Naya Saal</button>
+                    <select id="app-session-select" 
+                            onfocus="if(typeof populateSessionDropdown==='function') populateSessionDropdown();"
+                            onchange="switchAppFinancialSession(this.value)" 
+                            style="background:#0f172a; color:#38bdf8; border:1px solid #334155; padding:4px 8px; border-radius:4px; font-weight:bold; font-size:12px; cursor:pointer; pointer-events:auto; position:relative; z-index:10000;">
+                    </select>
+                    <button type="button" class="add-btn" style="padding:4px 8px; font-size:11px; background:#7c3aed; cursor:pointer; position:relative; z-index:10000;" onclick="openSessionClosingModal()" title="1 April Year-End Closing">➕ Naya Saal</button>
                 </div>
 
                 <button id="nav-admin-btn" class="admin-nav-btn" onclick="openAdminModule()">👑 Admin Control</button>
