@@ -1,6 +1,7 @@
 /* ========================================================
    SIMPLICITY ERP - FIREBASE, STORAGE, AUTH & ADMIN ENGINE
-   File 3 of 7 • Developed by Farhan Jawed
+   File 1 of 5 • Developed by Farhan Jawed
+   (Session-Isolated Storage & Zero-Crash Architecture)
 ======================================================== */
 
 // 1. FIREBASE CONFIGURATION & INITIALIZATION
@@ -91,7 +92,7 @@ function showSyncStatus(status) {
     }
 }
 
-// 3. CRITICAL STORAGE NORMALIZER (Fixes Calculation Crashes)
+// 3. STORAGE & MULTI-SESSION ISOLATION ENGINE
 function safeArray(data) {
     if (!data) return [];
     if (Array.isArray(data)) {
@@ -99,27 +100,63 @@ function safeArray(data) {
             return item !== null && item !== undefined;
         });
     }
+    // Firebase numeric object to array conversion
     if (typeof data === "object") {
-        var arr = [];
-        for (var key in data) {
-            if (Object.prototype.hasOwnProperty.call(data, key)) {
-                if (data[key] !== null && data[key] !== undefined) {
-                    arr.push(data[key]);
-                }
-            }
+        var keys = Object.keys(data);
+        var isNumeric = keys.length > 0 && keys.every(function(k) { return !isNaN(parseInt(k, 10)); });
+        if (isNumeric) {
+            var arr = [];
+            keys.sort(function(a, b) { return parseInt(a, 10) - parseInt(b, 10); }).forEach(function(k) {
+                if (data[k] !== null && data[k] !== undefined) arr.push(data[k]);
+            });
+            return arr;
         }
-        return arr;
+        return data;
     }
     return [];
+}
+
+// Global keys jo saal badalne par change nahi honi chahiye
+var GLOBAL_APP_KEYS = [
+    "app_sessions_list",
+    "app_active_session",
+    "karkhana_list",
+    "app_users",
+    "info_ledger"
+];
+
+function getStorageKey(key) {
+    if (!currentUserId) return key;
+    if (GLOBAL_APP_KEYS.indexOf(key) !== -1) {
+        return currentUserId + "_" + key;
+    }
+    var sess = (typeof getActiveFinancialSession === "function") ? getActiveFinancialSession() : "2026-2027";
+    return currentUserId + "_" + sess + "_" + key;
 }
 
 function getStore(key) {
     if (!currentUserId) return [];
     try {
-        var raw = localStorage.getItem(currentUserId + "_" + key);
+        var fullKey = getStorageKey(key);
+        var raw = localStorage.getItem(fullKey);
+
+        // Backward compatibility: Agar naye session key me data nahi mila, purani flat key check karein
+        if (raw === null || raw === undefined) {
+            var oldKey = currentUserId + "_" + key;
+            var oldRaw = localStorage.getItem(oldKey);
+            if (oldRaw !== null && oldRaw !== undefined) {
+                raw = oldRaw;
+                localStorage.setItem(fullKey, oldRaw);
+            }
+        }
+
         if (!raw) return [];
         var parsed = JSON.parse(raw);
-        return safeArray(parsed);
+        if (Array.isArray(parsed)) return safeArray(parsed);
+        if (typeof parsed === "object" && parsed !== null) {
+            return safeArray(parsed);
+        }
+        return parsed;
     } catch (e) {
         return [];
     }
@@ -128,12 +165,14 @@ function getStore(key) {
 function setStore(key, data) {
     if (!currentUserId) return;
     try {
-        var cleanData = safeArray(data);
-        localStorage.setItem(currentUserId + "_" + key, JSON.stringify(cleanData));
+        var fullKey = getStorageKey(key);
+        var toSave = Array.isArray(data) ? safeArray(data) : data;
+        localStorage.setItem(fullKey, JSON.stringify(toSave));
 
         if (db && !isRemoteUpdating && currentUserId) {
             showSyncStatus("syncing");
-            db.ref("users/" + currentUserId + "/" + key).set(cleanData)
+            var fbKey = fullKey.replace(currentUserId + "_", "");
+            db.ref("users/" + currentUserId + "/" + fbKey).set(toSave)
                 .then(function() { showSyncStatus("online"); })
                 .catch(function() { showSyncStatus("error"); });
         }
@@ -163,8 +202,11 @@ function initFirebaseLiveListeners() {
                 isRemoteUpdating = true;
                 for (var k in val) {
                     try {
-                        var normalized = safeArray(val[k]);
-                        localStorage.setItem(currentUserId + "_" + k, JSON.stringify(normalized));
+                        var itemData = val[k];
+                        if (Array.isArray(itemData)) {
+                            itemData = safeArray(itemData);
+                        }
+                        localStorage.setItem(currentUserId + "_" + k, JSON.stringify(itemData));
                     } catch (e) {}
                 }
                 isRemoteUpdating = false;
@@ -212,8 +254,9 @@ function sanitizeKarigerList() {
     return clean;
 }
 
-// 4. DATA BACKUP & RESTORE (CONSISTENT WITH ALL MODULES)
+// 4. DATA BACKUP & RESTORE
 function exportUserFullData() {
+    var sess = (typeof getActiveFinancialSession === "function") ? getActiveFinancialSession() : "2026-2027";
     var keys = [
         "kariger_list", "info_ledger", "karkhana_list", "app_sessions_list", "app_active_session",
         "bana_stock", "bana_history", "zari_stock", "zari_history",
@@ -225,6 +268,7 @@ function exportUserFullData() {
 
     var obj = {
         userId: currentUserId,
+        session: sess,
         exportDate: new Date().toISOString(),
         data: {},
         sheets: {},
@@ -256,7 +300,8 @@ function exportUserFullData() {
 async function syncToGoogleDrive() {
     if (!currentUserId) return alert("Pehle login karein!");
     var data = exportUserFullData();
-    var fileName = currentUserId + "_Backup_" + formatDateDisplay(getTodayDate()) + ".json";
+    var sess = (typeof getActiveFinancialSession === "function") ? getActiveFinancialSession() : "2026-2027";
+    var fileName = currentUserId + "_" + sess + "_Backup_" + formatDateDisplay(getTodayDate()) + ".json";
     var file = new File([JSON.stringify(data, null, 2)], fileName, { type: "application/json" });
 
     if (navigator.canShare && navigator.canShare({ files: [file] })) {
@@ -273,10 +318,11 @@ async function syncToGoogleDrive() {
 function downloadBackupFile() {
     if (!currentUserId) return alert("Pehle login karein!");
     var data = exportUserFullData();
+    var sess = (typeof getActiveFinancialSession === "function") ? getActiveFinancialSession() : "2026-2027";
     var blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
     var a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
-    a.download = currentUserId + "_Backup_" + formatDateDisplay(getTodayDate()) + ".json";
+    a.download = currentUserId + "_" + sess + "_Backup_" + formatDateDisplay(getTodayDate()) + ".json";
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -450,7 +496,6 @@ function handleRegister() {
     }, 1200);
 }
 
-// STRICT CLEAN LOGIN (Auto loads financial session)
 function handleLogin() {
     var idInput = document.getElementById("login-id");
     var passInput = document.getElementById("login-pass");
@@ -500,7 +545,6 @@ function handleLogin() {
             setDisplay("nav-admin-btn", "none");
         }
 
-        // Live Listeners & Session System Auto-Start
         initFirebaseLiveListeners();
         if (typeof populateSessionDropdown === "function") populateSessionDropdown();
         if (typeof backToDashboard === "function") backToDashboard();
@@ -764,7 +808,7 @@ function saveProfileSettings() {
     }
 
     var users = getUsersList();
-    var idx = users.findIndex(function(x) { return x.id === currentUserId; });
+    var idx = users.findIndex(function(u) { return u.id === currentUserId; });
 
     if (idx !== -1) {
         users[idx].name = n;
