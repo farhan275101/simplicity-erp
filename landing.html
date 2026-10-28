@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    
+    <!-- 🔍 GOOGLE SEO META TAGS (GOOGLE SEARCH ME LAANE KE LIYE) -->
+    <title>Simplicity ERP • Saree Manufacturer & Karkhana Business Portal by Farhan Jawed</title>
+    <meta name="description" content="Simplicity ERP is India's leading digital ERP software designed specifically for Saree & Textile Manufacturers. Manage Karigers, Loom Production, Raw Material, Bana, Zari, Sancha, Job Work, and Day-Book in real-time.">
+    <meta name="keywords" content="Simplicity ERP, Simplicity Saree ERP, Simplicity Farhan Jawed, Saree Manufacturer ERP, Textile Karkhana Software, Karigar Khata App, Bana Zari Stock Management, Farhan Jawed ERP, Powerloom Jacquard Software">
+    <meta name="author" content="Farhan Jawed">
+    <meta name="robots" content="index, follow">
+
+    <!-- Open Graph (WhatsApp / Facebook Link Preview) -->
+    <meta property="og:title" content="Simplicity ERP • Digital Karkhana Portal for Saree Manufacturers">
+    <meta property="og:description" content="Purani Diary Chhodo, Karkhana Digital Karo! 1-1 Saree, 1-1 Gram Zari aur Karigar ki Mazdoori ka pakka hisab. Crafted by Farhan Jawed.">
+    <meta property="og:type" content="website">
+
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#1e3a8a">
+
+    <!-- Embedded High-Performance Modern CSS -->
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            scroll-behavior: smooth;
+        }
+
+        body {
+            background: #f8fafc;
+            color: #1e293b;
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        /* 1. TOP NAVBAR */
+        .landing-navbar {
+            background: #0f172a;
+            color: white;
+            padding: 16px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            border-bottom: 1px solid #334155;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        .brand-logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+            color: white;
+        }
+
+        .brand-logo span { font-size: 24px; }
+        .brand-logo h1 { font-size: 18px; font-weight: 800; letter-spacing: -0.5px; }
+        .brand-logo small { font-size: 11px; color: #38bdf8; display: block; font-weight: 600; }
+
+        .nav-actions { display: flex; align-items: center; gap: 12px; }
+
+        .btn-launch {
+            background: linear-gradient(135deg, #2563eb, #1d4ed8);
+            color: white;
+            padding: 9px 18px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 13px;
+            box-shadow: 0 4px 14px rgba(37, 99, 235, 0.4);
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .btn-launch:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(37, 99, 235, 0.5); }
+
+        /* 2. HERO SECTION */
+        .hero {
+            background: linear-gradient(180deg, #0f172a 0%, #1e3a8a 100%);
+            color: white;
+            padding: 70px 20px 80px;
+            text-align: center;
+            position: relative;
+        }
+
+        .badge-pill {
+            background: rgba(56, 189, 248, 0.15);
+            color: #38bdf8;
+            border: 1px solid rgba(56, 189, 248, 0.3);
+            padding: 6px 16px;
+            border-radius: 30px;
+            font-size: 12px;
+            font-weight: 700;
+            display: inline-block;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .hero h2 {
+            font-size: 38px;
+            font-weight: 900;
+            line-height: 1.25;
+            max-width: 900px;
+            margin: 0 auto 18px;
+            letter-spacing: -0.8px;
+        }
+
+        .hero h2 span {
+            background: linear-gradient(90deg, #38bdf8, #818cf8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero p {
+            font-size: 16px;
+            color: #cbd5e1;
+            max-width: 720px;
+            margin: 0 auto 30px;
+            font-weight: 500;
+        }
+
+        .hero-cta-group {
+            display: flex;
+            justify-content: center;
+            gap: 14px;
+            flex-wrap: wrap;
+            margin-bottom: 40px;
+        }
+
+        .btn-primary-hero {
+            background: #22c55e;
+            color: white;
+            padding: 13px 28px;
+            border-radius: 10px;
+            text-decoration: none;
+            font-size: 15px;
+            font-weight: 800;
+            box-shadow: 0 8px 24px rgba(34, 197, 94, 0.4);
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .btn-primary-hero:hover { background: #16a34a; transform: translateY(-2px); }
+
+        .btn-secondary-hero {
+            background: rgba(255, 255, 255, 0.12);
+            color: white;
+            padding: 13px 26px;
+            border-radius: 10px;
+            text-decoration: none;
+            font-size: 15px;
+            font-weight: 700;
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .btn-secondary-hero:hover { background: rgba(255, 255, 255, 0.2); }
+
+        .stats-ribbon {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            flex-wrap: wrap;
+            margin-top: 30px;
+            padding-top: 25px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .stat-item h4 { font-size: 24px; font-weight: 800; color: #38bdf8; }
+        .stat-item p { font-size: 12px; color: #94a3b8; font-weight: 600; text-transform: uppercase; }
+
+        /* 3. CONTAINER */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 60px 20px;
+        }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 50px;
+        }
+
+        .section-header h3 {
+            font-size: 28px;
+            font-weight: 800;
+            color: #0f172a;
+            margin-bottom: 10px;
+        }
+
+        .section-header p {
+            font-size: 15px;
+            color: #64748b;
+            max-width: 650px;
+            margin: 0 auto;
+        }
+
+        /* 4. PAIN POINTS / PROBLEMS SOLVED */
+        .problem-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin-bottom: 70px;
+        }
+
+        @media (max-width: 850px) {
+            .problem-grid { grid-template-columns: 1fr; }
+            .hero h2 { font-size: 28px; }
+        }
+
+        .problem-card {
+            background: white;
+            border-radius: 14px;
+            padding: 26px;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+            border-top: 4px solid #ef4444;
+        }
+
+        .problem-card .icon { font-size: 32px; margin-bottom: 12px; display: block; }
+        .problem-card h4 { font-size: 17px; font-weight: 800; color: #991b1b; margin-bottom: 8px; }
+        .problem-card p { font-size: 13px; color: #475569; line-height: 1.6; }
+
+        /* 5. WORKFLOW GRID (THE SOLUTION) */
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+        }
+
+        @media (max-width: 960px) { .feature-grid { grid-template-columns: repeat(2, 1fr); } }
+        @media (max-width: 640px) { .feature-grid { grid-template-columns: 1fr; } }
+
+        .feature-card {
+            background: white;
+            border-radius: 16px;
+            padding: 28px;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.04);
+            transition: all 0.25s ease;
+            position: relative;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 28px rgba(0, 0, 0, 0.08);
+            border-color: #cbd5e1;
+        }
+
+        .feature-badge {
+            font-size: 11px;
+            font-weight: 800;
+            padding: 4px 10px;
+            border-radius: 20px;
+            display: inline-block;
+            margin-bottom: 14px;
+        }
+
+        .feature-card h4 {
+            font-size: 18px;
+            font-weight: 800;
+            color: #0f172a;
+            margin-bottom: 10px;
+        }
+
+        .feature-card p {
+            font-size: 13px;
+            color: #475569;
+            line-height: 1.6;
+        }
+
+        .feature-points {
+            margin-top: 14px;
+            padding-top: 14px;
+            border-top: 1px dashed #e2e8f0;
+            list-style: none;
+        }
+
+        .feature-points li {
+            font-size: 12px;
+            color: #334155;
+            font-weight: 600;
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        /* 6. PWA INSTALL GUIDE */
+        .install-guide-box {
+            background: linear-gradient(135deg, #1e3a8a, #0f172a);
+            color: white;
+            border-radius: 20px;
+            padding: 45px 30px;
+            margin-top: 60px;
+            text-align: center;
+            box-shadow: 0 15px 35px rgba(30, 58, 138, 0.25);
+        }
+
+        .install-guide-box h3 { font-size: 26px; font-weight: 800; margin-bottom: 12px; }
+        .install-guide-box p { font-size: 14px; color: #94a3b8; max-width: 600px; margin: 0 auto 30px; }
+
+        .steps-flex {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .step-card {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 14px;
+            padding: 20px;
+            width: 260px;
+            text-align: left;
+        }
+
+        .step-card span {
+            background: #38bdf8;
+            color: #0f172a;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 13px;
+            margin-bottom: 12px;
+        }
+
+        .step-card h5 { font-size: 15px; font-weight: 700; color: white; margin-bottom: 6px; }
+        .step-card p { font-size: 12px; color: #cbd5e1; margin: 0; }
+
+        /* 7. FOUNDER BRANDING & CONTACT */
+        .founder-box {
+            background: white;
+            border-radius: 18px;
+            border: 1px solid #e2e8f0;
+            padding: 40px 30px;
+            margin-top: 70px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 25px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.03);
+        }
+
+        .founder-info h4 { font-size: 22px; font-weight: 900; color: #0f172a; }
+        .founder-info p { font-size: 14px; color: #64748b; margin-top: 4px; }
+        .founder-info .tag {
+            background: #eff6ff;
+            color: #2563eb;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 800;
+            border: 1px solid #bfdbfe;
+            display: inline-block;
+            margin-top: 8px;
+        }
+
+        .footer {
+            background: #0f172a;
+            color: #94a3b8;
+            text-align: center;
+            padding: 25px 20px;
+            font-size: 13px;
+            border-top: 1px solid #1e293b;
+        }
+
+        .footer span { color: #38bdf8; font-weight: 700; }
+    </style>
+</head>
+<body>
+
+    <!-- 1. NAVBAR -->
+    <header class="landing-navbar">
+        <a href="index.html" class="brand-logo">
+            <span>✨</span>
+            <div>
+                <h1>Simplicity ERP</h1>
+                <small>By Farhan Jawed • Textile ERP</small>
+            </div>
+        </a>
+        <div class="nav-actions">
+            <a href="index.html" class="btn-launch">🚀 Launch App</a>
+        </div>
+    </header>
+
+    <!-- 2. HERO BANNER -->
+    <section class="hero">
+        <div class="badge-pill">🇮🇳 Dedicated for Saree & Textile Manufacturers</div>
+        <h2>Purani Diary Chhodo, <span>Apna Karkhana Digital Karo!</span></h2>
+        <p>Loom se lekar Dukan tak — 1-1 Saree, 1-1 Gram Zari, Bana, Sancha aur Karigar ki Mazdoori ka pakka aur transparent hisab aapke mobile me.</p>
+
+        <div class="hero-cta-group">
+            <a href="index.html" class="btn-primary-hero">🚀 Karkhana Portal Kholein</a>
+            <a href="https://api.whatsapp.com/send?text=Hello%20Farhan%20Bhai,%20mujhe%20Simplicity%20ERP%20ke%20bare%20me%20janna%20hai." target="_blank" class="btn-secondary-hero">📲 WhatsApp Par Demo Maangein</a>
+        </div>
+
+        <div class="stats-ribbon">
+            <div class="stat-item">
+                <h4>500+</h4>
+                <p>Looms Capacity</p>
+            </div>
+            <div class="stat-item">
+                <h4>100%</h4>
+                <p>Theft & Loss Protected</p>
+            </div>
+            <div class="stat-item">
+                <h4>1 April</h4>
+                <p>Auto Session Closing</p>
+            </div>
+            <div class="stat-item">
+                <h4>1-Sec</h4>
+                <p>WhatsApp Digital Parchi</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- 3. PROBLEMS SOLVED FOR MANUFACTURERS -->
+    <section class="container">
+        <div class="section-header">
+            <h3>Saree Manufacturers Ki 3 Sabse Badi Musibatein</h3>
+            <p>Traditional copy-pen diary ki wajah se har mahine hazaron rupaye ka nuksan hota hai jiska pata bhi nahi chalta.</p>
+        </div>
+
+        <div class="problem-grid">
+            <div class="problem-card">
+                <span class="icon">🧶</span>
+                <h4>Zari & Bana Ka Jhol</h4>
+                <p>Munshi diary me Less TP ya Topi ka wazan kat-kut kar deta hai. Karigar se tootan aur jhuth ka hisab na hone se mahine me kilon raw material bina hisab ke gayab ho jata hai.</p>
+            </div>
+            <div class="problem-card" style="border-top-color:#ea580c;">
+                <span class="icon">✂️</span>
+                <h4>Job Work me Saree Loss</h4>
+                <p>Karkhane se Booti Cutting gayi aur Calender gayi — raste me kitni saree kharab hui aur kitni gayab hui, iska koi pakka register na hone se malik ko seedha nuksan hota hai.</p>
+            </div>
+            <div class="problem-card" style="border-top-color:#8b5cf6;">
+                <span class="icon">📖</span>
+                <h4>Munshi & Diary Par Nirbharta</h4>
+                <p>Agar munshi chhutti par chala jaye ya panna fat jaye, to pura hisab ruk jata hai. Gaddi ya dukan par baith kar malik ko 500 loom ka live stock kabhi pata nahi chalta.</p>
+            </div>
+        </div>
+
+        <!-- 4. WORKFLOW SHOWCASE (THE 6 MODULES) -->
+        <div class="section-header">
+            <h3>Simplicity ERP Ka Complete Digital Solution</h3>
+            <p>Zameen se juda software jo aapke karkhane ke har mod par maal aur paise ko 100% lock kar deta hai.</p>
+        </div>
+
+        <div class="feature-grid">
+            <!-- MODULE 1 -->
+            <div class="feature-card">
+                <span class="feature-badge" style="background:#f0fdfa; color:#0f766e; border:1px solid #99f6e4;">MODULE 1</span>
+                <h4>🧵 Kariger Master & Tani Khata</h4>
+                <p>Har karigar ki Tani sheet ka exact hisab. Manual Rate (Bana, Zari, Bani) aur auto-formula deduction.</p>
+                <ul class="feature-points">
+                    <li>✔️ Net Bana = Cone - Less TP</li>
+                    <li>✔️ Net Zari = Qty - Topi</li>
+                    <li>✔️ Bana & Zari Wastage (Jhuth) Deduction</li>
+                    <li>✔️ 1-Click WhatsApp Khata Parchi</li>
+                </ul>
+            </div>
+
+            <!-- MODULE 2 -->
+            <div class="feature-card">
+                <span class="feature-badge" style="background:#ecfdf5; color:#059669; border:1px solid #a7f3d0;">MODULE 2</span>
+                <h4>🧶 Raw Material & Sancha Stock</h4>
+                <p>Main Godam aur sabhi Branch Karkhanon me bache huye Bana, Zari aur Sanche ka live stock balance.</p>
+                <ul class="feature-points">
+                    <li>✔️ Godam-wise Multi-Karkhana Tabs</li>
+                    <li>✔️ Sancha Item with Person Name & Search</li>
+                    <li>✔️ Karigar Returning Maal Auto-Add (+)</li>
+                    <li>✔️ Stock Out Par Negative Alert Warning</li>
+                </ul>
+            </div>
+
+            <!-- MODULE 3 -->
+            <div class="feature-card">
+                <span class="feature-badge" style="background:#eff6ff; color:#2563eb; border:1px solid #bfdbfe;">MODULE 3</span>
+                <h4>🥻 3-Process Saree Stock</h4>
+                <p>Saree ka har roop alag register me darj hota hai taaki kachhi aur paki saree aapas me mix na ho.</p>
+                <ul class="feature-points">
+                    <li>✔️ Fresh Saree (Loom Weave Inward)</li>
+                    <li>✔️ Finished Saree (Calender Se Tayyar)</li>
+                    <li>✔️ Lott / Damage Saree Ka Alag Khata</li>
+                    <li>✔️ Passbook: Hara (Aayi) aur Laal (Main Gayi)</li>
+                </ul>
+            </div>
+
+            <!-- MODULE 4 -->
+            <div class="feature-card">
+                <span class="feature-badge" style="background:#fff1f2; color:#e11d48; border:1px solid #fecdd3;">MODULE 4</span>
+                <h4>✂️ Job Work Hub (Cutting & Calender)</h4>
+                <p>Batch Entry System jisme 50 karigar ka maal 1 single line me darj ho jata hai bina register bhare.</p>
+                <ul class="feature-points">
+                    <li>✔️ Cutting: Sirf Main Godam Fresh Stock Se</li>
+                    <li>✔️ Calender: Fresh Ya Cutting Se Aayi Saree</li>
+                    <li>✔️ Live Register: Cutting Aayi, Calender Gayi</li>
+                    <li>✔️ Job Work Bills, Katuti & Payment Raseed</li>
+                </ul>
+            </div>
+
+            <!-- MODULE 5 -->
+            <div class="feature-card">
+                <span class="feature-badge" style="background:#f0fdf4; color:#15803d; border:1px solid #bbf7d0;">MODULE 5</span>
+                <h4>🏪 Apni Dukan Bheja (Final Out)</h4>
+                <p>Karkhane se tayyar maal dukan ya gaddi par bhejte waqt ka digital parcel register.</p>
+                <ul class="feature-points">
+                    <li>✔️ Calender Se Tayyar Saree Ka Live Out</li>
+                    <li>✔️ Tareekh-wise Challan & Driver Note</li>
+                    <li>✔️ Karkhane me kitna maal bacha, live update</li>
+                </ul>
+            </div>
+
+            <!-- MODULE 6 -->
+            <div class="feature-card">
+                <span class="feature-badge" style="background:#f5f3ff; color:#7c3aed; border:1px solid #ddd6fe;">MODULE 6</span>
+                <h4>📅 1 April Year-End Closing (Naya Saal)</h4>
+                <p>Pura saal hamesha ke liye सुरक्षित (Locked). Naye saal me app bilkul halka aur fresh khulega.</p>
+                <ul class="feature-points">
+                    <li>✔️ Sabhi Godamo ka Bacha Maal ➔ Opening Stock</li>
+                    <li>✔️ Karigar Closing ➔ Nayi Tani 1 Opening</li>
+                    <li>✔️ Purane Saal me switch karke dekhne ki azaadi</li>
+                    <li>✔️ Top Opening Stock Box har module ke upar</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- 5. HOW TO INSTALL / USE APP (PWA GUIDE) -->
+        <div class="install-guide-box">
+            <h3>📱 Apne Mobile Me App Kaise Install Karein?</h3>
+            <p>Simplicity ERP ko chalane ke liye kisi heavy download ki zaroorat nahi hai. Google Chrome se 5 second me aapke phone par app install ho jata hai.</p>
+
+            <div class="steps-flex">
+                <div class="step-card">
+                    <span>1</span>
+                    <h5>Link Kholein</h5>
+                    <p>Upar diye gaye <strong>"Launch App"</strong> button par click karein aur apna portal kholein.</p>
+                </div>
+                <div class="step-card">
+                    <span>2</span>
+                    <h5>Install / Add Screen</h5>
+                    <p>Chrome browser ke 3 dots (⋮) par click karke <strong>"Add to Home screen"</strong> ya <strong>"Install App"</strong> chunein.</p>
+                </div>
+                <div class="step-card">
+                    <span>3</span>
+                    <h5>App Ready!</h5>
+                    <p>Aapke mobile screen par <strong>Simplicity ERP</strong> ka icon ban jayega. 1 click me login karein.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 6. FOUNDER BRANDING -->
+        <div class="founder-box">
+            <div class="founder-info">
+                <h4>Created with Pride by Farhan Jawed</h4>
+                <p>Saree & Textile Manufacturing Industry ke liye Bharat ka pehla ground-level Digital ERP Portal.</p>
+                <div class="tag">👑 Trusted by Progressive Textile Manufacturers</div>
+            </div>
+            <div>
+                <a href="https://api.whatsapp.com/send?text=Hello%20Farhan%20Bhai,%20mujhe%20apne%20karkhane%20me%20Simplicity%20ERP%20lagwana%20hai." target="_blank" class="btn-primary-hero" style="background:#2563eb;">
+                    💬 Farhan Bhai Se Direct Baat Karein
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- 7. FOOTER -->
+    <footer class="footer">
+        <p>© 2026 <strong>Simplicity ERP</strong> • Crafted with pride by <span>Farhan Jawed</span> • All Rights Reserved.</p>
+    </footer>
+
+</body>
+</html>
