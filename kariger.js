@@ -1567,3 +1567,67 @@ function searchInfoLedger() {
     });
     renderInfoTable(list);
 }
+
+// ================= 8. 🧪 2,000 TEST KARIGER GENERATOR =================
+
+function generate2000TestKarigers() {
+    if (!currentUserId) return alert("Pehle 'test' ID se login karein!");
+    
+    // Safety check: Taaki galti se Farhan bhai ke personal account me na chala jaye
+    if (currentUserId !== "test") {
+        if (!confirm("⚠️ DHYAN DEIN: Aap 'test' ID se login nahi hain!\nAbhi aap '" + currentUserId + "' me hain. Kya aap sach me is ID me 2,000 test kariger daalna chahte hain?")) return;
+    }
+
+    var btn = document.getElementById("btn-generate-dummy");
+    if (btn) btn.textContent = "⏳ 2,000 Kariger Ban Rahe Hain...";
+
+    setTimeout(function() {
+        var names = [
+            "RAMESH", "SURESH", "MOHAN", "ASLAM", "IMRAN", 
+            "BABLU", "RAJU", "GUDDU", "CHANDAN", "SALIM", 
+            "DILSHAD", "AKHTAR", "MUKESH", "NAEEM", "SUNIL", 
+            "KALLU", "RASHID", "FAROOQ", "DINESH", "ANIL"
+        ];
+        var sarees = [
+            "Banarasi Katan", "Tanchoi Silk", "Organza Zari", 
+            "Georgette Booti", "Tissue Fancy", "Chiffon Handwork", 
+            "Kora Kadwa", "Meena Buti"
+        ];
+        
+        var list = [];
+        var today = getTodayDate();
+
+        for (var i = 1; i <= 2000; i++) {
+            var nameIdx = (i - 1) % names.length;
+            var sareeIdx = (i - 1) % sarees.length;
+            var karId = "kar_test_" + i;
+
+            list.push({
+                id: karId,
+                name: names[nameIdx] + " (NO. " + i + ")",
+                saree: sarees[sareeIdx],
+                date: today,
+                karkhanaId: "k_main",
+                karkhanaName: "Main Godown"
+            });
+        }
+
+        // IndexedDB me 2,000 record ek jhatke me save honge
+        saveKarigerList(list);
+        renderKarigerKarkhanaTabs();
+        renderKarigerTable();
+        if (typeof updateDashboardBadgeTotals === "function") updateDashboardBadgeTotals();
+
+        if (btn) btn.textContent = "🧪 +2,000 Test Kariger";
+        alert("🎉 MUBARAK HO!\n\n2,000 Kariger ek sath IndexedDB me save ho gaye hain!\nAb dekhein mobile me speed kaisi hai.");
+    }, 150);
+}
+
+function clearAllTestKarigers() {
+    if (!confirm("Kya aap saare 2,000 test kariger ko delete karke list wapas saaf karna chahte hain?")) return;
+    saveKarigerList([]);
+    renderKarigerKarkhanaTabs();
+    renderKarigerTable();
+    if (typeof updateDashboardBadgeTotals === "function") updateDashboardBadgeTotals();
+    alert("🗑️ List wapas bilkul saaf ho gayi!");
+}
