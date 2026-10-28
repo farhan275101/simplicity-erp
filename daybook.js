@@ -1,10 +1,12 @@
 /* ========================================================
    SIMPLICITY ERP - PAYMENT MODULE, DAYBOOK & APP STARTUP
    File 5 of 5 • Developed by Farhan Jawed
-   (Day-Book Saree Double Counting Fix & Multi-Godam Payment Engine)
+   (Enterprise Fast Badge Engine, Paginated Payments & Zero-Freeze Startup)
 ======================================================== */
 
 var currentPaymentKarkhanaFilter = "all"; // "all" ya specific karkhanaId
+var currentPaymentPage = 1;
+var paymentPageSize = 50;
 
 // ================= 1. KARIGER FINANCE COMPUTATION ENGINE =================
 
@@ -41,11 +43,12 @@ function getKarigerFinanceSummary(karId) {
     };
 }
 
-// ================= 2. PAYMENT MODULE (MULTI-GODAM SYSTEM) =================
+// ================= 2. PAYMENT MODULE (PAGINATED & SUPERFAST) =================
 
 function openPaymentModule() {
     if (typeof hideAllSections === "function") hideAllSections();
     setDisplay("payment-section", "block");
+    currentPaymentPage = 1;
     renderPaymentKarkhanaTabs();
     renderPaymentTable();
 }
@@ -73,6 +76,7 @@ function renderPaymentKarkhanaTabs() {
 
 function switchPaymentKarkhanaTab(kId) {
     currentPaymentKarkhanaFilter = kId;
+    currentPaymentPage = 1;
     renderPaymentKarkhanaTabs();
     renderPaymentTable();
 }
@@ -81,7 +85,6 @@ function renderPaymentTable(flist) {
     var allKarigers = flist || ((typeof sanitizeKarigerList === "function") ? sanitizeKarigerList() : []);
     var tbody = document.getElementById("payment-table-body");
     if (!tbody) return;
-    tbody.innerHTML = "";
 
     var list = allKarigers;
     if (currentPaymentKarkhanaFilter !== "all") {
@@ -97,19 +100,57 @@ function renderPaymentTable(flist) {
         });
     }
 
-    var overallPaid = 0;
-    var overallBaki = 0;
+    var totalItems = list.length;
+    var totalPages = Math.ceil(totalItems / paymentPageSize) || 1;
+    if (currentPaymentPage > totalPages) currentPaymentPage = totalPages;
+    if (currentPaymentPage < 1) currentPaymentPage = 1;
 
-    if (!list.length) {
-        tbody.innerHTML = "<tr><td colspan='9' style='text-align:center; padding:20px; color:#888;'>Is Godam/Karkhane me koi Kariger hisab nahi mila.</td></tr>";
+    // Pagination bar setup
+    var pagContainer = document.getElementById("payment-pagination-bar");
+    if (!pagContainer) {
+        var tableWrap = tbody.closest(".table-responsive");
+        if (tableWrap) {
+            pagContainer = document.createElement("div");
+            pagContainer.id = "payment-pagination-bar";
+            pagContainer.style.cssText = "display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-top:10px; padding:10px 14px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; font-size:13px; font-weight:700;";
+            tableWrap.parentNode.insertBefore(pagContainer, tableWrap.nextSibling);
+        }
+    }
+
+    if (!totalItems) {
+        tbody.innerHTML = "<tr><td colspan='9' style='text-align:center; padding:25px; color:#888;'>Is Godam/Karkhane me koi Kariger hisab nahi mila.</td></tr>";
         var elP = document.getElementById("total-paid-display");
         var elB = document.getElementById("total-baki-display");
         if (elP) elP.textContent = "₹ 0";
         if (elB) elB.textContent = "₹ 0";
+        if (pagContainer) pagContainer.style.display = "none";
         return;
     }
 
-    list.forEach(function(k, idx) {
+    if (pagContainer) {
+        pagContainer.style.display = "flex";
+        var startIdx = (currentPaymentPage - 1) * paymentPageSize + 1;
+        var endIdx = Math.min(currentPaymentPage * paymentPageSize, totalItems);
+
+        var prevDisabled = (currentPaymentPage <= 1) ? "disabled style='opacity:0.5; cursor:not-allowed; padding:6px 14px;'" : "style='padding:6px 14px; cursor:pointer;'";
+        var nextDisabled = (currentPaymentPage >= totalPages) ? "disabled style='opacity:0.5; cursor:not-allowed; padding:6px 14px;'" : "style='padding:6px 14px; cursor:pointer;'";
+
+        pagContainer.innerHTML = 
+            "<div style='color:#7c3aed;'>📊 Dikh rahe hain: " + startIdx + " - " + endIdx + " (Kul: " + totalItems + " Kariger)</div>" +
+            "<div style='display:flex; align-items:center; gap:8px;'>" +
+                "<button class='quick-btn btn-out' " + prevDisabled + " onclick='prevPaymentPage()'>◀️ Pichla Page</button>" +
+                "<span style='background:#ffffff; border:1px solid #cbd5e1; padding:5px 12px; border-radius:6px; color:#1e3a8a;'>Page " + currentPaymentPage + " / " + totalPages + "</span>" +
+                "<button class='quick-btn btn-in' " + nextDisabled + " onclick='nextPaymentPage()'>Agla Page ▶️</button>" +
+            "</div>";
+    }
+
+    // 0ms Fast Slice & Single Buffer Render
+    var pageList = list.slice((currentPaymentPage - 1) * paymentPageSize, currentPaymentPage * paymentPageSize);
+    var htmlBuffer = "";
+    var overallPaid = 0;
+    var overallBaki = 0;
+
+    pageList.forEach(function(k, idx) {
         if (!k) return;
         var fin = getKarigerFinanceSummary(k.id);
         overallPaid += fin.totalPaid;
@@ -117,9 +158,10 @@ function renderPaymentTable(flist) {
 
         var bakiBadgeClass = fin.currentBakaya > 0 ? "badge-red" : "badge-green";
         var kNameBadge = "<span class='badge-blue' style='font-size:11px; font-weight:700;'>🏭 " + (k.karkhanaName || "Main Godown") + "</span>";
+        var actualIdx = (currentPaymentPage - 1) * paymentPageSize + (idx + 1);
 
-        tbody.innerHTML += "<tr>" +
-            "<td>" + (idx + 1) + "</td>" +
+        htmlBuffer += "<tr>" +
+            "<td>" + actualIdx + "</td>" +
             "<td>" + kNameBadge + "</td>" +
             "<td><strong>" + k.name + "</strong></td>" +
             "<td>" + (k.saree || "-") + "</td>" +
@@ -131,13 +173,30 @@ function renderPaymentTable(flist) {
         "</tr>";
     });
 
+    tbody.innerHTML = htmlBuffer;
+
     var dispP = document.getElementById("total-paid-display");
     var dispB = document.getElementById("total-baki-display");
     if (dispP) dispP.textContent = "₹ " + overallPaid.toFixed(2);
     if (dispB) dispB.textContent = "₹ " + overallBaki.toFixed(2);
 }
 
+function nextPaymentPage() {
+    currentPaymentPage++;
+    renderPaymentTable();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function prevPaymentPage() {
+    if (currentPaymentPage > 1) {
+        currentPaymentPage--;
+        renderPaymentTable();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+}
+
 function filterPayment() {
+    currentPaymentPage = 1;
     renderPaymentTable();
 }
 
@@ -254,7 +313,7 @@ function deletePaymentFromSheet(karId, sheetId, rowId) {
     }
 }
 
-// ================= 3. ROZANA DAY-BOOK MODULE (JOB WORK ALAG KIYA GAYA) =================
+// ================= 3. ROZANA DAY-BOOK MODULE =================
 
 function setDashboardToday() {
     var dateInput = document.getElementById("dash-day-date");
@@ -292,16 +351,16 @@ function renderDashboardDayBook() {
     var bStock = getStore("bana_stock");
     var zStock = getStore("zari_stock");
 
-    // Stock In Calculation for date
     bStock.forEach(function(b) { if (b && b.date === d) bIn += (Number(b.aaya) || 0); });
     zStock.forEach(function(z) { if (z && z.date === d) zIn += (Number(z.aaya) || 0); });
 
-    // Kariger Sheets Out & Return Calculation
     var karList = (typeof sanitizeKarigerList === "function") ? sanitizeKarigerList() : [];
     karList.forEach(function(k) {
+        // Fast Check: agar koi entry nahi hai to sheets loop me na ghuse
         var sheets = (typeof getKarigerSheets === "function") ? getKarigerSheets(k.id) : [];
+        if (!sheets.length) return;
         sheets.forEach(function(sh) {
-            if (sh && sh.rows) {
+            if (sh && sh.rows && sh.rows.length) {
                 var rows = safeArray(sh.rows);
                 rows.forEach(function(r) {
                     if (r && r.date === d) {
@@ -316,7 +375,6 @@ function renderDashboardDayBook() {
         });
     });
 
-    // 🎯 SAREE IN & OUT (JOB WORK AUR TRANSFERS DAY-BOOK SE 100% ALAG)
     var sH = getStore("saree_history").filter(function(h) { return h && h.date === d; });
     var sIn = 0, sOut = 0;
     sH.forEach(function(h) {
@@ -324,9 +382,7 @@ function renderDashboardDayBook() {
         var isTransfer = (typeStr.indexOf("Transfer") !== -1) || (typeStr.indexOf("Branch Transfer") !== -1);
         var isJobWork = (typeStr.indexOf("Cutting") !== -1) || (typeStr.indexOf("Calender") !== -1) || (typeStr.indexOf("Finished Sale") !== -1);
         
-        if (isTransfer || isJobWork) {
-            return; // Job work aur transfer day-book me mix nahi honge
-        }
+        if (isTransfer || isJobWork) return;
 
         if (typeStr.indexOf("In") !== -1) {
             sIn += (Number(h.pcs) || 0);
@@ -335,13 +391,11 @@ function renderDashboardDayBook() {
         }
     });
 
-    // Update Day-Book Tab Badges
     setT("sub-day-bana", "In: +" + bIn.toFixed(1) + " | Out: -" + bOut.toFixed(1));
     setT("sub-day-zari", "In: +" + zIn.toFixed(1) + " | Out: -" + zOut.toFixed(1));
     setT("sub-day-saree", "In: +" + sIn + " | Out: -" + sOut);
     setT("sub-day-payment", "Diya: ₹ " + pOut.toFixed(0));
 
-    // Render Tab Tables
     if (currentDayBookTab === "bana") {
         thead.innerHTML = "<tr style='background:#059669;'><th style='width:30%;'>Bana Ka Naam</th><th style='width:30%;'>Kariger / Vivran</th><th style='background:#047857; color:#a7f3d0; width:20%;'>📥 Aaya (In)</th><th style='background:#b91c1c; color:#fecaca; width:20%;'>📤 Gaya (Out)</th></tr>";
         var bDayRows = [];
@@ -355,6 +409,7 @@ function renderDashboardDayBook() {
 
         karList.forEach(function(k) {
             var sheets = (typeof getKarigerSheets === "function") ? getKarigerSheets(k.id) : [];
+            if (!sheets.length) return;
             sheets.forEach(function(sh) {
                 if (sh && sh.rows) {
                     var rows = safeArray(sh.rows);
@@ -372,14 +427,16 @@ function renderDashboardDayBook() {
         if (!bDayRows.length) {
             tbody.innerHTML = "<tr><td colspan='4' style='text-align:center; padding:15px; color:#888;'>Is tarikh me Bana ki koi entry nahi hai.</td></tr>";
         } else {
+            var bBuf = "";
             bDayRows.forEach(function(r) {
-                tbody.innerHTML += "<tr>" +
+                bBuf += "<tr>" +
                     "<td><strong>" + r.name + "</strong></td>" +
                     "<td>" + r.desc + "</td>" +
                     "<td>" + (r.inQty > 0 ? ("<span style='color:#059669; font-weight:700;'>+" + r.inQty.toFixed(2) + "</span>") : "-") + "</td>" +
                     "<td>" + (r.outQty > 0 ? ("<span style='color:#dc2626; font-weight:700;'>-" + r.outQty.toFixed(2) + "</span>") : "-") + "</td>" +
                 "</tr>";
             });
+            tbody.innerHTML = bBuf;
         }
         tfoot.innerHTML = "<tr><td colspan='2'><strong>Total Rozana Bana:</strong></td><td><strong style='color:#059669;'>+" + bIn.toFixed(2) + "</strong></td><td><strong style='color:#dc2626;'>-" + bOut.toFixed(2) + "</strong></td></tr>";
 
@@ -396,6 +453,7 @@ function renderDashboardDayBook() {
 
         karList.forEach(function(k) {
             var sheets = (typeof getKarigerSheets === "function") ? getKarigerSheets(k.id) : [];
+            if (!sheets.length) return;
             sheets.forEach(function(sh) {
                 if (sh && sh.rows) {
                     var rows = safeArray(sh.rows);
@@ -413,14 +471,16 @@ function renderDashboardDayBook() {
         if (!zDayRows.length) {
             tbody.innerHTML = "<tr><td colspan='4' style='text-align:center; padding:15px; color:#888;'>Is tarikh me Zari ki koi entry nahi hai.</td></tr>";
         } else {
+            var zBuf = "";
             zDayRows.forEach(function(r) {
-                tbody.innerHTML += "<tr>" +
+                zBuf += "<tr>" +
                     "<td><strong>" + r.name + "</strong></td>" +
                     "<td>" + r.desc + "</td>" +
                     "<td>" + (r.inQty > 0 ? ("<span style='color:#059669; font-weight:700;'>+" + r.inQty.toFixed(2) + "</span>") : "-") + "</td>" +
                     "<td>" + (r.outQty > 0 ? ("<span style='color:#dc2626; font-weight:700;'>-" + r.outQty.toFixed(2) + "</span>") : "-") + "</td>" +
                 "</tr>";
             });
+            tbody.innerHTML = zBuf;
         }
         tfoot.innerHTML = "<tr><td colspan='2'><strong>Total Rozana Zari:</strong></td><td><strong style='color:#059669;'>+" + zIn.toFixed(2) + "</strong></td><td><strong style='color:#dc2626;'>-" + zOut.toFixed(2) + "</strong></td></tr>";
 
@@ -437,14 +497,14 @@ function renderDashboardDayBook() {
         if (!filteredSH.length) {
             tbody.innerHTML = "<tr><td colspan='5' style='text-align:center; padding:15px; color:#888;'>Is tarikh me Factory Saree ki koi entry nahi hai.</td></tr>";
         } else {
+            var sBuf = "";
             filteredSH.forEach(function(h) {
                 var typeStr = String(h.type || "");
                 var isA = typeStr.indexOf("In") !== -1;
-
                 var inCol = isA ? ("<strong style='color:#059669;'>+" + h.pcs + " Pcs</strong>") : "-";
                 var outCol = !isA ? ("<strong style='color:#dc2626;'>-" + h.pcs + " Pcs</strong>") : "-";
 
-                tbody.innerHTML += "<tr>" +
+                sBuf += "<tr>" +
                     "<td><strong>" + h.name + "</strong></td>" +
                     "<td>" + (h.kariger || "-") + "</td>" +
                     "<td>" + inCol + "</td>" +
@@ -452,6 +512,7 @@ function renderDashboardDayBook() {
                     "<td>" + (h.note || "-") + "</td>" +
                 "</tr>";
             });
+            tbody.innerHTML = sBuf;
         }
         tfoot.innerHTML = "<tr><td colspan='2'><strong>Kul Fresh Saree:</strong></td><td><strong style='color:#059669;'>+" + sIn + " Pcs</strong></td><td><strong style='color:#dc2626;'>-" + sOut + " Pcs</strong></td><td>-</td></tr>";
 
@@ -461,6 +522,7 @@ function renderDashboardDayBook() {
 
         karList.forEach(function(k) {
             var sheets = (typeof getKarigerSheets === "function") ? getKarigerSheets(k.id) : [];
+            if (!sheets.length) return;
             sheets.forEach(function(sh) {
                 if (sh && sh.rows) {
                     var rows = safeArray(sh.rows);
@@ -476,19 +538,23 @@ function renderDashboardDayBook() {
         if (!dayPayments.length) {
             tbody.innerHTML = "<tr><td colspan='3' style='text-align:center; padding:15px; color:#888;'>Is tarikh me koi payment nahi di gayi.</td></tr>";
         } else {
+            var pBuf = "";
             dayPayments.forEach(function(dp) {
-                tbody.innerHTML += "<tr>" +
+                pBuf += "<tr>" +
                     "<td><strong>" + dp.kariger + "</strong></td>" +
                     "<td>" + dp.tani + "</td>" +
                     "<td><strong style='color:#dc2626;'>- ₹ " + dp.amount.toFixed(2) + "</strong></td>" +
                 "</tr>";
             });
+            tbody.innerHTML = pBuf;
         }
         tfoot.innerHTML = "<tr><td colspan='2'><strong>Total Rozana Bhugtan:</strong></td><td><strong style='color:#dc2626;'>- ₹ " + pOut.toFixed(2) + "</strong></td></tr>";
     }
 }
 
-// ================= 4. DASHBOARD BADGES & NAVIGATION =================
+// ================= 4. DASHBOARD BADGES (NON-BLOCKING ZERO-LAG ENGINE) =================
+
+var badgeCalculationTimer = null;
 
 function updateDashboardBadgeTotals() {
     var setT = function(id, v) {
@@ -496,76 +562,79 @@ function updateDashboardBadgeTotals() {
         if (el) el.textContent = v;
     };
 
+    // 1. FAST METRICS (0ms lag - Turant update honge)
     var karList = (typeof sanitizeKarigerList === "function") ? sanitizeKarigerList() : [];
     setT("btn-total-kariger", "Total: " + karList.length);
     setT("btn-total-info", "Total: " + safeArray(getStore("info_ledger")).length);
 
-    // Live Bana Total
-    var tb = 0;
-    getStore("bana_stock").forEach(function(b) {
-        if (b && b.name && typeof getBanaItemStats === "function") {
-            try {
-                var st = getBanaItemStats(b.name, "k_main");
-                tb += Number(st.bacha || 0);
-            } catch(e) {}
-        }
-    });
-    setT("btn-total-bana", "Bacha: " + tb.toFixed(2));
-
-    // Live Zari Total
-    var tz = 0;
-    getStore("zari_stock").forEach(function(z) {
-        if (z && z.name && typeof getZariItemStats === "function") {
-            try {
-                var st = getZariItemStats(z.name, "k_main");
-                tz += Number(st.bacha || 0);
-            } catch(e) {}
-        }
-    });
-    setT("btn-total-zari", "Bacha: " + tz.toFixed(2));
-
-    // Saree Stock Total (Fresh)
     var ts = 0;
-    getStore("saree_stock").forEach(function(s) {
-        if (s) ts += (Number(s.pcs) || 0);
-    });
+    getStore("saree_stock").forEach(function(s) { if (s) ts += (Number(s.pcs) || 0); });
     setT("btn-total-saree", "Stock: " + ts + " Pcs");
 
-    // Total Bakaya
-    var totalBakiAll = 0;
-    karList.forEach(function(k) {
-        if (k && k.id) {
-            var fin = getKarigerFinanceSummary(k.id);
-            totalBakiAll += fin.currentBakaya;
-        }
-    });
-    setT("btn-total-payment", "Baki: ₹ " + totalBakiAll.toFixed(0));
-
-    // Sancha Total
-    var tsc = 0;
-    if (typeof getSanchaItems === "function") {
-        getSanchaItems().forEach(function(s) {
-            if (s) {
-                if (typeof getSanchaItemStats === "function") {
-                    try {
-                        var st = getSanchaItemStats(s.id, s.name, "k_main");
-                        tsc += (Number(st.bacha) || 0);
-                    } catch(e) {}
-                } else {
-                    tsc += (Number(s.totalQty) || 0);
-                }
-            }
-        });
-    }
-    setT("btn-total-sancha", "Bacha: " + tsc.toFixed(2));
-
-    // Job Work Total Workers & Live Cutting Register
     if (typeof getJobWorkers === "function") {
         setT("btn-total-jobwork", "Workers: " + getJobWorkers().length);
     }
     if (typeof updateJobWorkHubBadges === "function") {
         updateJobWorkHubBadges();
     }
+
+    // 2. HEAVY METRICS (Background Non-Blocking Loop - Phone 1 second bhi nahi freeze hoga)
+    if (badgeCalculationTimer) clearTimeout(badgeCalculationTimer);
+
+    badgeCalculationTimer = setTimeout(function() {
+        // Live Bana Total
+        var tb = 0;
+        getStore("bana_stock").forEach(function(b) {
+            if (b && b.name && typeof getBanaItemStats === "function") {
+                try {
+                    var st = getBanaItemStats(b.name, "k_main");
+                    tb += Number(st.bacha || 0);
+                } catch(e) {}
+            }
+        });
+        setT("btn-total-bana", "Bacha: " + tb.toFixed(2));
+
+        // Live Zari Total
+        var tz = 0;
+        getStore("zari_stock").forEach(function(z) {
+            if (z && z.name && typeof getZariItemStats === "function") {
+                try {
+                    var st = getZariItemStats(z.name, "k_main");
+                    tz += Number(st.bacha || 0);
+                } catch(e) {}
+            }
+        });
+        setT("btn-total-zari", "Bacha: " + tz.toFixed(2));
+
+        // Sancha Total
+        var tsc = 0;
+        if (typeof getSanchaItems === "function") {
+            getSanchaItems().forEach(function(s) {
+                if (s) {
+                    if (typeof getSanchaItemStats === "function") {
+                        try {
+                            var st = getSanchaItemStats(s.id, s.name, "k_main");
+                            tsc += (Number(st.bacha) || 0);
+                        } catch(e) {}
+                    } else {
+                        tsc += (Number(s.totalQty) || 0);
+                    }
+                }
+            });
+        }
+        setT("btn-total-sancha", "Bacha: " + tsc.toFixed(2));
+
+        // Total Bakaya (Kariger Sheet Loop in Background)
+        var totalBakiAll = 0;
+        karList.forEach(function(k) {
+            if (k && k.id) {
+                var fin = getKarigerFinanceSummary(k.id);
+                totalBakiAll += fin.currentBakaya;
+            }
+        });
+        setT("btn-total-payment", "Baki: ₹ " + totalBakiAll.toFixed(0));
+
+    }, 60); // 60ms delay ensures UI renders instantly first!
 }
 
 function hideAllSections() {
