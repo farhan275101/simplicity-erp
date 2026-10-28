@@ -269,7 +269,7 @@ function getZariItemStats(itemName, targetKarkhanaId) {
     };
 }
 
-// ================= 4. BANA & ZARI STOCK MODULES (TARIKA 2 IMPLEMENTED) =================
+// ================= 4. BANA & ZARI STOCK MODULES =================
 
 function openBanaModule() {
     if (typeof hideAllSections === "function") hideAllSections();
@@ -1579,7 +1579,7 @@ function closeItemModal() {
     isModalSareePassbookMode = false;
 }
 
-// ================= 9. SANCHA STOCK MODULE (TARIKA 2 IMPLEMENTED) =================
+// ================= 9. SANCHA STOCK MODULE =================
 
 function getSanchaItems() {
     var items = getStore("sancha_items");
@@ -2108,4 +2108,18 @@ function renderSanchaHistoryTable() {
 
         tbody.innerHTML += "<tr>" +
             "<td>" + formatDateDisplay(e.date) + "</td>" +
-            "<td><span class='" + (isAaya ? "badge-green" : "badge-red") + "'>" + e.type + "</span></
+            "<td><span class='" + (isAaya ? "badge-green" : "badge-red") + "'>" + e.type + "</span></td>" +
+            "<td><strong>" + Number(e.qty).toFixed(2) + "</strong></td>" +
+            "<td>" + (e.note || "-") + "</td>" +
+            "<td style='text-align:center;'>" + actionCol + "</td>" +
+        "</tr>";
+    });
+}
+
+function deleteSanchaHistoryRowDirectly(hId) {
+    if (!confirm("Kya aap is Sancha history entry ko delete karna chahte hain?")) return;
+    var hist = safeArray(getStore("sancha_history"));
+    var entry = hist.find(function(x) { return x && String(x.id) === String(hId); });
+    if (entry) {
+        var items = getSanchaItems();
+        var it = items.find(function(x) { return x && Strin
