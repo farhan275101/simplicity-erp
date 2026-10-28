@@ -1,7 +1,7 @@
 /* ========================================================
    SIMPLICITY ERP - KARIGER MASTER, DYNAMIC MULTI-KARKHANA & SESSION ENGINE
    File 2 of 5 • Developed by Farhan Jawed
-   (Manual Rates, Net Formula, Karkhana Stock Auto-Adjust & Session Isolation)
+   (Multi-Godam Opening Carry Forward, Manual Rates, Net Formula & Karkhana Stock)
 ======================================================== */
 
 var activeKarigerId = null;
@@ -22,7 +22,6 @@ function getAppSessions() {
         list = ["2026-2027"];
         localStorage.setItem(userKey, JSON.stringify(list));
     }
-    // Extra quotes clean karein
     return list.map(function(s) { return String(s).replace(/['"]+/g, '').trim(); });
 }
 
@@ -34,7 +33,6 @@ function getActiveFinancialSession() {
         sess = list[list.length - 1] || "2026-2027";
         localStorage.setItem(userKey, sess);
     }
-    // Clean extra quotes from Firebase/storage
     sess = String(sess).replace(/['"]+/g, '').trim();
     return sess || "2026-2027";
 }
@@ -89,7 +87,6 @@ function openSessionClosingModal() {
     var curInp = document.getElementById("session-current-display");
     if (curInp) curInp.value = cur;
 
-    // Suggest Next Year (Jaise 2026-2027 -> 2027-2028)
     var parts = String(cur).split("-");
     var nextYear = "";
     if (parts.length === 2 && !isNaN(parseInt(parts[0], 10)) && !isNaN(parseInt(parts[1], 10))) {
@@ -108,7 +105,7 @@ function closeSessionClosingModal() {
     setDisplay("session-closing-modal", "none");
 }
 
-// 🚀 1 APRIL YEAR-END CLOSING PROCESS (31st March Closing -> 1st April Opening)
+// 🚀 POINT 1: YEAR-END CLOSING PROCESS (EVERY GODOWN STOCKS CARRY FORWARD)
 function executeYearEndClosingProcess() {
     var curSess = getActiveFinancialSession();
     var newSessEl = document.getElementById("session-new-input");
@@ -124,12 +121,14 @@ function executeYearEndClosingProcess() {
 
     if (!confirm("⚠️ KYA AAP 1 APRIL / YEAR-END CLOSING KARNA CHAHTE HAIN?\n\n" +
         "• Purana saal (" + curSess + ") hamesha ke liye सुरक्षित (Locked) rahega.\n" +
-        "• 31st March ki closing naye saal (" + newSess + ") ki 1st April OPENING ban jayegi.\n" +
-        "• Kariger, Stock aur Jobwork me saaf dikhega ki maal pichle saal se uth ke aaya hai.\n" +
+        "• Sabhi Godamo (Main + Branch) ka bacha stock unhi ke Opening me jayega.\n" +
+        "• Karigaron ki closing naye saal me Tani 1 Opening hisab ban jayegi.\n" +
         "• Naye saal me app bilkul halka aur fresh khulega!\n" +
         "• Aap jab chahein upar session dropdown se purane saal me jakar purana hisab dekh sakte hain.")) {
         return;
     }
+
+    var karkhanas = getKarkhanas();
 
     // ================= STEP 1: KARIGAR CLOSING TO OPENING =================
     var oldKarigers = safeArray(getStore("kariger_list"));
@@ -157,24 +156,35 @@ function executeYearEndClosingProcess() {
         }];
     });
 
-    // ================= STEP 2: SAREE STOCKS CARRY FORWARD =================
-    var freshTotalPcs = 0;
-    safeArray(getStore("saree_stock")).forEach(function(s) { freshTotalPcs += (Number(s.pcs) || 0); });
+    // ================= STEP 2: SAREE STOCKS (PER GODOWN CARRY FORWARD) =================
+    var allSarees = safeArray(getStore("saree_stock"));
     var newSareeStock = [];
-    if (freshTotalPcs > 0) {
-        newSareeStock.push({
-            id: "saree_open_" + Date.now(),
-            date: getTodayDate(),
-            name: "Fresh Saree Opening Stock",
-            kariger: "📦 Opening Stock (" + curSess + " Se Uth Kar Aaya)",
-            karkhanaId: "k_main",
-            karkhanaName: "Main Godown",
-            pcs: freshTotalPcs,
-            outPcs: 0,
-            isOpening: true
-        });
-    }
 
+    karkhanas.forEach(function(k) {
+        var kPcs = 0;
+        allSarees.forEach(function(s) {
+            var matchK = (String(s.karkhanaId) === String(k.id)) || (!s.karkhanaId && k.isDefault);
+            if (matchK) {
+                kPcs += (Number(s.pcs) || 0);
+            }
+        });
+
+        if (kPcs > 0) {
+            newSareeStock.push({
+                id: "saree_open_" + k.id + "_" + Date.now(),
+                date: getTodayDate(),
+                name: "Fresh Saree Opening Stock",
+                kariger: "📦 Opening Stock (" + curSess + " Se Aaya)",
+                karkhanaId: k.id,
+                karkhanaName: k.name,
+                pcs: kPcs,
+                outPcs: 0,
+                isOpening: true
+            });
+        }
+    });
+
+    // Finished Calender Saree Opening
     var finTotalPcs = 0;
     safeArray(getStore("finished_saree_stock")).forEach(function(f) { finTotalPcs += (Number(f.pcs) || 0); });
     var newFinStock = [];
@@ -183,89 +193,132 @@ function executeYearEndClosingProcess() {
             id: "fin_open_" + Date.now(),
             date: getTodayDate(),
             name: "Calender Finished Saree",
-            source: "📦 Opening Stock (" + curSess + " Se Uth Kar Aaya)",
+            source: "📦 Opening Stock (" + curSess + " Se Aaya)",
             pcs: finTotalPcs,
             isOpening: true
         });
     }
 
-    var lottTotalPcs = 0;
-    safeArray(getStore("lott_saree_stock")).forEach(function(l) { lottTotalPcs += (Number(l.pcs) || 0); });
+    // Lott Saree Opening per Karkhana
+    var allLott = safeArray(getStore("lott_saree_stock"));
     var newLottStock = [];
-    if (lottTotalPcs > 0) {
-        newLottStock.push({
-            id: "lott_open_" + Date.now(),
-            date: getTodayDate(),
-            name: "Damage Saree Opening Stock",
-            source: "📦 Opening Stock (" + curSess + " Se Uth Kar Aaya)",
-            pcs: lottTotalPcs,
-            isOpening: true
+    karkhanas.forEach(function(k) {
+        var lPcs = 0;
+        allLott.forEach(function(l) {
+            var matchL = (String(l.karkhanaId) === String(k.id)) || (!l.karkhanaId && k.isDefault);
+            if (matchL) lPcs += (Number(l.pcs) || 0);
         });
-    }
-
-    // ================= STEP 3: BANA & ZARI STOCK CARRY FORWARD =================
-    var newBanaStock = [];
-    safeArray(getStore("bana_stock")).forEach(function(b) {
-        if (!b || !b.name) return;
-        var bachaQty = Number(b.bacha || b.aaya || 0);
-        if (typeof getBanaItemStats === "function") {
-            try { bachaQty = getBanaItemStats(b.name, "k_main").bacha; } catch(e) {}
-        }
-        if (bachaQty > 0) {
-            newBanaStock.push({
-                id: Date.now() + Math.random(),
-                name: b.name,
+        if (lPcs > 0) {
+            newLottStock.push({
+                id: "lott_open_" + k.id + "_" + Date.now(),
                 date: getTodayDate(),
-                aaya: Number(bachaQty.toFixed(2)),
-                gaya: 0,
-                bacha: Number(bachaQty.toFixed(2)),
-                note: "📦 Opening Stock (" + curSess + " Se Aaya)",
+                name: "Damage Saree Opening Stock",
+                source: "📦 Opening Stock (" + curSess + " Se Aaya)",
+                karkhanaId: k.id,
+                karkhanaName: k.name,
+                pcs: lPcs,
                 isOpening: true
             });
         }
+    });
+
+    // ================= STEP 3: BANA & ZARI (PER GODOWN CARRY FORWARD) =================
+    var newBanaStock = [];
+    var banaItems = safeArray(getStore("bana_stock"));
+    var uniqueBanaNames = [];
+    banaItems.forEach(function(b) {
+        if (b && b.name && uniqueBanaNames.indexOf(b.name.trim().toLowerCase()) === -1) {
+            uniqueBanaNames.push(b.name.trim().toLowerCase());
+        }
+    });
+
+    uniqueBanaNames.forEach(function(bNameLow) {
+        var origItem = banaItems.find(function(x) { return x && x.name && x.name.trim().toLowerCase() === bNameLow; });
+        var displayName = origItem ? origItem.name : bNameLow;
+
+        karkhanas.forEach(function(k) {
+            var bachaQty = 0;
+            if (typeof getBanaItemStats === "function") {
+                try { bachaQty = getBanaItemStats(displayName, k.id).bacha; } catch(e) {}
+            }
+            if (bachaQty > 0) {
+                newBanaStock.push({
+                    id: Date.now() + Math.random(),
+                    name: displayName,
+                    date: getTodayDate(),
+                    aaya: Number(bachaQty.toFixed(2)),
+                    gaya: 0,
+                    bacha: Number(bachaQty.toFixed(2)),
+                    karkhanaId: k.id,
+                    karkhanaName: k.name,
+                    note: "📦 Opening Stock (" + curSess + " Se Aaya)",
+                    isOpening: true
+                });
+            }
+        });
     });
 
     var newZariStock = [];
-    safeArray(getStore("zari_stock")).forEach(function(z) {
-        if (!z || !z.name) return;
-        var bachaQty = Number(z.bacha || z.aaya || 0);
-        if (typeof getZariItemStats === "function") {
-            try { bachaQty = getZariItemStats(z.name, "k_main").bacha; } catch(e) {}
-        }
-        if (bachaQty > 0) {
-            newZariStock.push({
-                id: Date.now() + Math.random(),
-                name: z.name,
-                date: getTodayDate(),
-                aaya: Number(bachaQty.toFixed(2)),
-                gaya: 0,
-                bacha: Number(bachaQty.toFixed(2)),
-                note: "📦 Opening Stock (" + curSess + " Se Aayi)",
-                isOpening: true
-            });
+    var zariItems = safeArray(getStore("zari_stock"));
+    var uniqueZariNames = [];
+    zariItems.forEach(function(z) {
+        if (z && z.name && uniqueZariNames.indexOf(z.name.trim().toLowerCase()) === -1) {
+            uniqueZariNames.push(z.name.trim().toLowerCase());
         }
     });
 
-    // ================= STEP 4: SANCHA ITEMS CARRY FORWARD =================
+    uniqueZariNames.forEach(function(zNameLow) {
+        var origItem = zariItems.find(function(x) { return x && x.name && x.name.trim().toLowerCase() === zNameLow; });
+        var displayName = origItem ? origItem.name : zNameLow;
+
+        karkhanas.forEach(function(k) {
+            var bachaQty = 0;
+            if (typeof getZariItemStats === "function") {
+                try { bachaQty = getZariItemStats(displayName, k.id).bacha; } catch(e) {}
+            }
+            if (bachaQty > 0) {
+                newZariStock.push({
+                    id: Date.now() + Math.random(),
+                    name: displayName,
+                    date: getTodayDate(),
+                    aaya: Number(bachaQty.toFixed(2)),
+                    gaya: 0,
+                    bacha: Number(bachaQty.toFixed(2)),
+                    karkhanaId: k.id,
+                    karkhanaName: k.name,
+                    note: "📦 Opening Stock (" + curSess + " Se Aayi)",
+                    isOpening: true
+                });
+            }
+        });
+    });
+
+    // ================= STEP 4: SANCHA ITEMS (PER GODOWN CARRY FORWARD) =================
     var sanchaItems = safeArray(getStore("sancha_items"));
     var newSanchaItems = [];
     sanchaItems.forEach(function(item) {
         if (!item || !item.name) return;
-        var bachaQty = 0;
-        if (typeof getSanchaItemStats === "function") {
-            try { bachaQty = getSanchaItemStats(item.id, item.name, "k_main").bacha; } catch(e) {}
-        } else {
-            bachaQty = Number(item.aaya || 0);
-        }
-        newSanchaItems.push({
-            id: item.id || ("sancha_" + Date.now()),
-            name: item.name,
-            karkhanaId: "k_main",
-            karkhanaName: "Main Godown",
-            date: getTodayDate(),
-            aaya: Math.max(0, bachaQty),
-            note: "📦 Opening Stock (" + curSess + " Se Aaya)",
-            isOpening: true
+        karkhanas.forEach(function(k) {
+            var bachaQty = 0;
+            if (typeof getSanchaItemStats === "function") {
+                try { bachaQty = getSanchaItemStats(item.id, item.name, k.id).bacha; } catch(e) {}
+            } else if (k.isDefault) {
+                bachaQty = Number(item.aaya || 0);
+            }
+
+            if (bachaQty > 0) {
+                newSanchaItems.push({
+                    id: (item.id || "sancha_" + Date.now()) + "_" + k.id,
+                    name: item.name,
+                    person: item.person || "-",
+                    karkhanaId: k.id,
+                    karkhanaName: k.name,
+                    date: getTodayDate(),
+                    aaya: Math.max(0, bachaQty),
+                    note: "📦 Opening Stock (" + curSess + " Se Aaya)",
+                    isOpening: true
+                });
+            }
         });
     });
 
@@ -332,7 +385,6 @@ function executeYearEndClosingProcess() {
     closeSessionClosingModal();
     populateSessionDropdown();
 
-    // UI Refresh
     if (typeof backToDashboard === "function") backToDashboard();
     if (typeof renderKarigerKarkhanaTabs === "function") renderKarigerKarkhanaTabs();
     if (typeof renderKarigerTable === "function") renderKarigerTable();
@@ -342,8 +394,8 @@ function executeYearEndClosingProcess() {
 
     alert("🎉 MUBARAK HO! 1 April Year-End Closing safalta-purvak poori hui!\n\n" +
           "• Pichla saal (" + curSess + ") hamesha ke liye safe ho gaya hai.\n" +
-          "• Naya Saal '" + newSess + "' opening stock ke sath chalu ho gaya hai!\n" +
-          "• Karkhana, Stock aur Job Work me saaf dikhega ki pichle saal se kitna maal uth kar aaya hai.");
+          "• Sabhi Godamo (Main + Branch) ka bacha stock unhi ke Opening me live ho gaya hai!\n" +
+          "• Karigar hisab aur stock bilkul fresh aur opening balance ke sath tayyar hai.");
 }
 
 // ================= 2. DYNAMIC KARKHANA MASTER =================
@@ -888,7 +940,6 @@ function loadCurrentSheetData() {
     document.getElementById("tani-bani").value = sh.pichlaBani || 0;
     document.getElementById("tani-note").value = sh.note || "";
 
-    // Point 1: Sheet me saved manual rate input me load honge
     document.getElementById("rate-bana").value = (sh.rateBana !== undefined && sh.rateBana !== null) ? sh.rateBana : 0.311;
     document.getElementById("rate-zari").value = (sh.rateZari !== undefined && sh.rateZari !== null) ? sh.rateZari : 0.110;
     document.getElementById("rate-bani").value = (sh.rateBani !== undefined && sh.rateBani !== null) ? sh.rateBani : 240;
@@ -897,7 +948,6 @@ function loadCurrentSheetData() {
     if (typeof updateLiveStockDisplay === "function") updateLiveStockDisplay();
 }
 
-// Point 1: Rate badalte hi manual value sheet me save ho jayegi
 function saveCurrentSheetConfig() {
     if (!activeKarigerId) return;
     var sheets = getKarigerSheets(activeKarigerId);
@@ -986,7 +1036,6 @@ function calculateSheetTotals(sh) {
     };
 }
 
-// 🎯 POINT 2 & 3: FORMULA (CONE - LESS TP) & (QTY - TOPI) + KARKHANA STOCK ADJUST
 function addSheetLineRow() {
     if (!activeKarigerId) return;
     var sheets = getKarigerSheets(activeKarigerId);
@@ -1004,12 +1053,10 @@ function addSheetLineRow() {
     var taniName = (document.getElementById("line-tani-name").value || "").trim();
     var taniWazan = parseFloat(document.getElementById("line-tani-wazan").value) || 0;
 
-    // POINT 2: NET BANA = BANA CONE - LESS TP
     var bCone = parseFloat(document.getElementById("line-bana-cone").value) || 0;
     var bLess = parseFloat(document.getElementById("line-bana-less").value) || 0;
     var netBana = Math.max(0, bCone - bLess);
 
-    // POINT 2: NET ZARI = ZARI QTY - TOPI
     var zQty = parseFloat(document.getElementById("line-zari").value) || 0;
     var zTopi = parseFloat(document.getElementById("line-zari-topi").value) || 0;
     var netZari = Math.max(0, zQty - zTopi);
@@ -1051,7 +1098,6 @@ function addSheetLineRow() {
     sh.rows.push(newRow);
     saveKarigerSheets(activeKarigerId, sheets);
 
-    // POINT 3: SAREE STOCK ENTRY IN SPECIFIC KARKHANA
     if (saree > 0) {
         var sStock = safeArray(getStore("saree_stock"));
         sStock.push({
@@ -1082,7 +1128,6 @@ function addSheetLineRow() {
         setStore("saree_history", sH);
     }
 
-    // POINT 3: LOTT SAREE STOCK IN SPECIFIC KARKHANA
     if (lott > 0) {
         var lottStock = safeArray(getStore("lott_saree_stock"));
         lottStock.push({
@@ -1098,7 +1143,6 @@ function addSheetLineRow() {
         setStore("lott_saree_stock", lottStock);
     }
 
-    // Reset Form Inputs
     document.getElementById("line-saree").value = "";
     document.getElementById("line-tani-wazan").value = "";
     document.getElementById("line-bana-cone").value = "";
@@ -1117,7 +1161,6 @@ function addSheetLineRow() {
     alert("✅ Line jud gayi aur " + kKarkhanaName + " ke stock me auto-adjust ho gayi!");
 }
 
-// 🎯 POINT 3: REVERSIBLE DELETE (STOCK AUTO REVERSED)
 function deleteSheetLineRow(idx) {
     if (!confirm("Kya aap is line entry ko delete karna chahte hain?\nIska kata hua stock wapas godam me jud jayega.")) return;
 
@@ -1168,7 +1211,7 @@ function renderSheetTable(sh) {
 
     if (!rows.length) {
         var openingNote = sh.note ? ("<div style='color:#0284c7; font-weight:bold; margin-bottom:6px;'>" + sh.note + "</div>") : "";
-        tbody.innerHTML = "<tr><td colspan='12' style='text-align:center; padding:15px; color:#888;'>" + openingNote + "Is Tani me koi rozana entry nahi hai. Upar se line jodein.</td></tr>";
+        tbody.innerHTML = "<tr><td colspan='12' style='text-align:center; padding:15px; color:#888;'>Is Tani me koi rozana entry nahi hai. Upar se line jodein.</td></tr>";
     } else {
         rows.forEach(function(r, idx) {
             if (!r) return;
@@ -1236,7 +1279,6 @@ function renderSheetTable(sh) {
     setEl("calc-remaining-zari", c.remainingZari.toFixed(2));
 }
 
-// POINT 3: KARIGAR KE APNE GODAM KA LIVE STOCK DIKHAYEGA
 function updateLiveStockDisplay() {
     var bName = (document.getElementById("line-bana-name") && document.getElementById("line-bana-name").value || "").trim();
     var zName = (document.getElementById("line-zari-name") && document.getElementById("line-zari-name").value || "").trim();
