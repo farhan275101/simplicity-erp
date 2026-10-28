@@ -240,7 +240,7 @@
                 </div>
             </div>
 
-            <!-- MODULE: SANCHA (WITH POINT 4: SEARCH BAR & NAME FIELD) -->
+            <!-- MODULE: SANCHA (WITH SEARCH, NAME FIELD & EDIT) -->
             <div id="sancha-section" class="module-section">
                 <div class="module-header">
                     <button class="back-btn" onclick="backToDashboard()">← Dashboard Wapas</button>
@@ -254,20 +254,21 @@
                 <!-- DYNAMIC SANCHA KARKHANA TABS -->
                 <div id="sancha-karkhana-tabs-bar" class="sheet-tabs-bar" style="margin-bottom:12px; overflow-x:auto;"></div>
 
-                <!-- POINT 5: SANCHA OPENING STOCK BOX -->
+                <!-- SANCHA OPENING STOCK BOX -->
                 <div id="sancha-opening-box" class="summary-box" style="margin-bottom:14px; background:#f0f9ff; border:1px solid #bae6fd; border-left:5px solid #0284c7; text-align:left; padding:12px 16px;">
                     <span style="color:#0284c7; font-weight:800; font-size:12px;">📦 OPENING SANCHA STOCK:</span>
                     <h3 id="sancha-opening-val" style="color:#0284c7; font-size:20px; margin:4px 0;">0.00</h3>
                     <small id="sancha-opening-note" style="color:#64748b; font-weight:600; font-size:11px;">Pichle Session ki 31 March Closing se</small>
                 </div>
 
-                <!-- POINT 4: SANCHA TOP SEARCH BAR -->
+                <!-- SANCHA SEARCH BAR -->
                 <div class="filter-panel" style="margin-bottom:14px;">
                     <input type="text" id="search-sancha-input" class="search-box" placeholder="🔍 Search Sancha Item, Name, Date..." oninput="filterSancha()">
                 </div>
 
-                <!-- POINT 4: SANCHA FORM WITH "Name" FIELD -->
+                <!-- SANCHA FORM WITH EDIT & "Name" FIELD -->
                 <div id="add-sancha-item-form" class="custom-form">
+                    <input type="hidden" id="sancha-edit-id">
                     <h4 style="color:#0284c7; margin-bottom:10px;">➕ Naya Sancha Item Banayein (Main Godown):</h4>
                     <div class="form-row-4">
                         <div class="input-group"><label>Date</label><input type="date" id="sancha-new-item-date"></div>
@@ -275,14 +276,25 @@
                         <div class="input-group"><label>Name</label><input type="text" id="sancha-new-item-person" placeholder="Naam likhein"></div>
                         <div class="input-group"><label>Starting Stock</label><input type="number" step="any" id="sancha-new-item-qty" placeholder="0"></div>
                     </div>
-                    <button class="add-btn" style="background:#0284c7;" onclick="saveNewSanchaItem()">Save Item</button>
+                    <div style="display:flex; gap:10px;">
+                        <button class="add-btn" style="background:#0284c7;" id="sancha-save-btn" onclick="saveNewSanchaItem()">Save Item</button>
+                        <button class="reset-btn" id="sancha-cancel-btn" style="display:none;" onclick="cancelSanchaEdit()">Cancel</button>
+                    </div>
                 </div>
 
-                <!-- POINT 4: SANCHA TABLE WITH "Name" COLUMN -->
+                <!-- SANCHA TABLE WITH "Name" COLUMN (EXACT 7 COLUMNS) -->
                 <div class="table-responsive">
                     <table>
                         <thead>
-                            <tr style="background:#0284c7;"><th>Date</th><th>Item Naam</th><th>Name</th><th>Kul Aaya</th><th>Tani Gaya</th><th>Bacha Stock</th><th style="text-align:center;">Action</th></tr>
+                            <tr style="background:#0284c7;">
+                                <th>Date</th>
+                                <th>Item Naam</th>
+                                <th>Name</th>
+                                <th>Kul Aaya</th>
+                                <th>Tani Gaya</th>
+                                <th>Bacha Stock</th>
+                                <th style="text-align:center;">Action</th>
+                            </tr>
                         </thead>
                         <tbody id="sancha-table-body"></tbody>
                     </table>
@@ -395,7 +407,7 @@
                 </div>
             </div>
 
-            <!-- MODULE: KARIGER KHATA SHEET -->
+            <!-- MODULE: KARIGER KHATA SHEET (WITH BANA & ZARI WASTAGE BOXES) -->
             <div id="kariger-sheet-section" class="module-section">
                 <div class="module-header">
                     <div style="display:flex; gap:10px; align-items:center;">
@@ -417,10 +429,14 @@
                         <div class="sheet-tabs-list" id="tani-tabs-container"></div>
                         <button class="add-sheet-btn" onclick="addNewTaniSheet()">➕ Add Tani</button>
                     </div>
-                    <div class="tani-closing-grid">
-                        <div><label>PICHLA BANA (Closing):</label><input type="number" step="any" id="tani-bana" value="0" oninput="saveCurrentSheetConfig()"></div>
-                        <div><label>PICHLA ZARI (Closing):</label><input type="number" step="any" id="tani-zari" value="0" oninput="saveCurrentSheetConfig()"></div>
-                        <div><label>PICHLA BAKI (₹ Bani):</label><input type="number" step="any" id="tani-bani" value="0" oninput="saveCurrentSheetConfig()"></div>
+
+                    <!-- TANI CLOSING & WASTAGE GRID (RASTA A) -->
+                    <div class="tani-closing-grid" style="grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));">
+                        <div><label>PICHLA BANA:</label><input type="number" step="any" id="tani-bana" value="0" oninput="saveCurrentSheetConfig()"></div>
+                        <div><label>PICHLA ZARI:</label><input type="number" step="any" id="tani-zari" value="0" oninput="saveCurrentSheetConfig()"></div>
+                        <div><label>PICHLA BAKI (₹):</label><input type="number" step="any" id="tani-bani" value="0" oninput="saveCurrentSheetConfig()"></div>
+                        <div><label style="color:#d97706; font-weight:800;">BANA WASTAGE:</label><input type="number" step="any" id="tani-bana-waste" value="0" placeholder="0.00" oninput="saveCurrentSheetConfig()" style="border-color:#f59e0b; font-weight:bold;"></div>
+                        <div><label style="color:#d97706; font-weight:800;">ZARI WASTAGE:</label><input type="number" step="any" id="tani-zari-waste" value="0" placeholder="0.00" oninput="saveCurrentSheetConfig()" style="border-color:#f59e0b; font-weight:bold;"></div>
                         <div><label>NOTE:</label><input type="text" id="tani-note" oninput="saveCurrentSheetConfig()"></div>
                     </div>
                     
@@ -522,6 +538,7 @@
                             <div class="calc-row"><span>Net Diya:</span><strong id="calc-tot-bana">0</strong></div>
                             <div class="calc-row"><span>Returning:</span><strong id="calc-ret-bana">- 0</strong></div>
                             <div class="calc-row"><span>Khapat:</span><strong id="calc-bana-consumption">0</strong></div>
+                            <div class="calc-row"><span style="color:#d97706; font-weight:bold;">Wastage:</span><strong id="calc-bana-wastage" style="color:#d97706;">- 0.00</strong></div>
                             <div class="highlight-baki" style="border-color:#10b981; background:#ecfdf5;"><div class="calc-row" style="margin:0;"><span>BACHA BANA:</span><strong id="calc-remaining-bana" style="color:#059669; font-size:14px;">0</strong></div></div>
                         </div>
                         <div class="calc-card" style="border-top:4px solid #f97316;">
@@ -530,6 +547,7 @@
                             <div class="calc-row"><span>Net Diya:</span><strong id="calc-tot-zari">0</strong></div>
                             <div class="calc-row"><span>Returning:</span><strong id="calc-ret-zari">- 0</strong></div>
                             <div class="calc-row"><span>Khapat:</span><strong id="calc-zari-consumption">0</strong></div>
+                            <div class="calc-row"><span style="color:#d97706; font-weight:bold;">Wastage:</span><strong id="calc-zari-wastage" style="color:#d97706;">- 0.00</strong></div>
                             <div class="highlight-baki" style="border-color:#f97316; background:#fff7ed;"><div class="calc-row" style="margin:0;"><span>BACHI ZARI:</span><strong id="calc-remaining-zari" style="color:#ea580c; font-size:14px;">0</strong></div></div>
                         </div>
                     </div>
@@ -550,7 +568,7 @@
                 <!-- DYNAMIC BANA KARKHANA TABS -->
                 <div id="bana-karkhana-tabs-bar" class="sheet-tabs-bar" style="margin-bottom:12px; overflow-x:auto;"></div>
 
-                <!-- POINT 5: BANA OPENING STOCK BOX -->
+                <!-- BANA OPENING STOCK BOX -->
                 <div id="bana-opening-box" class="summary-box" style="margin-bottom:14px; background:#ecfdf5; border:1px solid #a7f3d0; border-left:5px solid #059669; text-align:left; padding:12px 16px;">
                     <span style="color:#059669; font-weight:800; font-size:12px;">📦 OPENING BANA STOCK:</span>
                     <h3 id="bana-opening-val" style="color:#059669; font-size:20px; margin:4px 0;">0.00 Kg</h3>
@@ -598,7 +616,7 @@
                 <!-- DYNAMIC ZARI KARKHANA TABS -->
                 <div id="zari-karkhana-tabs-bar" class="sheet-tabs-bar" style="margin-bottom:12px; overflow-x:auto;"></div>
 
-                <!-- POINT 5: ZARI OPENING STOCK BOX -->
+                <!-- ZARI OPENING STOCK BOX -->
                 <div id="zari-opening-box" class="summary-box" style="margin-bottom:14px; background:#fff7ed; border:1px solid #fed7aa; border-left:5px solid #ea580c; text-align:left; padding:12px 16px;">
                     <span style="color:#ea580c; font-weight:800; font-size:12px;">📦 OPENING ZARI STOCK:</span>
                     <h3 id="zari-opening-val" style="color:#ea580c; font-size:20px; margin:4px 0;">0.00 Kg</h3>
@@ -643,7 +661,7 @@
                 <!-- DYNAMIC SAREE KARKHANA TABS -->
                 <div id="saree-karkhana-tabs-bar" class="sheet-tabs-bar" style="margin-bottom:10px; overflow-x:auto;"></div>
 
-                <!-- POINT 5: SAREE OPENING STOCK BOX -->
+                <!-- SAREE OPENING STOCK BOX -->
                 <div id="saree-opening-box" class="summary-box" style="margin-bottom:14px; background:#eff6ff; border:1px solid #bfdbfe; border-left:5px solid #2563eb; text-align:left; padding:12px 16px;">
                     <span style="color:#2563eb; font-weight:800; font-size:12px;">📦 OPENING SAREE STOCK:</span>
                     <h3 id="saree-opening-val" style="color:#2563eb; font-size:20px; margin:4px 0;">0 Pcs</h3>
@@ -1065,7 +1083,7 @@
                         </div>
                     </div>
 
-                    <!-- 🔍 SEARCH BOX -->
+                    <!-- SEARCH BOX -->
                     <div class="filter-panel" style="margin-bottom:14px; background:#f5f3ff; border:1px solid #ddd6fe; padding:8px 12px;">
                         <input type="text" id="jw-search-bill-input" class="search-box" placeholder="🔍 Search Worker, Bill No., Tareekh..." oninput="filterJwBills()" style="width:100%;">
                     </div>
@@ -1178,7 +1196,6 @@
 
                 <div class="table-responsive">
                     <table>
-                        <!-- POINT 3: DYNAMIC THEAD FOR 2-COLUMN GREEN/RED PASSBOOK -->
                         <thead id="modal-history-thead">
                             <tr style="background:#334155; color:white;"><th>Tarikh</th><th>Kariger / Vivran</th><th>Qty / Rupaye</th><th style="text-align:center;">Action</th></tr>
                         </thead>
@@ -1374,9 +1391,9 @@
 
     <!-- JAVASCRIPT SCRIPTS -->
     <script src="auth.js"></script>
-    <script src="kariger.js?v=27"></script>
-    <script src="stock.js?v=27"></script>
-    <script src="jobwork.js?v=27"></script>
-    <script src="daybook.js?v=27"></script>
+    <script src="kariger.js?v=28"></script>
+    <script src="stock.js?v=28"></script>
+    <script src="jobwork.js?v=28"></script>
+    <script src="daybook.js?v=28"></script>
 </body>
 </html>
