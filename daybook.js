@@ -254,7 +254,7 @@ function deletePaymentFromSheet(karId, sheetId, rowId) {
     }
 }
 
-// ================= 3. ROZANA DAY-BOOK MODULE (DOUBLE COUNTING FIX) =================
+// ================= 3. ROZANA DAY-BOOK MODULE (JOB WORK ALAG KIYA GAYA) =================
 
 function setDashboardToday() {
     var dateInput = document.getElementById("dash-day-date");
@@ -296,7 +296,7 @@ function renderDashboardDayBook() {
     bStock.forEach(function(b) { if (b && b.date === d) bIn += (Number(b.aaya) || 0); });
     zStock.forEach(function(z) { if (z && z.date === d) zIn += (Number(z.aaya) || 0); });
 
-    // Sheets Out & Return Calculation
+    // Kariger Sheets Out & Return Calculation
     var karList = (typeof sanitizeKarigerList === "function") ? sanitizeKarigerList() : [];
     karList.forEach(function(k) {
         var sheets = (typeof getKarigerSheets === "function") ? getKarigerSheets(k.id) : [];
@@ -316,15 +316,16 @@ function renderDashboardDayBook() {
         });
     });
 
-    // SAREE IN & OUT (TRANSFERS ARE NOT COUNTED IN INWARD/OUTWARD PRODUCTION TOTALS)
+    // 🎯 SAREE IN & OUT (JOB WORK AUR TRANSFERS DAY-BOOK SE 100% ALAG)
     var sH = getStore("saree_history").filter(function(h) { return h && h.date === d; });
     var sIn = 0, sOut = 0;
     sH.forEach(function(h) {
         var typeStr = String(h.type || "");
         var isTransfer = (typeStr.indexOf("Transfer") !== -1) || (typeStr.indexOf("Branch Transfer") !== -1);
+        var isJobWork = (typeStr.indexOf("Cutting") !== -1) || (typeStr.indexOf("Calender") !== -1) || (typeStr.indexOf("Finished Sale") !== -1);
         
-        if (isTransfer) {
-            return; // Transfer skip hoga taaki double count na ho
+        if (isTransfer || isJobWork) {
+            return; // Job work aur transfer day-book me mix nahi honge
         }
 
         if (typeStr.indexOf("In") !== -1) {
@@ -426,24 +427,22 @@ function renderDashboardDayBook() {
     } else if (currentDayBookTab === "saree") {
         thead.innerHTML = "<tr style='background:#2563eb;'><th style='width:25%;'>Saree Ka Naam</th><th style='width:20%;'>Kariger / Godam</th><th style='background:#047857; color:#a7f3d0; width:20%;'>📥 Aayi (In)</th><th style='background:#b91c1c; color:#fecaca; width:20%;'>📤 Gayi (Out)</th><th>Vivran</th></tr>";
 
-        if (!sH.length) {
-            tbody.innerHTML = "<tr><td colspan='5' style='text-align:center; padding:15px; color:#888;'>Is tarikh me Saree ki koi entry nahi hai.</td></tr>";
+        var filteredSH = sH.filter(function(h) {
+            var typeStr = String(h.type || "");
+            var isTransfer = (typeStr.indexOf("Transfer") !== -1) || (typeStr.indexOf("Branch Transfer") !== -1);
+            var isJobWork = (typeStr.indexOf("Cutting") !== -1) || (typeStr.indexOf("Calender") !== -1) || (typeStr.indexOf("Finished Sale") !== -1);
+            return !isTransfer && !isJobWork;
+        });
+
+        if (!filteredSH.length) {
+            tbody.innerHTML = "<tr><td colspan='5' style='text-align:center; padding:15px; color:#888;'>Is tarikh me Factory Saree ki koi entry nahi hai.</td></tr>";
         } else {
-            sH.forEach(function(h) {
+            filteredSH.forEach(function(h) {
                 var typeStr = String(h.type || "");
-                var isTransfer = (typeStr.indexOf("Transfer") !== -1) || (typeStr.indexOf("Branch Transfer") !== -1);
                 var isA = typeStr.indexOf("In") !== -1;
 
-                var inCol = "-";
-                var outCol = "-";
-
-                if (isTransfer) {
-                    inCol = "<span class='badge-blue' style='font-size:11px;'>🔄 Transfer (" + h.pcs + " Pcs)</span>";
-                } else if (isA) {
-                    inCol = "<strong style='color:#059669;'>+" + h.pcs + " Pcs</strong>";
-                } else {
-                    outCol = "<strong style='color:#dc2626;'>-" + h.pcs + " Pcs</strong>";
-                }
+                var inCol = isA ? ("<strong style='color:#059669;'>+" + h.pcs + " Pcs</strong>") : "-";
+                var outCol = !isA ? ("<strong style='color:#dc2626;'>-" + h.pcs + " Pcs</strong>") : "-";
 
                 tbody.innerHTML += "<tr>" +
                     "<td><strong>" + h.name + "</strong></td>" +
