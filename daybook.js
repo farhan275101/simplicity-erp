@@ -1,7 +1,7 @@
 /* ========================================================
    SIMPLICITY ERP - PAYMENT MODULE, DAYBOOK & APP STARTUP
    File 5 of 5 • Developed by Farhan Jawed
-   (Point 2: Day-Book Saree Double Counting Fix & Multi-Godam Payment Engine)
+   (Day-Book Saree Double Counting Fix & Multi-Godam Payment Engine)
 ======================================================== */
 
 var currentPaymentKarkhanaFilter = "all"; // "all" ya specific karkhanaId
@@ -254,7 +254,7 @@ function deletePaymentFromSheet(karId, sheetId, rowId) {
     }
 }
 
-// ================= 3. ROZANA DAY-BOOK MODULE (POINT 2: NO DOUBLE COUNTING) =================
+// ================= 3. ROZANA DAY-BOOK MODULE (DOUBLE COUNTING FIX) =================
 
 function setDashboardToday() {
     var dateInput = document.getElementById("dash-day-date");
@@ -316,16 +316,15 @@ function renderDashboardDayBook() {
         });
     });
 
-    // 🎯 POINT 2: SAREE DOUBLE COUNTING FIX IN DAY-BOOK
+    // SAREE IN & OUT (TRANSFERS ARE NOT COUNTED IN INWARD/OUTWARD PRODUCTION TOTALS)
     var sH = getStore("saree_history").filter(function(h) { return h && h.date === d; });
     var sIn = 0, sOut = 0;
     sH.forEach(function(h) {
         var typeStr = String(h.type || "");
         var isTransfer = (typeStr.indexOf("Transfer") !== -1) || (typeStr.indexOf("Branch Transfer") !== -1);
         
-        // Agar godown transfer hai, to ise production In/Out me double add mat karo
         if (isTransfer) {
-            return;
+            return; // Transfer skip hoga taaki double count na ho
         }
 
         if (typeStr.indexOf("In") !== -1) {
@@ -435,7 +434,6 @@ function renderDashboardDayBook() {
                 var isTransfer = (typeStr.indexOf("Transfer") !== -1) || (typeStr.indexOf("Branch Transfer") !== -1);
                 var isA = typeStr.indexOf("In") !== -1;
 
-                // Transfer wali entry table me dikhegi lekin badge ke sath taaki clear rahe
                 var inCol = "-";
                 var outCol = "-";
 
