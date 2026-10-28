@@ -1,7 +1,7 @@
 /* ========================================================
    SIMPLICITY ERP - LIVE STOCK & MULTI-KARKHANA ENGINE
    File 3 of 5 • Developed by Farhan Jawed
-   (Sancha Edit & Search, Aligned Columns, Separate Opening & 2-Col Passbook)
+   (Purana vs Naya Maal Radio System, Sancha Edit & 2-Col Passbook)
 ======================================================== */
 
 var currentSareeStockTab = "fresh"; // "fresh", "finished", ya "lott"
@@ -269,13 +269,96 @@ function getZariItemStats(itemName, targetKarkhanaId) {
     };
 }
 
-// ================= 4. BANA & ZARI STOCK MODULES =================
+// ================= 4. BANA & ZARI STOCK MODULES (TARIKA 2 IMPLEMENTED) =================
 
 function openBanaModule() {
     if (typeof hideAllSections === "function") hideAllSections();
     setDisplay("bana-section", "block");
     renderBanaKarkhanaTabs();
     renderBanaTable();
+}
+
+function populateBanaExistingDropdown() {
+    var sel = document.getElementById("bana-select-existing");
+    if (!sel) return;
+    sel.innerHTML = "";
+
+    var stock = getStore("bana_stock");
+    var uniqueNames = [];
+
+    stock.forEach(function(b) {
+        if (b && b.name && uniqueNames.indexOf(b.name.trim().toLowerCase()) === -1) {
+            uniqueNames.push(b.name.trim().toLowerCase());
+            var st = getBanaItemStats(b.name, "k_main");
+            var opt = document.createElement("option");
+            opt.value = b.name.trim();
+            opt.textContent = b.name.trim() + " (Abhi Bacha: " + st.bacha.toFixed(2) + " Kg)";
+            sel.appendChild(opt);
+        }
+    });
+
+    if (!uniqueNames.length) {
+        sel.innerHTML = "<option value=''>Koi purana Bana nahi mila (Naya naam likhein)</option>";
+    }
+}
+
+function toggleBanaItemType() {
+    var isNew = document.getElementById("bana-type-new") && document.getElementById("bana-type-new").checked;
+    setDisplay("bana-existing-group", isNew ? "none" : "block");
+    setDisplay("bana-new-group", isNew ? "block" : "none");
+}
+
+function toggleBanaForm() {
+    var f = document.getElementById("add-bana-form");
+    if (!f) return;
+    f.style.display = (f.style.display === "block") ? "none" : "block";
+    document.getElementById("bana-date").value = getTodayDate();
+    
+    var rOld = document.getElementById("bana-type-existing");
+    if (rOld) rOld.checked = true;
+    populateBanaExistingDropdown();
+    toggleBanaItemType();
+}
+
+function saveNewBana() {
+    var d = document.getElementById("bana-date").value || getTodayDate();
+    var isNew = document.getElementById("bana-type-new") && document.getElementById("bana-type-new").checked;
+    var n = "";
+
+    if (isNew) {
+        n = (document.getElementById("bana-new-name").value || "").trim();
+        if (!n) return alert("Naye Bana ka naam likhein!");
+    } else {
+        n = (document.getElementById("bana-select-existing").value || "").trim();
+        if (!n) return alert("Pehle se maujood Bana chunein ya Naya Item chunein!");
+    }
+
+    var q = parseFloat(document.getElementById("bana-aaya").value) || 0;
+    if (q <= 0) return alert("Sahi quantity (Qty) bharein!");
+
+    var stock = getStore("bana_stock");
+    var item = stock.find(function(b) { return b && b.name && b.name.toLowerCase() === n.toLowerCase(); });
+
+    var histId = "bh_" + Date.now();
+    if (item) {
+        item.aaya = (Number(item.aaya) || 0) + q;
+        item.date = d;
+    } else {
+        stock.push({ id: Date.now(), name: n, date: d, aaya: q, gaya: 0, bacha: q });
+    }
+    setStore("bana_stock", stock);
+
+    var h = getStore("bana_history");
+    h.push({ id: histId, date: d, type: "Godam Kharid (Naya Maal)", name: n, qty: q, note: "Main Godam Purchase" });
+    setStore("bana_history", h);
+
+    if (document.getElementById("bana-new-name")) document.getElementById("bana-new-name").value = "";
+    if (document.getElementById("bana-aaya")) document.getElementById("bana-aaya").value = "";
+
+    toggleBanaForm();
+    renderBanaTable();
+    if (typeof updateDashboardBadgeTotals === "function") updateDashboardBadgeTotals();
+    alert("✅ " + q + " Kg " + n + " Main Godam me jud gaya!");
 }
 
 function renderBanaTable(flist) {
@@ -288,7 +371,6 @@ function renderBanaTable(flist) {
     var kName = kObj ? kObj.name : "Main Godown";
     var isMain = (currentBanaKarkhanaFilter === "k_main");
 
-    // SABHI GODAMO KA APNA OPENING BANA STOCK
     var totOpenBana = 0;
     list.forEach(function(b) {
         var matchK = isMain ? (!b.karkhanaId || b.karkhanaId === "k_main") : (String(b.karkhanaId) === String(currentBanaKarkhanaFilter));
@@ -324,42 +406,6 @@ function renderBanaTable(flist) {
     });
 }
 
-function toggleBanaForm() {
-    var f = document.getElementById("add-bana-form");
-    if (!f) return;
-    f.style.display = (f.style.display === "block") ? "none" : "block";
-    document.getElementById("bana-date").value = getTodayDate();
-}
-
-function saveNewBana() {
-    var d = document.getElementById("bana-date").value || getTodayDate();
-    var n = (document.getElementById("bana-name").value || "").trim();
-    var q = parseFloat(document.getElementById("bana-aaya").value) || 0;
-
-    if (!n || q <= 0) return alert("Sahi name aur quantity bharein!");
-
-    var stock = getStore("bana_stock");
-    var item = stock.find(function(b) { return b && b.name && b.name.toLowerCase() === n.toLowerCase(); });
-
-    var histId = "bh_" + Date.now();
-    if (item) {
-        item.aaya = (Number(item.aaya) || 0) + q;
-        item.date = d;
-    } else {
-        stock.push({ id: Date.now(), name: n, date: d, aaya: q, gaya: 0, bacha: q });
-    }
-    setStore("bana_stock", stock);
-
-    var h = getStore("bana_history");
-    h.push({ id: histId, date: d, type: "Godam Kharid (Naya Maal)", name: n, qty: q, note: "Main Godam Purchase" });
-    setStore("bana_history", h);
-
-    toggleBanaForm();
-    renderBanaTable();
-    if (typeof updateDashboardBadgeTotals === "function") updateDashboardBadgeTotals();
-    alert("✅ " + q + " Kg " + n + " Main Godam me jud gaya!");
-}
-
 function deleteBanaStock(idx) {
     if (!confirm("Kya aap is Bana item ko delete karna chahte hain?")) return;
     var s = getStore("bana_stock");
@@ -386,7 +432,6 @@ function resetBanaFilter() {
     renderBanaTable();
 }
 
-// 🎯 BANA PASSBOOK: OPENING STOCK AUR NAYI KHARID ALAG-ALAG LINE ME AAYEGI
 function viewBanaPassbook(banaName) {
     var entries = [];
     var nameLower = (banaName || "").trim().toLowerCase();
@@ -396,21 +441,18 @@ function viewBanaPassbook(banaName) {
     var kName = kObj ? kObj.name : "Godown";
 
     if (isMain) {
-        // 1. Opening Stock line alag
         getStore("bana_stock").forEach(function(b) {
             if (b && b.name && b.name.trim().toLowerCase() === nameLower && (b.isOpening || (b.note && b.note.indexOf("Opening") !== -1))) {
                 entries.push({ id: b.id, date: b.date || getTodayDate(), type: "📦 Opening Stock", qty: "+" + Number(b.aaya).toFixed(2), kariger: "Pichle Saal Ki Closing Se Aaya" });
             }
         });
 
-        // 2. Nayi Godam Kharid alag line me
         safeArray(getStore("bana_history")).filter(function(bh) {
             return bh && bh.name && bh.name.trim().toLowerCase() === nameLower && String(bh.type || "").indexOf("Kharid") !== -1;
         }).forEach(function(bh) {
             entries.push({ id: bh.id, date: bh.date, type: "📥 Godam Kharid (Naya Maal)", qty: "+" + Number(bh.qty).toFixed(2), kariger: "Supplier Inward" });
         });
 
-        // 3. Branch Transfer
         safeArray(getStore("material_transfers")).filter(function(t) { return t && t.type === "bana" && t.itemName.toLowerCase() === nameLower; }).forEach(function(t) {
             entries.push({ id: t.id, date: t.date, type: "Branch Ko Bheja", qty: "-" + Number(t.qty).toFixed(2), kariger: "Sent to " + t.toKarkhanaName });
         });
@@ -451,6 +493,89 @@ function openZariModule() {
     renderZariTable();
 }
 
+function populateZariExistingDropdown() {
+    var sel = document.getElementById("zari-select-existing");
+    if (!sel) return;
+    sel.innerHTML = "";
+
+    var stock = getStore("zari_stock");
+    var uniqueNames = [];
+
+    stock.forEach(function(z) {
+        if (z && z.name && uniqueNames.indexOf(z.name.trim().toLowerCase()) === -1) {
+            uniqueNames.push(z.name.trim().toLowerCase());
+            var st = getZariItemStats(z.name, "k_main");
+            var opt = document.createElement("option");
+            opt.value = z.name.trim();
+            opt.textContent = z.name.trim() + " (Abhi Bachi: " + st.bacha.toFixed(2) + " Kg)";
+            sel.appendChild(opt);
+        }
+    });
+
+    if (!uniqueNames.length) {
+        sel.innerHTML = "<option value=''>Koi purani Zari nahi mili (Naya naam likhein)</option>";
+    }
+}
+
+function toggleZariItemType() {
+    var isNew = document.getElementById("zari-type-new") && document.getElementById("zari-type-new").checked;
+    setDisplay("zari-existing-group", isNew ? "none" : "block");
+    setDisplay("zari-new-group", isNew ? "block" : "none");
+}
+
+function toggleZariForm() {
+    var f = document.getElementById("add-zari-form");
+    if (!f) return;
+    f.style.display = (f.style.display === "block") ? "none" : "block";
+    document.getElementById("zari-date").value = getTodayDate();
+
+    var rOld = document.getElementById("zari-type-existing");
+    if (rOld) rOld.checked = true;
+    populateZariExistingDropdown();
+    toggleZariItemType();
+}
+
+function saveNewZari() {
+    var d = document.getElementById("zari-date").value || getTodayDate();
+    var isNew = document.getElementById("zari-type-new") && document.getElementById("zari-type-new").checked;
+    var n = "";
+
+    if (isNew) {
+        n = (document.getElementById("zari-new-name").value || "").trim();
+        if (!n) return alert("Nayi Zari ka naam likhein!");
+    } else {
+        n = (document.getElementById("zari-select-existing").value || "").trim();
+        if (!n) return alert("Pehle se maujood Zari chunein ya Naya Item chunein!");
+    }
+
+    var q = parseFloat(document.getElementById("zari-aaya").value) || 0;
+    if (q <= 0) return alert("Sahi quantity (Qty) bharein!");
+
+    var stock = getStore("zari_stock");
+    var item = stock.find(function(z) { return z && z.name && z.name.toLowerCase() === n.toLowerCase(); });
+
+    var histId = "zh_" + Date.now();
+    if (item) {
+        item.aaya = (Number(item.aaya) || 0) + q;
+        item.date = d;
+    } else {
+        stock.push({ id: Date.now(), name: n, date: d, aaya: q, gaya: 0, bacha: q });
+    }
+    setStore("zari_stock", stock);
+
+    var h = getStore("zari_history");
+    h.push({ id: histId, date: d, type: "Godam Kharid (Naya Maal)", name: n, qty: q, note: "Main Godam Purchase" });
+    setStore("zari_history", h);
+
+    if (document.getElementById("zari-new-name")) document.getElementById("zari-new-name").value = "";
+    if (document.getElementById("zari-aaya")) document.getElementById("zari-aaya").value = "";
+
+    toggleZariForm();
+    renderZariTable();
+    if (typeof updateDashboardBadgeTotals === "function") updateDashboardBadgeTotals();
+    alert("✅ " + q + " Kg " + n + " Main Godam me jud gayi!");
+}
+
 function renderZariTable(flist) {
     var list = flist || getStore("zari_stock");
     var tbody = document.getElementById("zari-table-body");
@@ -461,7 +586,6 @@ function renderZariTable(flist) {
     var kName = kObj ? kObj.name : "Main Godown";
     var isMain = (currentZariKarkhanaFilter === "k_main");
 
-    // SABHI GODAMO KA APNA OPENING ZARI STOCK
     var totOpenZari = 0;
     list.forEach(function(z) {
         var matchK = isMain ? (!z.karkhanaId || z.karkhanaId === "k_main") : (String(z.karkhanaId) === String(currentZariKarkhanaFilter));
@@ -497,42 +621,6 @@ function renderZariTable(flist) {
     });
 }
 
-function toggleZariForm() {
-    var f = document.getElementById("add-zari-form");
-    if (!f) return;
-    f.style.display = (f.style.display === "block") ? "none" : "block";
-    document.getElementById("zari-date").value = getTodayDate();
-}
-
-function saveNewZari() {
-    var d = document.getElementById("zari-date").value || getTodayDate();
-    var n = (document.getElementById("zari-name").value || "").trim();
-    var q = parseFloat(document.getElementById("zari-aaya").value) || 0;
-
-    if (!n || q <= 0) return alert("Sahi name aur quantity bharein!");
-
-    var stock = getStore("zari_stock");
-    var item = stock.find(function(z) { return z && z.name && z.name.toLowerCase() === n.toLowerCase(); });
-
-    var histId = "zh_" + Date.now();
-    if (item) {
-        item.aaya = (Number(item.aaya) || 0) + q;
-        item.date = d;
-    } else {
-        stock.push({ id: Date.now(), name: n, date: d, aaya: q, gaya: 0, bacha: q });
-    }
-    setStore("zari_stock", stock);
-
-    var h = getStore("zari_history");
-    h.push({ id: histId, date: d, type: "Godam Kharid (Naya Maal)", name: n, qty: q, note: "Main Godam Purchase" });
-    setStore("zari_history", h);
-
-    toggleZariForm();
-    renderZariTable();
-    if (typeof updateDashboardBadgeTotals === "function") updateDashboardBadgeTotals();
-    alert("✅ " + q + " Kg " + n + " Main Godam me jud gayi!");
-}
-
 function deleteZariStock(idx) {
     if (!confirm("Kya aap is Zari item ko delete karna chahte hain?")) return;
     var s = getStore("zari_stock");
@@ -559,7 +647,6 @@ function resetZariFilter() {
     renderZariTable();
 }
 
-// 🎯 ZARI PASSBOOK: OPENING STOCK AUR NAYI KHARID ALAG-ALAG LINE ME AAYEGI
 function viewZariPassbook(zariName) {
     var entries = [];
     var nameLower = (zariName || "").trim().toLowerCase();
@@ -569,21 +656,18 @@ function viewZariPassbook(zariName) {
     var kName = kObj ? kObj.name : "Godown";
 
     if (isMain) {
-        // 1. Opening Stock line alag
         getStore("zari_stock").forEach(function(z) {
             if (z && z.name && z.name.trim().toLowerCase() === nameLower && (z.isOpening || (z.note && z.note.indexOf("Opening") !== -1))) {
                 entries.push({ id: z.id, date: z.date || getTodayDate(), type: "📦 Opening Stock", qty: "+" + Number(z.aaya).toFixed(2), kariger: "Pichle Saal Ki Closing Se Aayi" });
             }
         });
 
-        // 2. Nayi Godam Kharid alag line me
         safeArray(getStore("zari_history")).filter(function(zh) {
             return zh && zh.name && zh.name.trim().toLowerCase() === nameLower && String(zh.type || "").indexOf("Kharid") !== -1;
         }).forEach(function(zh) {
             entries.push({ id: zh.id, date: zh.date, type: "📥 Godam Kharid (Naya Maal)", qty: "+" + Number(zh.qty).toFixed(2), kariger: "Supplier Inward" });
         });
 
-        // 3. Branch Transfer
         safeArray(getStore("material_transfers")).filter(function(t) { return t && t.type === "zari" && t.itemName.toLowerCase() === nameLower; }).forEach(function(t) {
             entries.push({ id: t.id, date: t.date, type: "Branch Ko Bheji", qty: "-" + Number(t.qty).toFixed(2), kariger: "Sent to " + t.toKarkhanaName });
         });
@@ -617,7 +701,7 @@ function viewZariPassbook(zariName) {
     viewCustomDatePassbook("Zari Passbook: " + zariName + " (" + kName + ")", entries, "zari_history");
 }
 
-// ================= 5. 🚚 MATERIAL & SANCHA TRANSFER =================
+// ================= 5. MATERIAL & SANCHA TRANSFER =================
 
 function openMaterialTransferModal(type) {
     var isZari = (type === "zari");
@@ -682,7 +766,6 @@ function saveMaterialTransferEntry() {
     if (!item) return alert("Item ka naam bharein!");
     if (qty <= 0) return alert("Sahi quantity bharein!");
 
-    // Negative Stock Alert
     if (type === "bana" && typeof getBanaItemStats === "function") {
         var curB = getBanaItemStats(item, "k_main").bacha;
         if (qty > curB) {
@@ -726,7 +809,7 @@ function saveMaterialTransferEntry() {
     alert("✅ " + qty + " " + item + " Main Godam se " + destName + " ko bhej diya gaya!");
 }
 
-// ================= 6. 🥻 SAREE STOCK MODULE =================
+// ================= 6. SAREE STOCK MODULE =================
 
 function openSareeModule() {
     if (typeof hideAllSections === "function") hideAllSections();
@@ -781,7 +864,6 @@ function renderSareeTable(flist) {
     var kObj = getKarkhanasSafe().find(function(x) { return String(x.id) === String(kId); });
     var kName = kObj ? kObj.name : "Main Godown";
 
-    // SABHI GODAMO KA APNA OPENING SAREE STOCK
     var totOpenSaree = 0;
     if (currentSareeStockTab === "fresh") {
         var allS = safeArray(getStore("saree_stock"));
@@ -813,7 +895,6 @@ function renderSareeTable(flist) {
     if (elVal) elVal.textContent = totOpenSaree + " Pcs (" + kName + " - " + currentSareeStockTab.toUpperCase() + ")";
     if (elNote) elNote.textContent = totOpenSaree > 0 ? ("Pichle Session (" + getPreviousSessionLabel() + ") ki 31 March Closing se Aaya") : "Is Godam me koi Opening Stock nahi tha";
 
-    // 1. FRESH SAREE TAB
     if (currentSareeStockTab === "fresh") {
         thead.innerHTML = "<tr style='background:#2563eb; color:white;'>" +
             "<th>Date</th><th>S.No.</th><th>Saree Ka Naam</th><th>Kariger / Karkhana</th><th>Fresh Stock (Pcs)</th><th>Out / Transfer</th><th style='text-align:center;'>Action</th>" +
@@ -866,7 +947,6 @@ function renderSareeTable(flist) {
             "</tr>";
         }
 
-    // 2. FINISHED SAREE TAB
     } else if (currentSareeStockTab === "finished") {
         thead.innerHTML = "<tr style='background:#0d9488; color:white;'>" +
             "<th>Date</th><th>S.No.</th><th>Tayaar Saree (Process)</th><th>Kahan Se Aayi (Source)</th><th>Finished Stock (Pcs)</th><th>Out (Bikri/Dukan)</th><th style='text-align:center;'>Action</th>" +
@@ -913,7 +993,6 @@ function renderSareeTable(flist) {
             "</tr>";
         }
 
-    // 3. LOTT / DAMAGE SAREE TAB
     } else if (currentSareeStockTab === "lott") {
         thead.innerHTML = "<tr style='background:#dc2626; color:white;'>" +
             "<th>Date</th><th>Saree Ka Naam</th><th>Kahan Se Aayi</th><th>Lott Stock (Pcs)</th><th>Out</th><th style='text-align:center;'>Action</th>" +
@@ -1125,7 +1204,7 @@ function resetSareeFilter() {
     renderSareeTable();
 }
 
-// ================= 7. 📥 SAREE INWARD / TRANSFER =================
+// ================= 7. SAREE INWARD / TRANSFER =================
 
 function openSareeTransferModal() {
     document.getElementById("saree-transfer-date").value = getTodayDate();
@@ -1228,7 +1307,7 @@ function saveSareeTransferEntry() {
     alert("✅ " + pcs + " Saree " + sourceName + " se Main Godam me safalta-purvak receive ho gayi!");
 }
 
-// ================= 8. 🎯 SAREE PASSBOOK (GREEN = AAYI, RED = MAIN GODAM GAYI) =================
+// ================= 8. SAREE PASSBOOK =================
 
 function viewFreshSareePassbook(sareeName) {
     var entries = [];
@@ -1238,7 +1317,6 @@ function viewFreshSareePassbook(sareeName) {
     var kObj = getKarkhanasSafe().find(function(x) { return String(x.id) === String(kId); });
     var kName = kObj ? kObj.name : "Godown";
 
-    // 1. Kariger Weave (Loom se Aayi)
     hist.forEach(function(it) {
         if (!it) return;
         var nMatch = (it.name && it.name.toLowerCase() === String(sareeName || "").toLowerCase());
@@ -1259,7 +1337,6 @@ function viewFreshSareePassbook(sareeName) {
         }
     });
 
-    // 2. Branch Transfer In / Out
     if (!isMain) {
         safeArray(getStore("saree_transfers")).filter(function(st) {
             return st && String(st.fromKarkhanaId) === String(kId) && String(st.sareeName || "").toLowerCase() === String(sareeName || "").toLowerCase();
@@ -1290,7 +1367,6 @@ function viewFreshSareePassbook(sareeName) {
         });
     }
 
-    // 3. Opening Stock entries
     var openItems = safeArray(getStore("saree_stock")).filter(function(s) {
         var matchK = isMain ? (!s.karkhanaId || s.karkhanaId === "k_main") : (String(s.karkhanaId) === String(kId));
         return matchK && (s.isOpening || (s.kariger && s.kariger.indexOf("Opening Stock") !== -1)) &&
@@ -1503,7 +1579,7 @@ function closeItemModal() {
     isModalSareePassbookMode = false;
 }
 
-// ================= 9. ⚙️ SANCHA STOCK MODULE (EDIT, ALIGNMENT & SEARCH FIX) =================
+// ================= 9. SANCHA STOCK MODULE (TARIKA 2 IMPLEMENTED) =================
 
 function getSanchaItems() {
     var items = getStore("sancha_items");
@@ -1601,12 +1677,48 @@ function openSanchaModule() {
     renderSanchaTable();
 }
 
+function populateSanchaExistingDropdown() {
+    var sel = document.getElementById("sancha-select-existing");
+    if (!sel) return;
+    sel.innerHTML = "";
+
+    var items = getSanchaItems();
+    var uniqueNames = [];
+
+    items.forEach(function(s) {
+        if (s && s.name && uniqueNames.indexOf(s.name.trim().toLowerCase()) === -1) {
+            uniqueNames.push(s.name.trim().toLowerCase());
+            var st = getSanchaItemStats(s.id, s.name, "k_main");
+            var opt = document.createElement("option");
+            opt.value = s.id;
+            opt.textContent = s.name.trim() + (s.person && s.person !== "-" ? (" (" + s.person + ")") : "") + " [Bacha: " + st.bacha.toFixed(2) + "]";
+            sel.appendChild(opt);
+        }
+    });
+
+    if (!uniqueNames.length) {
+        sel.innerHTML = "<option value=''>Koi purana Sancha nahi mila (Naya naam likhein)</option>";
+    }
+}
+
+function toggleSanchaItemType() {
+    var isNew = document.getElementById("sancha-type-new") && document.getElementById("sancha-type-new").checked;
+    setDisplay("sancha-existing-group", isNew ? "none" : "block");
+    setDisplay("sancha-new-group", isNew ? "block" : "none");
+    setDisplay("sancha-new-person-group", isNew ? "block" : "none");
+}
+
 function toggleAddSanchaItemForm() {
     var f = document.getElementById("add-sancha-item-form");
     if (!f) return;
     f.style.display = (f.style.display === "block") ? "none" : "block";
     document.getElementById("sancha-new-item-date").value = getTodayDate();
     cancelSanchaEdit();
+
+    var rOld = document.getElementById("sancha-type-existing");
+    if (rOld) rOld.checked = true;
+    populateSanchaExistingDropdown();
+    toggleSanchaItemType();
 }
 
 function cancelSanchaEdit() {
@@ -1619,32 +1731,25 @@ function cancelSanchaEdit() {
     setDisplay("sancha-cancel-btn", "none");
 }
 
-// 🎯 SANCHA ITEM SAVE & EDIT ENGINE
 function saveNewSanchaItem() {
     var editId = document.getElementById("sancha-edit-id").value;
     var d = document.getElementById("sancha-new-item-date").value || getTodayDate();
-    var n = (document.getElementById("sancha-new-item-name").value || "").trim();
-    var person = (document.getElementById("sancha-new-item-person").value || "").trim();
     var q = parseFloat(document.getElementById("sancha-new-item-qty").value) || 0;
-
-    if (!n) return alert("Sancha item ka naam daalein!");
-
     var items = getSanchaItems();
 
     if (editId) {
         var it = items.find(function(x) { return String(x.id) === String(editId); });
         if (it) {
-            it.name = n;
-            it.person = person || "-";
+            it.name = (document.getElementById("sancha-new-item-name").value || "").trim();
+            it.person = (document.getElementById("sancha-new-item-person").value || "").trim() || "-";
             it.date = d;
             it.aaya = q;
 
-            // History me bhi update karein
             var hist = getStore("sancha_history");
             hist.forEach(function(h) {
                 if (h && String(h.itemId) === String(editId) && String(h.type || "").indexOf("Starting") !== -1) {
-                    h.itemName = n;
-                    h.person = person || "-";
+                    h.itemName = it.name;
+                    h.person = it.person;
                     h.date = d;
                     h.qty = q;
                 }
@@ -1652,29 +1757,61 @@ function saveNewSanchaItem() {
             setStore("sancha_history", hist);
         }
     } else {
-        var newId = "sancha_" + Date.now();
-        items.push({
-            id: newId,
-            name: n,
-            person: person || "-",
-            date: d,
-            aaya: q,
-            karkhanaId: "k_main"
-        });
+        var isNew = document.getElementById("sancha-type-new") && document.getElementById("sancha-type-new").checked;
 
-        if (q > 0) {
-            var hist = getStore("sancha_history");
-            hist.push({
-                id: Date.now(),
-                itemId: newId,
-                itemName: n,
+        if (isNew) {
+            var n = (document.getElementById("sancha-new-item-name").value || "").trim();
+            var person = (document.getElementById("sancha-new-item-person").value || "").trim();
+
+            if (!n) return alert("Naye Sancha item ka naam daalein!");
+
+            var newId = "sancha_" + Date.now();
+            items.push({
+                id: newId,
+                name: n,
                 person: person || "-",
                 date: d,
-                type: "Aaya (Starting)",
-                qty: q,
-                note: (person ? ("Name: " + person + " • ") : "") + "Main Godam Starting Stock"
+                aaya: q,
+                karkhanaId: "k_main"
             });
-            setStore("sancha_history", hist);
+
+            if (q > 0) {
+                var hist2 = getStore("sancha_history");
+                hist2.push({
+                    id: Date.now(),
+                    itemId: newId,
+                    itemName: n,
+                    person: person || "-",
+                    date: d,
+                    type: "Aaya (Starting)",
+                    qty: q,
+                    note: (person ? ("Name: " + person + " • ") : "") + "Main Godam Starting Stock"
+                });
+                setStore("sancha_history", hist2);
+            }
+        } else {
+            var selectedSanchaId = document.getElementById("sancha-select-existing").value;
+            if (!selectedSanchaId) return alert("Pehle se maujood Sancha chunein ya Naya Item chunein!");
+            if (q <= 0) return alert("Sahi quantity bharein!");
+
+            var existingItem = items.find(function(x) { return String(x.id) === String(selectedSanchaId); });
+            if (existingItem) {
+                existingItem.aaya = (Number(existingItem.aaya) || 0) + q;
+                existingItem.date = d;
+
+                var hist3 = getStore("sancha_history");
+                hist3.push({
+                    id: Date.now(),
+                    itemId: existingItem.id,
+                    itemName: existingItem.name,
+                    person: existingItem.person || "-",
+                    date: d,
+                    type: "Aaya (Stock In)",
+                    qty: q,
+                    note: "Existing Sancha Stock Added"
+                });
+                setStore("sancha_history", hist3);
+            }
         }
     }
 
@@ -1686,13 +1823,16 @@ function saveNewSanchaItem() {
     alert("✅ Sancha Item safalta-purvak save ho gaya!");
 }
 
-// 🎯 SANCHA ✏️ EDIT FUNCTION
 function editSanchaItem(id) {
     var it = getSanchaItems().find(function(x) { return String(x.id) === String(id); });
     if (!it) return;
 
     var f = document.getElementById("add-sancha-item-form");
     if (f) f.style.display = "block";
+
+    var rNew = document.getElementById("sancha-type-new");
+    if (rNew) rNew.checked = true;
+    toggleSanchaItemType();
 
     document.getElementById("sancha-edit-id").value = it.id;
     document.getElementById("sancha-new-item-date").value = it.date || getTodayDate();
@@ -1705,7 +1845,6 @@ function editSanchaItem(id) {
     document.getElementById("sancha-new-item-name").focus();
 }
 
-// 🎯 SANCHA SEARCH FILTER (NAME, PERSON, DATE LIVE)
 function filterSancha() {
     var txt = (document.getElementById("search-sancha-input") && document.getElementById("search-sancha-input").value || "").toLowerCase().trim();
     var allItems = getSanchaItems();
@@ -1724,7 +1863,6 @@ function filterSancha() {
     renderSanchaTable(filtered);
 }
 
-// 🎯 SANCHA TABLE (EXACT 7 ALIGNED COLUMNS + EDIT BUTTON)
 function renderSanchaTable(customList) {
     var items = customList || getSanchaItems();
     var tbody = document.getElementById("sancha-table-body");
@@ -1735,7 +1873,6 @@ function renderSanchaTable(customList) {
     var kName = kObj ? kObj.name : "Main Godown";
     var isMain = (currentSanchaKarkhanaFilter === "k_main");
 
-    // SABHI GODAMO KA APNA OPENING SANCHA STOCK
     var totOpenSancha = 0;
     getSanchaItems().forEach(function(s) {
         var matchK = isMain ? (!s.karkhanaId || s.karkhanaId === "k_main") : (String(s.karkhanaId) === String(currentSanchaKarkhanaFilter));
@@ -1758,7 +1895,6 @@ function renderSanchaTable(customList) {
         var st = getSanchaItemStats(item.id, item.name, currentSanchaKarkhanaFilter);
         var opTag = (item.note && item.note.indexOf("Opening") !== -1) ? "<span class='badge-blue' style='font-size:10px; display:block; margin-top:2px;'>📦 Pichle Saal Se Aaya</span>" : "";
 
-        // ✅ EXACT 7 COLUMNS PERFECT ALIGNED WITH ✏️ EDIT BUTTON
         tbody.innerHTML += "<tr>" +
             "<td>" + formatDateDisplay(st.date || item.date) + "</td>" +
             "<td><strong style='color:#0284c7;'>⚙️ " + item.name + " <span style='font-size:11px;'>(" + kName + ")</span></strong>" + opTag + "</td>" +
@@ -1766,11 +1902,7 @@ function renderSanchaTable(customList) {
             "<td><span class='badge-green'>+" + Number(st.aaya).toFixed(2) + "</span></td>" +
             "<td><span class='badge-red'>-" + Number(st.gaya).toFixed(2) + "</span></td>" +
             "<td><span class='badge-blue' style='font-size:13px; font-weight:800;'>" + Number(st.bacha).toFixed(2) + "</span></td>" +
-            "<td style='text-align:center;'>" +
-                "<button class='detail-btn' style='background:#0284c7;' onclick='openSanchaDetailModal(\"" + item.id + "\")'>📖 Passbook</button> " +
-                "<button class='edit-btn' onclick='editSanchaItem(\"" + item.id + "\")'>✏️</button> " +
-                "<button class='delete-btn' onclick='deleteSanchaItem(\"" + item.id + "\")'>🗑️</button>" +
-            "</td>" +
+            "<td style='text-align:center;'><button class='detail-btn' style='background:#0284c7;' onclick='openSanchaDetailModal(\"" + item.id + "\")'>📖 Passbook</button> <button class='edit-btn' onclick='editSanchaItem(\"" + item.id + "\")'>✏️</button> <button class='delete-btn' onclick='deleteSanchaItem(\"" + item.id + "\")'>🗑️</button></td>" +
         "</tr>";
     });
 }
@@ -1976,43 +2108,4 @@ function renderSanchaHistoryTable() {
 
         tbody.innerHTML += "<tr>" +
             "<td>" + formatDateDisplay(e.date) + "</td>" +
-            "<td><span class='" + (isAaya ? "badge-green" : "badge-red") + "'>" + e.type + "</span></td>" +
-            "<td><strong style='color:" + (isAaya ? "#059669" : "#dc2626") + ";'>" + (isAaya ? "+" : "-") + e.qty.toFixed(2) + "</strong></td>" +
-            "<td><strong>" + e.source + "</strong> <span style='color:#64748b;'>(" + e.note + ")</span></td>" +
-            "<td style='text-align:center;'>" + actionCol + "</td>" +
-        "</tr>";
-    });
-}
-
-function deleteSanchaHistoryRowDirectly(entryId) {
-    if (!entryId) return;
-    if (!confirm("Kya aap is entry ko delete karna chahte hain? Iska stock bhi wapas adjust ho jayega.")) return;
-
-    var hist = getStore("sancha_history");
-    var entry = hist.find(function(x) { return x && String(x.id) === String(entryId); });
-
-    if (entry) {
-        var qty = Number(entry.qty) || 0;
-        if (String(entry.type || "").indexOf("Starting") !== -1) {
-            var items = getSanchaItems();
-            var item = items.find(function(i) { 
-                return i && (String(i.id) === String(entry.itemId) || String(i.name).trim().toLowerCase() === String(entry.itemName).trim().toLowerCase()); 
-            });
-            if (item) {
-                item.aaya = Math.max(0, (Number(item.aaya) || 0) - qty);
-                setStore("sancha_items", items);
-            }
-        }
-        hist = hist.filter(function(x) { return !x || String(x.id) !== String(entryId); });
-        setStore("sancha_history", hist);
-    }
-
-    renderSanchaHistoryTable();
-    renderSanchaTable();
-    if (typeof updateDashboardBadgeTotals === "function") updateDashboardBadgeTotals();
-    alert("🗑️ Sancha passbook entry delete ho gayi aur Stock update ho gaya!");
-}
-
-function autoDeductSanchaStock(wazan, date, karName, sanchaName, taniName) {
-    return true;
-}
+            "<td><span class='" + (isAaya ? "badge-green" : "badge-red") + "'>" + e.type + "</span></
