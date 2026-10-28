@@ -2111,7 +2111,7 @@ function renderSanchaHistoryTable() {
             "<td><span class='" + (isAaya ? "badge-green" : "badge-red") + "'>" + e.type + "</span></td>" +
             "<td><strong>" + Number(e.qty).toFixed(2) + "</strong></td>" +
             "<td>" + (e.note || "-") + "</td>" +
-            "<td style='text-align:center;'>" + actionCol + "</td>" +
+            "<td style='text-align:center;'><button class='delete-btn' onclick='deleteSanchaHistoryRowDirectly(\"" + e.id + "\")'>🗑️</button></td>" +
         "</tr>";
     });
 }
@@ -2122,4 +2122,17 @@ function deleteSanchaHistoryRowDirectly(hId) {
     var entry = hist.find(function(x) { return x && String(x.id) === String(hId); });
     if (entry) {
         var items = getSanchaItems();
-        var it = items.find(function(x) { return x && Strin
+        var it = items.find(function(x) { return x && String(x.id) === String(entry.itemId); });
+        if (it && String(entry.type || "").indexOf("Aaya") !== -1) {
+            it.aaya = Math.max(0, (Number(it.aaya) || 0) - (Number(entry.qty) || 0));
+            setStore("sancha_items", items);
+        }
+    }
+    hist = hist.filter(function(x) { return !x || String(x.id) !== String(hId); });
+    setStore("sancha_history", hist);
+
+    renderSanchaHistoryTable();
+    renderSanchaTable();
+    if (typeof updateDashboardBadgeTotals === "function") updateDashboardBadgeTotals();
+    alert("🗑️ Sancha history entry delete ho gayi!");
+}
