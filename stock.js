@@ -1,7 +1,7 @@
 /* ========================================================
    SIMPLICITY ERP - LIVE STOCK & MULTI-KARKHANA ENGINE
    File 3 of 5 • Developed by Farhan Jawed
-   (Aligned Sancha Columns, Working Sancha Search & Instant Passbook Delete)
+   (All-Godowns Opening Stock, Aligned Sancha Table, Sancha Search & Instant Delete)
 ======================================================== */
 
 var currentSareeStockTab = "fresh"; // "fresh", "finished", ya "lott"
@@ -288,18 +288,18 @@ function renderBanaTable(flist) {
     var kName = kObj ? kObj.name : "Main Godown";
     var isMain = (currentBanaKarkhanaFilter === "k_main");
 
+    // ✅ POINT 5: SABHI GODAMO KA APNA OPENING BANA STOCK
     var totOpenBana = 0;
-    if (isMain) {
-        list.forEach(function(b) {
-            if (b && (b.isOpening || (b.note && b.note.indexOf("Opening") !== -1))) {
-                totOpenBana += (Number(b.aaya) || 0);
-            }
-        });
-    }
+    list.forEach(function(b) {
+        var matchK = isMain ? (!b.karkhanaId || b.karkhanaId === "k_main") : (String(b.karkhanaId) === String(currentBanaKarkhanaFilter));
+        if (b && matchK && (b.isOpening || (b.note && b.note.indexOf("Opening") !== -1))) {
+            totOpenBana += (Number(b.aaya) || 0);
+        }
+    });
     var elVal = document.getElementById("bana-opening-val");
     var elNote = document.getElementById("bana-opening-note");
     if (elVal) elVal.textContent = totOpenBana.toFixed(2) + " Kg (" + kName + ")";
-    if (elNote) elNote.textContent = isMain ? ("Pichle Session (" + getPreviousSessionLabel() + ") ki 31 March Closing se") : (kName + " ka stock transfer ke zariye aata hai");
+    if (elNote) elNote.textContent = totOpenBana > 0 ? ("Pichle Session (" + getPreviousSessionLabel() + ") ki 31 March Closing se Aaya") : "Is Godam me koi Opening Stock nahi tha";
 
     if (!list.length) {
         tbody.innerHTML = "<tr><td colspan='6' style='text-align:center; padding:20px; color:#888;'>Koi Bana Item nahi mila.</td></tr>";
@@ -452,18 +452,18 @@ function renderZariTable(flist) {
     var kName = kObj ? kObj.name : "Main Godown";
     var isMain = (currentZariKarkhanaFilter === "k_main");
 
+    // ✅ POINT 5: SABHI GODAMO KA APNA OPENING ZARI STOCK
     var totOpenZari = 0;
-    if (isMain) {
-        list.forEach(function(z) {
-            if (z && (z.isOpening || (z.note && z.note.indexOf("Opening") !== -1))) {
-                totOpenZari += (Number(z.aaya) || 0);
-            }
-        });
-    }
+    list.forEach(function(z) {
+        var matchK = isMain ? (!z.karkhanaId || z.karkhanaId === "k_main") : (String(z.karkhanaId) === String(currentZariKarkhanaFilter));
+        if (z && matchK && (z.isOpening || (z.note && z.note.indexOf("Opening") !== -1))) {
+            totOpenZari += (Number(z.aaya) || 0);
+        }
+    });
     var elVal = document.getElementById("zari-opening-val");
     var elNote = document.getElementById("zari-opening-note");
     if (elVal) elVal.textContent = totOpenZari.toFixed(2) + " Kg (" + kName + ")";
-    if (elNote) elNote.textContent = isMain ? ("Pichle Session (" + getPreviousSessionLabel() + ") ki 31 March Closing se") : (kName + " ka stock transfer ke zariye aata hai");
+    if (elNote) elNote.textContent = totOpenZari > 0 ? ("Pichle Session (" + getPreviousSessionLabel() + ") ki 31 March Closing se Aaya") : "Is Godam me koi Opening Stock nahi tha";
 
     if (!list.length) {
         tbody.innerHTML = "<tr><td colspan='6' style='text-align:center; padding:20px; color:#888;'>Koi Zari Item nahi mila.</td></tr>";
@@ -664,7 +664,7 @@ function saveMaterialTransferEntry() {
     if (!item) return alert("Item ka naam bharein!");
     if (qty <= 0) return alert("Sahi quantity bharein!");
 
-    // Negative Stock Alert
+    // Negative Stock Alerts
     if (type === "bana" && typeof getBanaItemStats === "function") {
         var curB = getBanaItemStats(item, "k_main").bacha;
         if (qty > curB) {
@@ -763,6 +763,7 @@ function renderSareeTable(flist) {
     var kObj = getKarkhanasSafe().find(function(x) { return String(x.id) === String(kId); });
     var kName = kObj ? kObj.name : "Main Godown";
 
+    // ✅ POINT 5: SABHI GODAMO KA APNA OPENING SAREE STOCK
     var totOpenSaree = 0;
     if (currentSareeStockTab === "fresh") {
         var allS = safeArray(getStore("saree_stock"));
@@ -792,7 +793,7 @@ function renderSareeTable(flist) {
     var elVal = document.getElementById("saree-opening-val");
     var elNote = document.getElementById("saree-opening-note");
     if (elVal) elVal.textContent = totOpenSaree + " Pcs (" + kName + " - " + currentSareeStockTab.toUpperCase() + ")";
-    if (elNote) elNote.textContent = "Pichle Session (" + getPreviousSessionLabel() + ") ki 31 March Closing se Aaya";
+    if (elNote) elNote.textContent = totOpenSaree > 0 ? ("Pichle Session (" + getPreviousSessionLabel() + ") ki 31 March Closing se Aaya") : "Is Godam me koi Opening Stock nahi tha";
 
     // 1. FRESH SAREE TAB
     if (currentSareeStockTab === "fresh") {
@@ -854,7 +855,7 @@ function renderSareeTable(flist) {
         "</tr>";
 
         var finList = getCleanFinishedSareeStock();
-        if (flist) finList = flist;
+        if (flist) finList = finList;
 
         if (!finList.length) {
             tbody.innerHTML = "<tr><td colspan='7' style='text-align:center; padding:20px; color:#0d9488; font-weight:700;'>✨ Abhi koi Calender Finished Saree nahi aayi hai.</td></tr>";
@@ -1634,7 +1635,7 @@ function saveNewSanchaItem() {
     alert("✅ Naya Sancha Item '" + n + "' Main Godam me ban gaya!");
 }
 
-// 🎯 SEARCH FIX: SEARCH IN BOTH NAME, PERSON AND DATE LIVE
+// 🎯 SEARCH FIX: SEARCHES BOTH ITEM NAME, PERSON AND DATE LIVE
 function filterSancha() {
     var txt = (document.getElementById("search-sancha-input") && document.getElementById("search-sancha-input").value || "").toLowerCase().trim();
     var allItems = getSanchaItems();
@@ -1653,7 +1654,7 @@ function filterSancha() {
     renderSanchaTable(filtered);
 }
 
-// 🎯 ALIGNED TABLE: EXACT 7 COLUMNS (NO ROW SHIFTING)
+// 🎯 ALIGNED TABLE: EXACT 7 COLUMNS & OPENING STOCK FOR ALL GODOWNS
 function renderSanchaTable(customList) {
     var items = customList || getSanchaItems();
     var tbody = document.getElementById("sancha-table-body");
@@ -1664,18 +1665,18 @@ function renderSanchaTable(customList) {
     var kName = kObj ? kObj.name : "Main Godown";
     var isMain = (currentSanchaKarkhanaFilter === "k_main");
 
+    // ✅ POINT 5: SABHI GODAMO KA APNA OPENING SANCHA STOCK
     var totOpenSancha = 0;
-    if (isMain) {
-        getSanchaItems().forEach(function(s) {
-            if (s && (s.isOpening || (s.note && s.note.indexOf("Opening") !== -1))) {
-                totOpenSancha += (Number(s.aaya) || 0);
-            }
-        });
-    }
+    getSanchaItems().forEach(function(s) {
+        var matchK = isMain ? (!s.karkhanaId || s.karkhanaId === "k_main") : (String(s.karkhanaId) === String(currentSanchaKarkhanaFilter));
+        if (s && matchK && (s.isOpening || (s.note && s.note.indexOf("Opening") !== -1))) {
+            totOpenSancha += (Number(s.aaya) || 0);
+        }
+    });
     var elVal = document.getElementById("sancha-opening-val");
     var elNote = document.getElementById("sancha-opening-note");
     if (elVal) elVal.textContent = totOpenSancha.toFixed(2) + " (" + kName + ")";
-    if (elNote) elNote.textContent = isMain ? ("Pichle Session (" + getPreviousSessionLabel() + ") ki 31 March Closing se") : (kName + " ka stock transfer ke zariye aata hai");
+    if (elNote) elNote.textContent = totOpenSancha > 0 ? ("Pichle Session (" + getPreviousSessionLabel() + ") ki 31 March Closing se Aaya") : "Is Godam me koi Opening Stock nahi tha";
 
     if (!items.length) {
         tbody.innerHTML = "<tr><td colspan='7' style='text-align:center; padding:20px; color:#888;'>Koi Sancha Item nahi mila.</td></tr>";
@@ -1687,7 +1688,7 @@ function renderSanchaTable(customList) {
         var st = getSanchaItemStats(item.id, item.name, currentSanchaKarkhanaFilter);
         var opTag = (item.note && item.note.indexOf("Opening") !== -1) ? "<span class='badge-blue' style='font-size:10px; display:block; margin-top:2px;'>📦 Pichle Saal Se Aaya</span>" : "";
 
-        // ✅ 7 COLUMNS PERFECT ALIGNED
+        // ✅ EXACT 7 COLUMNS PERFECT ALIGNED
         tbody.innerHTML += "<tr>" +
             "<td>" + formatDateDisplay(st.date || item.date) + "</td>" +
             "<td><strong style='color:#0284c7;'>⚙️ " + item.name + " <span style='font-size:11px;'>(" + kName + ")</span></strong>" + opTag + "</td>" +
@@ -1904,12 +1905,12 @@ function renderSanchaHistoryTable() {
             "<td><span class='" + (isAaya ? "badge-green" : "badge-red") + "'>" + e.type + "</span></td>" +
             "<td><strong style='color:" + (isAaya ? "#059669" : "#dc2626") + ";'>" + (isAaya ? "+" : "-") + e.qty.toFixed(2) + "</strong></td>" +
             "<td><strong>" + e.source + "</strong> <span style='color:#64748b;'>(" + e.note + ")</span></td>" +
-            "<td style='text-align:center;'>" + actionCol + "</td>" +
+            "<td style='text-align:center;'><button class='delete-btn' onclick='deleteSanchaHistoryRowDirectly(\"" + e.id + "\")'>🗑️</button></td>" +
         "</tr>";
     });
 }
 
-// 🎯 FIXED DELETE: TURANT DELETE HOGA AUR STOCK UPDATE HO JAYEGA
+// 🎯 FIXED DELETE: PASSBOOK SE ENTRY TURANT DELETE HOGI AUR STOCK MINUS HO JAYEGA
 function deleteSanchaHistoryRowDirectly(entryId) {
     if (!entryId) return;
     if (!confirm("Kya aap is entry ko delete karna chahte hain? Iska stock bhi wapas adjust ho jayega.")) return;
