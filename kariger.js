@@ -1,7 +1,7 @@
 /* ========================================================
-   SIMPLICITY ERP - KARIGER MASTER, DYNAMIC MULTI-KARKHANA & SESSION ENGINE
+   SIMPLICITY ERP - KARIGER MASTER, MULTI-KARKHANA & SESSION ENGINE
    File 2 of 5 • Developed by Farhan Jawed
-   (Multi-Godam Opening Carry Forward, Manual Rates, Net Formula & Karkhana Stock)
+   (Tani Wastage Deduction, Datalist Dropdowns, Multi-Godam Opening & Manual Rates)
 ======================================================== */
 
 var activeKarigerId = null;
@@ -105,7 +105,7 @@ function closeSessionClosingModal() {
     setDisplay("session-closing-modal", "none");
 }
 
-// 🚀 POINT 1: YEAR-END CLOSING PROCESS (EVERY GODOWN STOCKS CARRY FORWARD)
+// 🚀 YEAR-END CLOSING PROCESS (EVERY GODOWN STOCKS CARRY FORWARD)
 function executeYearEndClosingProcess() {
     var curSess = getActiveFinancialSession();
     var newSessEl = document.getElementById("session-new-input");
@@ -148,6 +148,8 @@ function executeYearEndClosingProcess() {
             pichlaBana: Number((calc.remainingBana || 0).toFixed(2)),
             pichlaZari: Number((calc.remainingZari || 0).toFixed(2)),
             pichlaBani: Number((calc.remainingAmt || 0).toFixed(2)),
+            banaWaste: 0,
+            zariWaste: 0,
             rateBana: lastSheet ? (Number(lastSheet.rateBana) || 0.311) : 0.311,
             rateZari: lastSheet ? (Number(lastSheet.rateZari) || 0.110) : 0.110,
             rateBani: lastSheet ? (Number(lastSheet.rateBani) || 240) : 240,
@@ -820,7 +822,58 @@ function renderKarigerTable() {
     });
 }
 
-// ================= 5. KARIGER KHATA SHEET ENGINE (MANUAL RATES & FORMULA) =================
+// 🎯 AUTO-FILL DATALISTS FOR SANCHA, BANA & ZARI (PREVENTS TYPOS & DUPLICATES)
+function populateSheetDatalists() {
+    // 1. Sancha Dropdown Datalist
+    var sanchaDl = document.getElementById("sheet-sancha-dl");
+    if (sanchaDl && typeof getSanchaItems === "function") {
+        sanchaDl.innerHTML = "";
+        var sItems = getSanchaItems();
+        var uniqueS = [];
+        sItems.forEach(function(s) {
+            if (s && s.name && uniqueS.indexOf(s.name.trim().toLowerCase()) === -1) {
+                uniqueS.push(s.name.trim().toLowerCase());
+                var opt = document.createElement("option");
+                opt.value = s.name.trim();
+                sanchaDl.appendChild(opt);
+            }
+        });
+    }
+
+    // 2. Bana Dropdown Datalist
+    var banaDl = document.getElementById("sheet-bana-dl");
+    if (banaDl) {
+        banaDl.innerHTML = "";
+        var bItems = safeArray(getStore("bana_stock"));
+        var uniqueB = [];
+        bItems.forEach(function(b) {
+            if (b && b.name && uniqueB.indexOf(b.name.trim().toLowerCase()) === -1) {
+                uniqueB.push(b.name.trim().toLowerCase());
+                var opt = document.createElement("option");
+                opt.value = b.name.trim();
+                banaDl.appendChild(opt);
+            }
+        });
+    }
+
+    // 3. Zari Dropdown Datalist
+    var zariDl = document.getElementById("sheet-zari-dl");
+    if (zariDl) {
+        zariDl.innerHTML = "";
+        var zItems = safeArray(getStore("zari_stock"));
+        var uniqueZ = [];
+        zItems.forEach(function(z) {
+            if (z && z.name && uniqueZ.indexOf(z.name.trim().toLowerCase()) === -1) {
+                uniqueZ.push(z.name.trim().toLowerCase());
+                var opt = document.createElement("option");
+                opt.value = z.name.trim();
+                zariDl.appendChild(opt);
+            }
+        });
+    }
+}
+
+// ================= 5. KARIGER KHATA SHEET ENGINE =================
 
 function openKarigerSheet(id) {
     var k = sanitizeKarigerList().find(function(x) { return String(x.id) === String(id); });
@@ -843,6 +896,8 @@ function openKarigerSheet(id) {
             pichlaBana: 0,
             pichlaZari: 0,
             pichlaBani: 0,
+            banaWaste: 0,
+            zariWaste: 0,
             rateBana: 0.311,
             rateZari: 0.110,
             rateBani: 240,
@@ -855,6 +910,8 @@ function openKarigerSheet(id) {
     setDisplay("kariger-section", "none");
     setDisplay("kariger-sheet-section", "block");
 
+    // Populate Datalists for Sancha, Bana, Zari
+    populateSheetDatalists();
     renderKarigerSheetTabs();
     loadCurrentSheetData();
 }
@@ -900,6 +957,8 @@ function addNewTaniSheet() {
         pichlaBana: Number((calc.remainingBana || 0).toFixed(2)),
         pichlaZari: Number((calc.remainingZari || 0).toFixed(2)),
         pichlaBani: Number((calc.remainingAmt || 0).toFixed(2)),
+        banaWaste: 0,
+        zariWaste: 0,
         rateBana: cur ? (Number(cur.rateBana) || 0.311) : 0.311,
         rateZari: cur ? (Number(cur.rateZari) || 0.110) : 0.110,
         rateBani: cur ? (Number(cur.rateBani) || 240) : 240,
@@ -938,6 +997,15 @@ function loadCurrentSheetData() {
     document.getElementById("tani-bana").value = sh.pichlaBana || 0;
     document.getElementById("tani-zari").value = sh.pichlaZari || 0;
     document.getElementById("tani-bani").value = sh.pichlaBani || 0;
+    
+    // Tani Wastage values load
+    if (document.getElementById("tani-bana-waste")) {
+        document.getElementById("tani-bana-waste").value = (sh.banaWaste !== undefined && sh.banaWaste !== null) ? sh.banaWaste : 0;
+    }
+    if (document.getElementById("tani-zari-waste")) {
+        document.getElementById("tani-zari-waste").value = (sh.zariWaste !== undefined && sh.zariWaste !== null) ? sh.zariWaste : 0;
+    }
+    
     document.getElementById("tani-note").value = sh.note || "";
 
     document.getElementById("rate-bana").value = (sh.rateBana !== undefined && sh.rateBana !== null) ? sh.rateBana : 0.311;
@@ -948,6 +1016,7 @@ function loadCurrentSheetData() {
     if (typeof updateLiveStockDisplay === "function") updateLiveStockDisplay();
 }
 
+// 🎯 TANI CONFIG SAVE: SAVES BANA WASTAGE & ZARI WASTAGE
 function saveCurrentSheetConfig() {
     if (!activeKarigerId) return;
     var sheets = getKarigerSheets(activeKarigerId);
@@ -957,6 +1026,15 @@ function saveCurrentSheetConfig() {
     sh.pichlaBana = parseFloat(document.getElementById("tani-bana").value) || 0;
     sh.pichlaZari = parseFloat(document.getElementById("tani-zari").value) || 0;
     sh.pichlaBani = parseFloat(document.getElementById("tani-bani").value) || 0;
+
+    // Wastage values save
+    if (document.getElementById("tani-bana-waste")) {
+        sh.banaWaste = parseFloat(document.getElementById("tani-bana-waste").value) || 0;
+    }
+    if (document.getElementById("tani-zari-waste")) {
+        sh.zariWaste = parseFloat(document.getElementById("tani-zari-waste").value) || 0;
+    }
+
     sh.note = document.getElementById("tani-note").value || "";
 
     sh.rateBana = parseFloat(document.getElementById("rate-bana").value) || 0;
@@ -967,6 +1045,7 @@ function saveCurrentSheetConfig() {
     renderSheetTable(sh);
 }
 
+// 🎯 WASTAGE FORMULA: BACHA = (DIYAA - WAPAS - KHAPAT - WASTAGE)
 function calculateSheetTotals(sh) {
     var def = {
         totSaree: 0,
@@ -978,10 +1057,12 @@ function calculateSheetTotals(sh) {
         totBana: 0,
         retBana: 0,
         banaConsumption: 0,
+        banaWaste: 0,
         remainingBana: 0,
         totZari: 0,
         retZari: 0,
         zariConsumption: 0,
+        zariWaste: 0,
         remainingZari: 0
     };
 
@@ -1011,12 +1092,14 @@ function calculateSheetTotals(sh) {
     var rateB = (sh.rateBana !== undefined && sh.rateBana !== null) ? Number(sh.rateBana) : 0.311;
     var banaCons = saree * rateB;
     var pichlaB = Number(sh.pichlaBana) || 0;
-    var remBana = (pichlaB + netB) - (retB + banaCons);
+    var bWaste = Number(sh.banaWaste) || 0; // BANA WASTAGE
+    var remBana = (pichlaB + netB) - (retB + banaCons + bWaste);
 
     var rateZ = (sh.rateZari !== undefined && sh.rateZari !== null) ? Number(sh.rateZari) : 0.110;
     var zariCons = saree * rateZ;
     var pichlaZ = Number(sh.pichlaZari) || 0;
-    var remZari = (pichlaZ + netZ) - (retZ + zariCons);
+    var zWaste = Number(sh.zariWaste) || 0; // ZARI WASTAGE
+    var remZari = (pichlaZ + netZ) - (retZ + zariCons + zWaste);
 
     return {
         totSaree: saree,
@@ -1028,10 +1111,12 @@ function calculateSheetTotals(sh) {
         totBana: netB,
         retBana: retB,
         banaConsumption: banaCons,
+        banaWaste: bWaste,
         remainingBana: remBana,
         totZari: netZ,
         retZari: retZ,
         zariConsumption: zariCons,
+        zariWaste: zWaste,
         remainingZari: remZari
     };
 }
@@ -1270,12 +1355,14 @@ function renderSheetTable(sh) {
     setEl("calc-tot-bana", c.totBana.toFixed(2));
     setEl("calc-ret-bana", "- " + c.retBana.toFixed(2));
     setEl("calc-bana-consumption", c.banaConsumption.toFixed(2));
+    setEl("calc-bana-wastage", "- " + c.banaWaste.toFixed(2)); // Bana Wastage Display
     setEl("calc-remaining-bana", c.remainingBana.toFixed(2));
 
     setEl("calc-last-tani-zari", (sh.pichlaZari || 0));
     setEl("calc-tot-zari", c.totZari.toFixed(2));
     setEl("calc-ret-zari", "- " + c.retZari.toFixed(2));
     setEl("calc-zari-consumption", c.zariConsumption.toFixed(2));
+    setEl("calc-zari-wastage", "- " + c.zariWaste.toFixed(2)); // Zari Wastage Display
     setEl("calc-remaining-zari", c.remainingZari.toFixed(2));
 }
 
@@ -1338,11 +1425,13 @@ function shareSheetOnWhatsApp() {
     text += "🧶 *BANA HISAB:*\n";
     text += "• Diya: " + c.totBana.toFixed(2) + " Kg | Khapat: " + c.banaConsumption.toFixed(2) + " Kg\n";
     if (c.retBana > 0) text += "• Returning Wapas: +" + c.retBana.toFixed(2) + " Kg\n";
+    if (c.banaWaste > 0) text += "• Bana Wastage: -" + c.banaWaste.toFixed(2) + " Kg\n";
     text += "🟢 *Bacha Bana:* *" + c.remainingBana.toFixed(2) + " Kg*\n";
     text += "━━━━━━━━━━━━━━━━━━━━━\n";
     text += "✨ *ZARI HISAB:*\n";
     text += "• Diya: " + c.totZari.toFixed(2) + " Kg | Khapat: " + c.zariConsumption.toFixed(2) + " Kg\n";
     if (c.retZari > 0) text += "• Returning Wapas: +" + c.retZari.toFixed(2) + " Kg\n";
+    if (c.zariWaste > 0) text += "• Zari Wastage: -" + c.zariWaste.toFixed(2) + " Kg\n";
     text += "🟠 *Bachi Zari:* *" + c.remainingZari.toFixed(2) + " Kg*\n";
     text += "━━━━━━━━━━━━━━━━━━━━━\n";
     text += "_Simplicity ERP • Developed by Farhan Jawed_";
