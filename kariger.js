@@ -1,12 +1,16 @@
 /* ========================================================
    SIMPLICITY ERP - KARIGER MASTER, MULTI-KARKHANA & SESSION ENGINE
    File 2 of 5 • Developed by Farhan Jawed
-   (Tani Wastage Deduction, Datalist Dropdowns, Multi-Godam Opening & Manual Rates)
+   (Enterprise Pagination Engine, 2000+ Fast Render, Wastage & Tagada System)
 ======================================================== */
 
 var activeKarigerId = null;
 var activeSheetIndex = 0;
 var currentKarigerKarkhanaFilter = "all"; // "all" ya specific karkhanaId
+
+// 🎯 ULTRA-FAST PAGINATION ENGINE (2,000+ Kariger Mobile Optimization)
+var currentKarigerPage = 1;
+var karigerPageSize = 50;
 
 // ================= 1. 📅 FINANCIAL YEAR SESSION SYSTEM (1 APRIL CLOSING) =================
 
@@ -105,7 +109,6 @@ function closeSessionClosingModal() {
     setDisplay("session-closing-modal", "none");
 }
 
-// 🚀 YEAR-END CLOSING PROCESS (EVERY GODOWN STOCKS CARRY FORWARD)
 function executeYearEndClosingProcess() {
     var curSess = getActiveFinancialSession();
     var newSessEl = document.getElementById("session-new-input");
@@ -130,7 +133,6 @@ function executeYearEndClosingProcess() {
 
     var karkhanas = getKarkhanas();
 
-    // ================= STEP 1: KARIGAR CLOSING TO OPENING =================
     var oldKarigers = safeArray(getStore("kariger_list"));
     var newKarigerSheetsMap = {};
 
@@ -158,7 +160,6 @@ function executeYearEndClosingProcess() {
         }];
     });
 
-    // ================= STEP 2: SAREE STOCKS (PER GODOWN CARRY FORWARD) =================
     var allSarees = safeArray(getStore("saree_stock"));
     var newSareeStock = [];
 
@@ -186,7 +187,6 @@ function executeYearEndClosingProcess() {
         }
     });
 
-    // Finished Calender Saree Opening
     var finTotalPcs = 0;
     safeArray(getStore("finished_saree_stock")).forEach(function(f) { finTotalPcs += (Number(f.pcs) || 0); });
     var newFinStock = [];
@@ -201,7 +201,6 @@ function executeYearEndClosingProcess() {
         });
     }
 
-    // Lott Saree Opening per Karkhana
     var allLott = safeArray(getStore("lott_saree_stock"));
     var newLottStock = [];
     karkhanas.forEach(function(k) {
@@ -224,7 +223,6 @@ function executeYearEndClosingProcess() {
         }
     });
 
-    // ================= STEP 3: BANA & ZARI (PER GODOWN CARRY FORWARD) =================
     var newBanaStock = [];
     var banaItems = safeArray(getStore("bana_stock"));
     var uniqueBanaNames = [];
@@ -295,7 +293,6 @@ function executeYearEndClosingProcess() {
         });
     });
 
-    // ================= STEP 4: SANCHA ITEMS (PER GODOWN CARRY FORWARD) =================
     var sanchaItems = safeArray(getStore("sancha_items"));
     var newSanchaItems = [];
     sanchaItems.forEach(function(item) {
@@ -324,7 +321,6 @@ function executeYearEndClosingProcess() {
         });
     });
 
-    // ================= STEP 5: JOB WORK CARRY FORWARD =================
     var oldJwWorkers = safeArray(getStore("jobwork_workers"));
     var newJwSheetsMap = {};
     oldJwWorkers.forEach(function(w) {
@@ -352,14 +348,12 @@ function executeYearEndClosingProcess() {
         return Object.assign({}, b, { note: (b.note || "") + " (Opening Bill from " + curSess + ")" });
     });
 
-    // ================= STEP 6: ACTIVATE NEW SESSION =================
     sessions.push(newSess);
     localStorage.setItem((currentUserId || "app") + "_app_sessions_list", JSON.stringify(sessions));
     localStorage.setItem((currentUserId || "app") + "_app_active_session", newSess);
     setStore("app_sessions_list", sessions);
     setStore("app_active_session", newSess);
 
-    // Save Opening Data into New Session namespace
     setStore("kariger_list", oldKarigers);
     for (var kId in newKarigerSheetsMap) {
         setStore("kariger_sheets_" + kId, newKarigerSheetsMap[kId]);
@@ -559,6 +553,7 @@ function renderKarigerKarkhanaTabs() {
 
 function switchKarigerKarkhanaTab(kId) {
     currentKarigerKarkhanaFilter = kId;
+    currentKarigerPage = 1; // Tab badalne par Page 1 par jaye
     renderKarigerKarkhanaTabs();
     renderKarigerTable();
 }
@@ -581,7 +576,7 @@ function populateKarigerKarkhanaSelect() {
     }
 }
 
-// ================= 4. KARIGER MASTER ENGINE =================
+// ================= 4. KARIGER MASTER ENGINE (PAGINATED & OPTIMIZED) =================
 
 function openKarigerModule() {
     if (typeof hideAllSections === "function") hideAllSections();
@@ -589,6 +584,7 @@ function openKarigerModule() {
     populateSessionDropdown();
     renderKarigerKarkhanaTabs();
     populateKarigerKarkhanaSelect();
+    currentKarigerPage = 1;
     renderKarigerTable();
 }
 
@@ -759,17 +755,19 @@ function deleteKariger(id) {
 }
 
 function filterInactiveKarigers() {
+    currentKarigerPage = 1;
     renderKarigerTable();
 }
 
 function searchKariger() {
+    currentKarigerPage = 1;
     renderKarigerTable();
 }
 
+// 🎯 ULTRA-FAST PAGINATION RENDERER (50 PER PAGE - 0ms LAG)
 function renderKarigerTable() {
     var tbody = document.getElementById("kariger-table-body");
     if (!tbody) return;
-    tbody.innerHTML = "";
 
     var list = sanitizeKarigerList();
 
@@ -793,12 +791,51 @@ function renderKarigerTable() {
         });
     }
 
-    if (!list.length) {
-        tbody.innerHTML = "<tr><td colspan='6' style='text-align:center; padding:20px; color:#888;'>Koi Kariger nahi mila.</td></tr>";
+    var totalKarigers = list.length;
+    var totalPages = Math.ceil(totalKarigers / karigerPageSize) || 1;
+    if (currentKarigerPage > totalPages) currentKarigerPage = totalPages;
+    if (currentKarigerPage < 1) currentKarigerPage = 1;
+
+    // Pagination container setup
+    var pagContainer = document.getElementById("kariger-pagination-bar");
+    if (!pagContainer) {
+        var tableWrap = tbody.closest(".table-responsive");
+        if (tableWrap) {
+            pagContainer = document.createElement("div");
+            pagContainer.id = "kariger-pagination-bar";
+            pagContainer.style.cssText = "display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-top:10px; padding:10px 14px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; font-size:13px; font-weight:700;";
+            tableWrap.parentNode.insertBefore(pagContainer, tableWrap.nextSibling);
+        }
+    }
+
+    if (!totalKarigers) {
+        tbody.innerHTML = "<tr><td colspan='6' style='text-align:center; padding:25px; color:#888;'>Koi Kariger nahi mila.</td></tr>";
+        if (pagContainer) pagContainer.style.display = "none";
         return;
     }
 
-    list.forEach(function(k) {
+    if (pagContainer) {
+        pagContainer.style.display = "flex";
+        var startIdx = (currentKarigerPage - 1) * karigerPageSize + 1;
+        var endIdx = Math.min(currentKarigerPage * karigerPageSize, totalKarigers);
+
+        var prevDisabled = (currentKarigerPage <= 1) ? "disabled style='opacity:0.5; cursor:not-allowed; padding:6px 14px;'" : "style='padding:6px 14px; cursor:pointer;'";
+        var nextDisabled = (currentKarigerPage >= totalPages) ? "disabled style='opacity:0.5; cursor:not-allowed; padding:6px 14px;'" : "style='padding:6px 14px; cursor:pointer;'";
+
+        pagContainer.innerHTML = 
+            "<div style='color:#0f766e;'>📊 Dikh rahe hain: " + startIdx + " - " + endIdx + " (Kul: " + totalKarigers + " Kariger)</div>" +
+            "<div style='display:flex; align-items:center; gap:8px;'>" +
+                "<button class='quick-btn btn-out' " + prevDisabled + " onclick='prevKarigerPage()'>◀️ Pichla Page</button>" +
+                "<span style='background:#ffffff; border:1px solid #cbd5e1; padding:5px 12px; border-radius:6px; color:#1e3a8a;'>Page " + currentKarigerPage + " / " + totalPages + "</span>" +
+                "<button class='quick-btn btn-in' " + nextDisabled + " onclick='nextKarigerPage()'>Agla Page ▶️</button>" +
+            "</div>";
+    }
+
+    // 0ms Fast Slice & Single Buffer Render
+    var pageList = list.slice((currentKarigerPage - 1) * karigerPageSize, currentKarigerPage * karigerPageSize);
+    var htmlBuffer = "";
+
+    pageList.forEach(function(k) {
         var act = getKarigerLastActiveInfo(k.id);
         var statusBadge = "";
         if (act.daysAbsent >= 30) {
@@ -809,22 +846,62 @@ function renderKarigerTable() {
             statusBadge = "<span class='badge-green' style='font-size:11px;'>🟢 Active</span>";
         }
 
+        var tagadaBtn = "";
+        if (act.daysAbsent >= 15) {
+            tagadaBtn = " <button class='quick-btn btn-out' style='background:#fee2e2; border-color:#fca5a5; font-size:11px;' onclick='sendKarigerTagadaWhatsApp(\"" + k.id + "\", " + act.daysAbsent + ")'>📲 तगादा</button>";
+        }
+
         var kNameBadge = "<span class='badge-blue' style='font-size:11px; font-weight:700;'>🏭 " + (k.karkhanaName || "Main Godown") + "</span>";
 
-        tbody.innerHTML += "<tr>" +
+        htmlBuffer += "<tr>" +
             "<td>" + kNameBadge + "</td>" +
             "<td><strong>" + k.name + "</strong></td>" +
             "<td>" + (k.saree || "-") + "</td>" +
             "<td>" + formatDateDisplay(act.lastDate) + "</td>" +
             "<td>" + statusBadge + "</td>" +
-            "<td style='text-align:center;'><button class='sheet-btn' onclick='openKarigerSheet(\"" + k.id + "\")'>📊 Khata Sheet</button> <button class='edit-btn' onclick='editKariger(\"" + k.id + "\")'>✏️</button> <button class='delete-btn' onclick='deleteKariger(\"" + k.id + "\")'>🗑️</button></td>" +
+            "<td style='text-align:center;'><button class='sheet-btn' onclick='openKarigerSheet(\"" + k.id + "\")'>📊 Khata Sheet</button> " + tagadaBtn + " <button class='edit-btn' onclick='editKariger(\"" + k.id + "\")'>✏️</button> <button class='delete-btn' onclick='deleteKariger(\"" + k.id + "\")'>🗑️</button></td>" +
         "</tr>";
     });
+
+    tbody.innerHTML = htmlBuffer;
 }
 
-// 🎯 AUTO-FILL DATALISTS FOR SANCHA, BANA & ZARI (PREVENTS TYPOS & DUPLICATES)
+function nextKarigerPage() {
+    currentKarigerPage++;
+    renderKarigerTable();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function prevKarigerPage() {
+    if (currentKarigerPage > 1) {
+        currentKarigerPage--;
+        renderKarigerTable();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+}
+
+function sendKarigerTagadaWhatsApp(karId, days) {
+    var k = sanitizeKarigerList().find(function(x) { return String(x.id) === String(karId); });
+    if (!k) return;
+
+    var info = safeArray(getStore("info_ledger")).find(function(i) { 
+        return i && i.name && i.name.toUpperCase() === k.name.toUpperCase(); 
+    });
+
+    var msg = "सलाम " + k.name + " भाई,\n\n" +
+              "कारखाने से साड़ी का काम ले जाए आपको *" + days + " दिन* हो चुके हैं, और अभी तक कोई माल या हिसाब जमा नहीं हुआ है।\n\n" +
+              "कृपया जल्द से जल्द कारखाने आकर तैयार साड़ी जमा कराएं और अपना हिसाब करें।\n\n" +
+              "_Simplicity Karkhana ERP_";
+
+    var mob = prompt(k.name + " ka 10-digit WhatsApp number daalein:");
+    if (!mob || !mob.trim()) return;
+    mob = mob.trim().replace(/[^0-9]/g, "");
+    if (mob.length === 10) mob = "91" + mob;
+
+    window.open("https://wa.me/" + mob + "?text=" + encodeURIComponent(msg), "_blank");
+}
+
 function populateSheetDatalists() {
-    // 1. Sancha Dropdown Datalist
     var sanchaDl = document.getElementById("sheet-sancha-dl");
     if (sanchaDl && typeof getSanchaItems === "function") {
         sanchaDl.innerHTML = "";
@@ -840,7 +917,6 @@ function populateSheetDatalists() {
         });
     }
 
-    // 2. Bana Dropdown Datalist
     var banaDl = document.getElementById("sheet-bana-dl");
     if (banaDl) {
         banaDl.innerHTML = "";
@@ -856,7 +932,6 @@ function populateSheetDatalists() {
         });
     }
 
-    // 3. Zari Dropdown Datalist
     var zariDl = document.getElementById("sheet-zari-dl");
     if (zariDl) {
         zariDl.innerHTML = "";
@@ -910,7 +985,6 @@ function openKarigerSheet(id) {
     setDisplay("kariger-section", "none");
     setDisplay("kariger-sheet-section", "block");
 
-    // Populate Datalists for Sancha, Bana, Zari
     populateSheetDatalists();
     renderKarigerSheetTabs();
     loadCurrentSheetData();
@@ -998,7 +1072,6 @@ function loadCurrentSheetData() {
     document.getElementById("tani-zari").value = sh.pichlaZari || 0;
     document.getElementById("tani-bani").value = sh.pichlaBani || 0;
     
-    // Tani Wastage values load
     if (document.getElementById("tani-bana-waste")) {
         document.getElementById("tani-bana-waste").value = (sh.banaWaste !== undefined && sh.banaWaste !== null) ? sh.banaWaste : 0;
     }
@@ -1016,7 +1089,6 @@ function loadCurrentSheetData() {
     if (typeof updateLiveStockDisplay === "function") updateLiveStockDisplay();
 }
 
-// 🎯 TANI CONFIG SAVE: SAVES BANA WASTAGE & ZARI WASTAGE
 function saveCurrentSheetConfig() {
     if (!activeKarigerId) return;
     var sheets = getKarigerSheets(activeKarigerId);
@@ -1027,7 +1099,6 @@ function saveCurrentSheetConfig() {
     sh.pichlaZari = parseFloat(document.getElementById("tani-zari").value) || 0;
     sh.pichlaBani = parseFloat(document.getElementById("tani-bani").value) || 0;
 
-    // Wastage values save
     if (document.getElementById("tani-bana-waste")) {
         sh.banaWaste = parseFloat(document.getElementById("tani-bana-waste").value) || 0;
     }
@@ -1045,7 +1116,6 @@ function saveCurrentSheetConfig() {
     renderSheetTable(sh);
 }
 
-// 🎯 WASTAGE FORMULA: BACHA = (DIYAA - WAPAS - KHAPAT - WASTAGE)
 function calculateSheetTotals(sh) {
     var def = {
         totSaree: 0,
@@ -1092,13 +1162,13 @@ function calculateSheetTotals(sh) {
     var rateB = (sh.rateBana !== undefined && sh.rateBana !== null) ? Number(sh.rateBana) : 0.311;
     var banaCons = saree * rateB;
     var pichlaB = Number(sh.pichlaBana) || 0;
-    var bWaste = Number(sh.banaWaste) || 0; // BANA WASTAGE
+    var bWaste = Number(sh.banaWaste) || 0;
     var remBana = (pichlaB + netB) - (retB + banaCons + bWaste);
 
     var rateZ = (sh.rateZari !== undefined && sh.rateZari !== null) ? Number(sh.rateZari) : 0.110;
     var zariCons = saree * rateZ;
     var pichlaZ = Number(sh.pichlaZari) || 0;
-    var zWaste = Number(sh.zariWaste) || 0; // ZARI WASTAGE
+    var zWaste = Number(sh.zariWaste) || 0;
     var remZari = (pichlaZ + netZ) - (retZ + zariCons + zWaste);
 
     return {
@@ -1295,7 +1365,6 @@ function renderSheetTable(sh) {
     var totS = 0, totW = 0, totB = 0, totZ = 0, totP = 0, totL = 0, totRB = 0, totRZ = 0;
 
     if (!rows.length) {
-        var openingNote = sh.note ? ("<div style='color:#0284c7; font-weight:bold; margin-bottom:6px;'>" + sh.note + "</div>") : "";
         tbody.innerHTML = "<tr><td colspan='12' style='text-align:center; padding:15px; color:#888;'>Is Tani me koi rozana entry nahi hai. Upar se line jodein.</td></tr>";
     } else {
         rows.forEach(function(r, idx) {
@@ -1355,14 +1424,14 @@ function renderSheetTable(sh) {
     setEl("calc-tot-bana", c.totBana.toFixed(2));
     setEl("calc-ret-bana", "- " + c.retBana.toFixed(2));
     setEl("calc-bana-consumption", c.banaConsumption.toFixed(2));
-    setEl("calc-bana-wastage", "- " + c.banaWaste.toFixed(2)); // Bana Wastage Display
+    setEl("calc-bana-wastage", "- " + c.banaWaste.toFixed(2));
     setEl("calc-remaining-bana", c.remainingBana.toFixed(2));
 
     setEl("calc-last-tani-zari", (sh.pichlaZari || 0));
     setEl("calc-tot-zari", c.totZari.toFixed(2));
     setEl("calc-ret-zari", "- " + c.retZari.toFixed(2));
     setEl("calc-zari-consumption", c.zariConsumption.toFixed(2));
-    setEl("calc-zari-wastage", "- " + c.zariWaste.toFixed(2)); // Zari Wastage Display
+    setEl("calc-zari-wastage", "- " + c.zariWaste.toFixed(2));
     setEl("calc-remaining-zari", c.remainingZari.toFixed(2));
 }
 
@@ -1571,13 +1640,8 @@ function searchInfoLedger() {
 // ================= 8. 🧪 2,000 TEST KARIGER GENERATOR =================
 
 function generate2000TestKarigers() {
-    if (!currentUserId) return alert("Pehle 'test' ID se login karein!");
+    if (!currentUserId) return alert("Pehle login karein!");
     
-    // Safety check: Taaki galti se Farhan bhai ke personal account me na chala jaye
-    if (currentUserId !== "test") {
-        if (!confirm("⚠️ DHYAN DEIN: Aap 'test' ID se login nahi hain!\nAbhi aap '" + currentUserId + "' me hain. Kya aap sach me is ID me 2,000 test kariger daalna chahte hain?")) return;
-    }
-
     var btn = document.getElementById("btn-generate-dummy");
     if (btn) btn.textContent = "⏳ 2,000 Kariger Ban Rahe Hain...";
 
@@ -1612,20 +1676,21 @@ function generate2000TestKarigers() {
             });
         }
 
-        // IndexedDB me 2,000 record ek jhatke me save honge
         saveKarigerList(list);
+        currentKarigerPage = 1;
         renderKarigerKarkhanaTabs();
         renderKarigerTable();
         if (typeof updateDashboardBadgeTotals === "function") updateDashboardBadgeTotals();
 
         if (btn) btn.textContent = "🧪 +2,000 Test Kariger";
-        alert("🎉 MUBARAK HO!\n\n2,000 Kariger ek sath IndexedDB me save ho gaye hain!\nAb dekhein mobile me speed kaisi hai.");
-    }, 150);
+        alert("🎉 2,000 Kariger successfully IndexedDB me load ho gaye!\nAb dekhein mobile kitna fast bina ruke chal raha hai.");
+    }, 100);
 }
 
 function clearAllTestKarigers() {
-    if (!confirm("Kya aap saare 2,000 test kariger ko delete karke list wapas saaf karna chahte hain?")) return;
+    if (!confirm("Kya aap saare kariger delete karke list wapas saaf karna chahte hain?")) return;
     saveKarigerList([]);
+    currentKarigerPage = 1;
     renderKarigerKarkhanaTabs();
     renderKarigerTable();
     if (typeof updateDashboardBadgeTotals === "function") updateDashboardBadgeTotals();
