@@ -1,7 +1,7 @@
 /* ========================================================
    SIMPLICITY ERP - PAYMENT MODULE, DAYBOOK & APP STARTUP
    File 5 of 5 • Developed by Farhan Jawed
-   (Multi-Godam Payment Engine, Live Finance & Dynamic Startup)
+   (Point 2: Day-Book Saree Double Counting Fix & Multi-Godam Payment Engine)
 ======================================================== */
 
 var currentPaymentKarkhanaFilter = "all"; // "all" ya specific karkhanaId
@@ -41,7 +41,7 @@ function getKarigerFinanceSummary(karId) {
     };
 }
 
-// ================= 2. PAYMENT MODULE (POINT 7: MULTI-GODAM SYSTEM) =================
+// ================= 2. PAYMENT MODULE (MULTI-GODAM SYSTEM) =================
 
 function openPaymentModule() {
     if (typeof hideAllSections === "function") hideAllSections();
@@ -254,7 +254,7 @@ function deletePaymentFromSheet(karId, sheetId, rowId) {
     }
 }
 
-// ================= 3. ROZANA DAY-BOOK MODULE =================
+// ================= 3. ROZANA DAY-BOOK MODULE (POINT 2: NO DOUBLE COUNTING) =================
 
 function setDashboardToday() {
     var dateInput = document.getElementById("dash-day-date");
@@ -316,11 +316,23 @@ function renderDashboardDayBook() {
         });
     });
 
+    // 🎯 POINT 2: SAREE DOUBLE COUNTING FIX IN DAY-BOOK
     var sH = getStore("saree_history").filter(function(h) { return h && h.date === d; });
     var sIn = 0, sOut = 0;
     sH.forEach(function(h) {
-        if (String(h.type || "").indexOf("In") !== -1) sIn += (Number(h.pcs) || 0);
-        else sOut += (Number(h.pcs) || 0);
+        var typeStr = String(h.type || "");
+        var isTransfer = (typeStr.indexOf("Transfer") !== -1) || (typeStr.indexOf("Branch Transfer") !== -1);
+        
+        // Agar godown transfer hai, to ise production In/Out me double add mat karo
+        if (isTransfer) {
+            return;
+        }
+
+        if (typeStr.indexOf("In") !== -1) {
+            sIn += (Number(h.pcs) || 0);
+        } else {
+            sOut += (Number(h.pcs) || 0);
+        }
     });
 
     // Update Day-Book Tab Badges
@@ -413,23 +425,38 @@ function renderDashboardDayBook() {
         tfoot.innerHTML = "<tr><td colspan='2'><strong>Total Rozana Zari:</strong></td><td><strong style='color:#059669;'>+" + zIn.toFixed(2) + "</strong></td><td><strong style='color:#dc2626;'>-" + zOut.toFixed(2) + "</strong></td></tr>";
 
     } else if (currentDayBookTab === "saree") {
-        thead.innerHTML = "<tr style='background:#2563eb;'><th style='width:25%;'>Saree Ka Naam</th><th style='width:20%;'>Kariger</th><th style='background:#047857; color:#a7f3d0; width:20%;'>📥 Aayi (In)</th><th style='background:#b91c1c; color:#fecaca; width:20%;'>📤 Gayi (Out)</th><th>Vivran</th></tr>";
+        thead.innerHTML = "<tr style='background:#2563eb;'><th style='width:25%;'>Saree Ka Naam</th><th style='width:20%;'>Kariger / Godam</th><th style='background:#047857; color:#a7f3d0; width:20%;'>📥 Aayi (In)</th><th style='background:#b91c1c; color:#fecaca; width:20%;'>📤 Gayi (Out)</th><th>Vivran</th></tr>";
 
         if (!sH.length) {
             tbody.innerHTML = "<tr><td colspan='5' style='text-align:center; padding:15px; color:#888;'>Is tarikh me Saree ki koi entry nahi hai.</td></tr>";
         } else {
             sH.forEach(function(h) {
-                var isA = String(h.type || "").indexOf("In") !== -1;
+                var typeStr = String(h.type || "");
+                var isTransfer = (typeStr.indexOf("Transfer") !== -1) || (typeStr.indexOf("Branch Transfer") !== -1);
+                var isA = typeStr.indexOf("In") !== -1;
+
+                // Transfer wali entry table me dikhegi lekin badge ke sath taaki clear rahe
+                var inCol = "-";
+                var outCol = "-";
+
+                if (isTransfer) {
+                    inCol = "<span class='badge-blue' style='font-size:11px;'>🔄 Transfer (" + h.pcs + " Pcs)</span>";
+                } else if (isA) {
+                    inCol = "<strong style='color:#059669;'>+" + h.pcs + " Pcs</strong>";
+                } else {
+                    outCol = "<strong style='color:#dc2626;'>-" + h.pcs + " Pcs</strong>";
+                }
+
                 tbody.innerHTML += "<tr>" +
                     "<td><strong>" + h.name + "</strong></td>" +
                     "<td>" + (h.kariger || "-") + "</td>" +
-                    "<td>" + (isA ? ("<strong style='color:#059669;'>+" + h.pcs + " Pcs</strong>") : "-") + "</td>" +
-                    "<td>" + (!isA ? ("<strong style='color:#dc2626;'>-" + h.pcs + " Pcs</strong>") : "-") + "</td>" +
+                    "<td>" + inCol + "</td>" +
+                    "<td>" + outCol + "</td>" +
                     "<td>" + (h.note || "-") + "</td>" +
                 "</tr>";
             });
         }
-        tfoot.innerHTML = "<tr><td colspan='2'><strong>Total Sarees:</strong></td><td><strong style='color:#059669;'>+" + sIn + " Pcs</strong></td><td><strong style='color:#dc2626;'>-" + sOut + " Pcs</strong></td><td>-</td></tr>";
+        tfoot.innerHTML = "<tr><td colspan='2'><strong>Kul Fresh Saree:</strong></td><td><strong style='color:#059669;'>+" + sIn + " Pcs</strong></td><td><strong style='color:#dc2626;'>-" + sOut + " Pcs</strong></td><td>-</td></tr>";
 
     } else if (currentDayBookTab === "payment") {
         thead.innerHTML = "<tr style='background:#7c3aed;'><th style='width:35%;'>Kariger</th><th style='width:35%;'>Tani / Vivran</th><th style='background:#b91c1c; color:#fecaca; width:30%;'>📤 Payment Diya (Out)</th></tr>";
@@ -593,7 +620,6 @@ window.onload = function() {
     var errMsg = document.getElementById("login-error");
     if (errMsg) errMsg.style.display = "none";
 
-    // Enter Key Login triggers
     if (idInp) {
         idInp.addEventListener("keypress", function(e) {
             if (e.key === "Enter") handleLogin();
