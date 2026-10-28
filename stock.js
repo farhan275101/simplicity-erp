@@ -1,7 +1,7 @@
 /* ========================================================
    SIMPLICITY ERP - LIVE STOCK & MULTI-KARKHANA ENGINE
    File 3 of 5 • Developed by Farhan Jawed
-   (Point 3: 2-Column Saree Passbook & Point 4: Sancha "Name" + Search Box)
+   (Aligned Sancha Columns, Working Sancha Search & Instant Passbook Delete)
 ======================================================== */
 
 var currentSareeStockTab = "fresh"; // "fresh", "finished", ya "lott"
@@ -12,7 +12,7 @@ var currentSanchaKarkhanaFilter = "k_main";
 
 var rawModalPassbookEntries = [];
 var currentPassbookStoreKey = "";
-var isModalSareePassbookMode = false; // Point 3 Tracker
+var isModalSareePassbookMode = false;
 
 // Helper to get previous session name for Opening Stock Reference
 function getPreviousSessionLabel() {
@@ -1209,7 +1209,7 @@ function saveSareeTransferEntry() {
     alert("✅ " + pcs + " Saree " + sourceName + " se Main Godam me safalta-purvak receive ho gayi!");
 }
 
-// ================= 8. 🎯 POINT 3: SAREE PASSBOOK (GREEN = AAYI, RED = MAIN GODAM GAYI) =================
+// ================= 8. 🎯 SAREE PASSBOOK (2 COLUMNS: GREEN & RED) =================
 
 function viewFreshSareePassbook(sareeName) {
     var entries = [];
@@ -1242,7 +1242,6 @@ function viewFreshSareePassbook(sareeName) {
 
     // 2. Branch Transfer In / Out
     if (!isMain) {
-        // Branch se Main Godam Gayi (Red)
         safeArray(getStore("saree_transfers")).filter(function(st) {
             return st && String(st.fromKarkhanaId) === String(kId) && String(st.sareeName || "").toLowerCase() === String(sareeName || "").toLowerCase();
         }).forEach(function(tr) {
@@ -1257,7 +1256,6 @@ function viewFreshSareePassbook(sareeName) {
             });
         });
     } else {
-        // Main Godam me Branch se Receive Hui (Green)
         safeArray(getStore("saree_transfers")).filter(function(st) {
             return st && String(st.sareeName || "").toLowerCase() === String(sareeName || "").toLowerCase();
         }).forEach(function(tr) {
@@ -1291,7 +1289,7 @@ function viewFreshSareePassbook(sareeName) {
         });
     });
 
-    isModalSareePassbookMode = true; // Turn ON 2-column mode
+    isModalSareePassbookMode = true;
     viewCustomDatePassbook("Fresh Saree Passbook: " + sareeName + " (" + kName + ")", entries, "saree_history");
 }
 
@@ -1365,7 +1363,6 @@ function resetModalPassbook() {
     renderModalPassbookRows(rawModalPassbookEntries);
 }
 
-// 🎯 POINT 3: RENDER MODAL TABLE (2 COLUMNS GREEN & RED FOR SAREE, 1 COLUMN FOR OTHERS)
 function renderModalPassbookRows(list) {
     var thead = document.getElementById("modal-history-thead");
     var tbody = document.getElementById("modal-history-body");
@@ -1373,7 +1370,6 @@ function renderModalPassbookRows(list) {
     tbody.innerHTML = "";
 
     if (isModalSareePassbookMode) {
-        // POINT 3: SAREE 2-COLUMN HEADER
         if (thead) {
             thead.innerHTML = "<tr style='background:#1e3a8a; color:white;'>" +
                 "<th>Tarikh</th>" +
@@ -1406,7 +1402,6 @@ function renderModalPassbookRows(list) {
         });
 
     } else {
-        // NORMAL 1-COLUMN HEADER FOR BANA, ZARI, SANCHA
         if (thead) {
             thead.innerHTML = "<tr style='background:#334155; color:white;'>" +
                 "<th>Tarikh</th><th>Kariger / Vivran</th><th>Qty / Rupaye</th><th style='text-align:center;'>Action</th>" +
@@ -1426,7 +1421,7 @@ function renderModalPassbookRows(list) {
                 "<td>" + formatDateDisplay(it.date) + "</td>" +
                 "<td>" + (it.kariger || it.desc || "-") + " (" + (it.type || "-") + ")</td>" +
                 "<td><strong>" + (it.qty || it.amount || 0) + "</strong></td>" +
-                "<td style='text-align:center;'>" + delBtn + "</td>" +
+                "<td style='text-align:center;'><button class='delete-btn' onclick='deletePassbookRowDirectly(\"" + it.id + "\")'>🗑️</button></td>" +
             "</tr>";
         });
     }
@@ -1489,7 +1484,7 @@ function closeItemModal() {
     isModalSareePassbookMode = false;
 }
 
-// ================= 9. ⚙️ POINT 4: SANCHA STOCK (NAME FIELD & SEARCH BOX) =================
+// ================= 9. ⚙️ SANCHA STOCK MODULE (ALL BUGS FIXED) =================
 
 function getSanchaItems() {
     var items = getStore("sancha_items");
@@ -1594,7 +1589,6 @@ function toggleAddSanchaItemForm() {
     document.getElementById("sancha-new-item-date").value = getTodayDate();
 }
 
-// 🎯 POINT 4: SAVE SANCHA ITEM WITH "Name" FIELD
 function saveNewSanchaItem() {
     var d = document.getElementById("sancha-new-item-date").value || getTodayDate();
     var n = (document.getElementById("sancha-new-item-name").value || "").trim();
@@ -1640,7 +1634,7 @@ function saveNewSanchaItem() {
     alert("✅ Naya Sancha Item '" + n + "' Main Godam me ban gaya!");
 }
 
-// 🎯 POINT 4: SANCHA TOP SEARCH FILTER
+// 🎯 SEARCH FIX: SEARCH IN BOTH NAME, PERSON AND DATE LIVE
 function filterSancha() {
     var txt = (document.getElementById("search-sancha-input") && document.getElementById("search-sancha-input").value || "").toLowerCase().trim();
     var allItems = getSanchaItems();
@@ -1659,7 +1653,7 @@ function filterSancha() {
     renderSanchaTable(filtered);
 }
 
-// 🎯 POINT 4: SANCHA TABLE WITH "Name" COLUMN
+// 🎯 ALIGNED TABLE: EXACT 7 COLUMNS (NO ROW SHIFTING)
 function renderSanchaTable(customList) {
     var items = customList || getSanchaItems();
     var tbody = document.getElementById("sancha-table-body");
@@ -1684,7 +1678,7 @@ function renderSanchaTable(customList) {
     if (elNote) elNote.textContent = isMain ? ("Pichle Session (" + getPreviousSessionLabel() + ") ki 31 March Closing se") : (kName + " ka stock transfer ke zariye aata hai");
 
     if (!items.length) {
-        tbody.innerHTML = "<tr><td colspan='7' style='text-align:center; padding:20px; color:#888;'>Koi Sancha Item nahi mila. Naya item jodein.</td></tr>";
+        tbody.innerHTML = "<tr><td colspan='7' style='text-align:center; padding:20px; color:#888;'>Koi Sancha Item nahi mila.</td></tr>";
         return;
     }
 
@@ -1693,13 +1687,14 @@ function renderSanchaTable(customList) {
         var st = getSanchaItemStats(item.id, item.name, currentSanchaKarkhanaFilter);
         var opTag = (item.note && item.note.indexOf("Opening") !== -1) ? "<span class='badge-blue' style='font-size:10px; display:block; margin-top:2px;'>📦 Pichle Saal Se Aaya</span>" : "";
 
+        // ✅ 7 COLUMNS PERFECT ALIGNED
         tbody.innerHTML += "<tr>" +
             "<td>" + formatDateDisplay(st.date || item.date) + "</td>" +
             "<td><strong style='color:#0284c7;'>⚙️ " + item.name + " <span style='font-size:11px;'>(" + kName + ")</span></strong>" + opTag + "</td>" +
             "<td><strong>" + (item.person || "-") + "</strong></td>" +
-            "<td><span class='badge-green'>+" + st.aaya.toFixed(2) + "</span></td>" +
-            "<td><span class='badge-red'>-" + st.gaya.toFixed(2) + "</span></td>" +
-            "<td><span class='badge-blue' style='font-size:13px; font-weight:800;'>" + st.bacha.toFixed(2) + "</span></td>" +
+            "<td><span class='badge-green'>+" + Number(st.aaya).toFixed(2) + "</span></td>" +
+            "<td><span class='badge-red'>-" + Number(st.gaya).toFixed(2) + "</span></td>" +
+            "<td><span class='badge-blue' style='font-size:13px; font-weight:800;'>" + Number(st.bacha).toFixed(2) + "</span></td>" +
             "<td style='text-align:center;'><button class='detail-btn' style='background:#0284c7;' onclick='openSanchaDetailModal(\"" + item.id + "\")'>📖 Passbook</button> <button class='delete-btn' onclick='deleteSanchaItem(\"" + item.id + "\")'>🗑️</button></td>" +
         "</tr>";
     });
@@ -1790,13 +1785,13 @@ function renderSanchaHistoryTable() {
 
     if (isMain) {
         var hist = getStore("sancha_history");
-        hist.forEach(function(h, idx) {
+        hist.forEach(function(h) {
             if (!h) return;
             var idMatch = (h.itemId && String(h.itemId) === String(activeSanchaItemId));
             var nameMatch = (h.itemName && h.itemName.trim().toLowerCase() === currentItemName);
             if (idMatch || nameMatch) {
                 entries.push({
-                    histIndex: idx,
+                    id: h.id,
                     date: h.date,
                     type: h.type || "Aaya (Purchase)",
                     qty: Number(h.qty) || 0,
@@ -1812,6 +1807,7 @@ function renderSanchaHistoryTable() {
             return t && t.type === "sancha" && t.itemName && t.itemName.trim().toLowerCase() === currentItemName;
         }).forEach(function(t) {
             entries.push({
+                id: t.id,
                 date: t.date,
                 type: "Branch Ko Bheja",
                 qty: Number(t.qty) || 0,
@@ -1830,6 +1826,7 @@ function renderSanchaHistoryTable() {
                     safeArray(sh.rows).forEach(function(r) {
                         if (r && r.sancha && r.sancha.trim().toLowerCase() === currentItemName && Number(r.taniWazan) > 0) {
                             entries.push({
+                                id: r.id,
                                 date: r.date,
                                 type: "Karigar Tani Gaya",
                                 qty: Number(r.taniWazan),
@@ -1849,6 +1846,7 @@ function renderSanchaHistoryTable() {
             return t && t.type === "sancha" && String(t.toKarkhanaId) === String(kId) && t.itemName && t.itemName.trim().toLowerCase() === currentItemName;
         }).forEach(function(t) {
             entries.push({
+                id: t.id,
                 date: t.date,
                 type: "Aaya (Transfer In)",
                 qty: Number(t.qty) || 0,
@@ -1867,6 +1865,7 @@ function renderSanchaHistoryTable() {
                     safeArray(sh.rows).forEach(function(r) {
                         if (r && r.sancha && r.sancha.trim().toLowerCase() === currentItemName && Number(r.taniWazan) > 0) {
                             entries.push({
+                                id: r.id,
                                 date: r.date,
                                 type: "Karigar Tani Gaya",
                                 qty: Number(r.taniWazan),
@@ -1892,8 +1891,8 @@ function renderSanchaHistoryTable() {
         var isAaya = (String(e.type).indexOf("Aaya") !== -1);
         
         var actionCol = "-";
-        if (!e.isSheet && !e.isTransfer && e.histIndex !== undefined) {
-            actionCol = "<button class='delete-btn' onclick='deleteSanchaHistoryRow(" + e.histIndex + ")'>🗑️</button>";
+        if (!e.isSheet && !e.isTransfer && e.id) {
+            actionCol = "<button class='delete-btn' onclick='deleteSanchaHistoryRowDirectly(\"" + e.id + "\")'>🗑️</button>";
         } else if (e.isSheet) {
             actionCol = "<span style='color:#64748b; font-size:11px; font-weight:bold;'>Sheet Entry</span>";
         } else if (e.isTransfer) {
@@ -1905,20 +1904,39 @@ function renderSanchaHistoryTable() {
             "<td><span class='" + (isAaya ? "badge-green" : "badge-red") + "'>" + e.type + "</span></td>" +
             "<td><strong style='color:" + (isAaya ? "#059669" : "#dc2626") + ";'>" + (isAaya ? "+" : "-") + e.qty.toFixed(2) + "</strong></td>" +
             "<td><strong>" + e.source + "</strong> <span style='color:#64748b;'>(" + e.note + ")</span></td>" +
-            "<td style='text-align:center;'><button class='delete-btn' onclick='deleteSanchaHistoryRow(" + e.histIndex + ")'>🗑️</button></td>" +
+            "<td style='text-align:center;'>" + actionCol + "</td>" +
         "</tr>";
     });
 }
 
-function deleteSanchaHistoryRow(idx) {
-    if (idx === undefined || idx === null || idx < 0) return;
-    if (!confirm("Kya aap is entry ko delete karna chahte hain?")) return;
+// 🎯 FIXED DELETE: TURANT DELETE HOGA AUR STOCK UPDATE HO JAYEGA
+function deleteSanchaHistoryRowDirectly(entryId) {
+    if (!entryId) return;
+    if (!confirm("Kya aap is entry ko delete karna chahte hain? Iska stock bhi wapas adjust ho jayega.")) return;
+
     var hist = getStore("sancha_history");
-    hist.splice(idx, 1);
-    setStore("sancha_history", hist);
+    var entry = hist.find(function(x) { return x && String(x.id) === String(entryId); });
+
+    if (entry) {
+        var qty = Number(entry.qty) || 0;
+        if (String(entry.type || "").indexOf("Starting") !== -1) {
+            var items = getSanchaItems();
+            var item = items.find(function(i) { 
+                return i && (String(i.id) === String(entry.itemId) || String(i.name).trim().toLowerCase() === String(entry.itemName).trim().toLowerCase()); 
+            });
+            if (item) {
+                item.aaya = Math.max(0, (Number(item.aaya) || 0) - qty);
+                setStore("sancha_items", items);
+            }
+        }
+        hist = hist.filter(function(x) { return !x || String(x.id) !== String(entryId); });
+        setStore("sancha_history", hist);
+    }
+
     renderSanchaHistoryTable();
     renderSanchaTable();
     if (typeof updateDashboardBadgeTotals === "function") updateDashboardBadgeTotals();
+    alert("🗑️ Sancha passbook entry delete ho gayi aur Stock update ho gaya!");
 }
 
 function autoDeductSanchaStock(wazan, date, karName, sanchaName, taniName) {
