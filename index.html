@@ -240,7 +240,7 @@
                 </div>
             </div>
 
-            <!-- MODULE: SANCHA (WITH OPENING STOCK BOX & GODAM TABS) -->
+            <!-- MODULE: SANCHA (WITH POINT 4: SEARCH BAR & NAME FIELD) -->
             <div id="sancha-section" class="module-section">
                 <div class="module-header">
                     <button class="back-btn" onclick="backToDashboard()">← Dashboard Wapas</button>
@@ -261,19 +261,28 @@
                     <small id="sancha-opening-note" style="color:#64748b; font-weight:600; font-size:11px;">Pichle Session ki 31 March Closing se</small>
                 </div>
 
+                <!-- POINT 4: SANCHA TOP SEARCH BAR -->
+                <div class="filter-panel" style="margin-bottom:14px;">
+                    <input type="text" id="search-sancha-input" class="search-box" placeholder="🔍 Search Sancha Item, Name, Date..." oninput="filterSancha()">
+                </div>
+
+                <!-- POINT 4: SANCHA FORM WITH "Name" FIELD -->
                 <div id="add-sancha-item-form" class="custom-form">
                     <h4 style="color:#0284c7; margin-bottom:10px;">➕ Naya Sancha Item Banayein (Main Godown):</h4>
-                    <div class="form-row-3">
+                    <div class="form-row-4">
                         <div class="input-group"><label>Date</label><input type="date" id="sancha-new-item-date"></div>
-                        <div class="input-group"><label>Naam</label><input type="text" id="sancha-new-item-name" placeholder="Jaise: Fancy, Resham"></div>
+                        <div class="input-group"><label>Item Naam</label><input type="text" id="sancha-new-item-name" placeholder="Jaise: Fancy, Resham"></div>
+                        <div class="input-group"><label>Name</label><input type="text" id="sancha-new-item-person" placeholder="Naam likhein"></div>
                         <div class="input-group"><label>Starting Stock</label><input type="number" step="any" id="sancha-new-item-qty" placeholder="0"></div>
                     </div>
                     <button class="add-btn" style="background:#0284c7;" onclick="saveNewSanchaItem()">Save Item</button>
                 </div>
+
+                <!-- POINT 4: SANCHA TABLE WITH "Name" COLUMN -->
                 <div class="table-responsive">
                     <table>
                         <thead>
-                            <tr style="background:#0284c7;"><th>Date</th><th>Item Naam</th><th>Kul Aaya</th><th>Tani Gaya</th><th>Bacha Stock</th><th style="text-align:center;">Action</th></tr>
+                            <tr style="background:#0284c7;"><th>Date</th><th>Item Naam</th><th>Name</th><th>Kul Aaya</th><th>Tani Gaya</th><th>Bacha Stock</th><th style="text-align:center;">Action</th></tr>
                         </thead>
                         <tbody id="sancha-table-body"></tbody>
                     </table>
@@ -753,7 +762,7 @@
                         </div>
                     </div>
 
-                    <!-- POINT 4 & SUGGESTION 2: CUTTING SAREE LIVE STOCK REGISTER CARD -->
+                    <!-- CUTTING SAREE LIVE STOCK REGISTER CARD -->
                     <div class="summary-bar" style="margin-top:25px; background:#fff1f2; border:1px solid #fecdd3; border-radius:12px; padding:15px;">
                         <div style="flex:1;">
                             <span style="color:#e11d48; font-weight:800; font-size:13px;">✂️ BOOTI CUTTING SAREE LIVE REGISTER (MAIN GODOWN):</span>
@@ -877,7 +886,6 @@
                                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; flex-wrap:wrap; gap:6px;">
                                     <strong style="color:#e11d48; font-size:13px;">📤 JANE WALI SAREE (Batch Entry)</strong>
                                     
-                                    <!-- POINT 1, 2, 3: STOCK SOURCE SELECTION -->
                                     <div id="jw-calender-stock-source-wrap" style="display:none; gap:12px; font-size:12px; font-weight:700;">
                                         <span style="color:#475569;">Stock Kahan Se Kate:</span>
                                         <label style="color:#2563eb; cursor:pointer;"><input type="radio" name="jw-source-rad" id="jw-source-fresh" checked> 🥻 Main Godown Fresh Stock</label>
@@ -1151,7 +1159,7 @@
         </div>
     </div>
 
-    <!-- MODAL 3: PASSBOOK HISTORY MODAL -->
+    <!-- MODAL 3: PASSBOOK HISTORY MODAL (WITH DYNAMIC THEAD ID) -->
     <div id="item-modal" class="modal-overlay">
         <div class="modal-card">
             <div class="modal-header">
@@ -1170,7 +1178,10 @@
 
                 <div class="table-responsive">
                     <table>
-                        <thead><tr style="background:#334155; color:white;"><th>Tarikh</th><th>Kariger / Vivran</th><th>Qty / Rupaye</th><th style="text-align:center;">Action</th></tr></thead>
+                        <!-- POINT 3: DYNAMIC THEAD FOR 2-COLUMN GREEN/RED PASSBOOK -->
+                        <thead id="modal-history-thead">
+                            <tr style="background:#334155; color:white;"><th>Tarikh</th><th>Kariger / Vivran</th><th>Qty / Rupaye</th><th style="text-align:center;">Action</th></tr>
+                        </thead>
                         <tbody id="modal-history-body"></tbody>
                     </table>
                 </div>
@@ -1363,9 +1374,9 @@
 
     <!-- JAVASCRIPT SCRIPTS -->
     <script src="auth.js"></script>
-    <script src="kariger.js?v=26"></script>
-    <script src="stock.js?v=26"></script>
-    <script src="jobwork.js?v=26"></script>
-    <script src="daybook.js?v=26"></script>
+    <script src="kariger.js?v=27"></script>
+    <script src="stock.js?v=27"></script>
+    <script src="jobwork.js?v=27"></script>
+    <script src="daybook.js?v=27"></script>
 </body>
 </html>
