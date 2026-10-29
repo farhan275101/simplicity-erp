@@ -17,8 +17,15 @@
     <meta property="og:description" content="Purani Diary Chhodo, Karkhana Digital Karo! 1-1 Saree, 1-1 Gram Zari aur Karigar ki Mazdoori ka pakka hisab. By Farhan Jawed • Managed & Marketed by Mohammad Rehan. Contact: +91 7985402962">
     <meta property="og:type" content="website">
 
+    <!-- 📱 PWA & MOBILE APP TAGS (Android Chrome + iOS) -->
     <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#1e3a8a">
+    <meta name="theme-color" content="#0f172a">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Simplicity ERP">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 
     <!-- Embedded High-Performance Modern CSS -->
     <style>
@@ -81,6 +88,22 @@
             transition: 0.2s;
         }
         .btn-call-nav:hover { background: rgba(56, 189, 248, 0.2); }
+
+        .btn-install-pwa {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+            padding: 9px 16px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 800;
+            font-size: 13px;
+            border: none;
+            cursor: pointer;
+            display: none;
+            align-items: center;
+            gap: 6px;
+            box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35);
+        }
 
         .btn-launch {
             background: linear-gradient(135deg, #2563eb, #1d4ed8);
@@ -459,6 +482,7 @@
             </div>
         </a>
         <div class="nav-actions">
+            <button id="pwa-install-btn" class="btn-install-pwa" onclick="triggerPwaInstall()">📥 Install App</button>
             <a href="tel:+917985402962" class="btn-call-nav">📞 +91 7985402962</a>
             <a href="index.html" class="btn-launch">🚀 Launch App</a>
         </div>
@@ -659,6 +683,48 @@
     <footer class="footer">
         <p>© 2026 <strong>Simplicity ERP</strong> • Created by <span>Farhan Jawed</span> • Managed & Marketed by <span>Mohammad Rehan</span> • All Rights Reserved.</p>
     </footer>
+
+    <!-- 8. SERVICE WORKER & 1-CLICK PWA INSTALL SCRIPT -->
+    <script>
+    // Service Worker Registration
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('sw.js').then(() => {
+            console.log('✅ Simplicity PWA Service Worker Active on Landing Page!');
+        }).catch((err) => {
+            console.warn('⚠️ Service Worker Registration failed:', err);
+        });
+    }
+
+    // Chrome In-App Install Prompt Handling
+    let deferredPrompt;
+    const installBtn = document.getElementById('pwa-install-btn');
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+        if (installBtn) {
+            installBtn.style.display = 'inline-flex';
+        }
+    });
+
+    function triggerPwaInstall() {
+        if (deferredPrompt) {
+            deferredPrompt.prompt();
+            deferredPrompt.userChoice.then((choiceResult) => {
+                if (choiceResult.outcome === 'accepted') {
+                    console.log('User installed Simplicity ERP');
+                    if (installBtn) installBtn.style.display = 'none';
+                }
+                deferredPrompt = null;
+            });
+        }
+    }
+
+    window.addEventListener('appinstalled', () => {
+        if (installBtn) installBtn.style.display = 'none';
+        console.log('🎉 Simplicity ERP Installed Successfully!');
+    });
+    </script>
 
 </body>
 </html>
