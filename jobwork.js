@@ -422,6 +422,11 @@ function viewJobWorkSummaryPassbook(boxCategory) {
         });
     });
 
+    // 🔒 Passbook Format Conflict Fix
+    if (typeof isModalSareePassbookMode !== "undefined") {
+        isModalSareePassbookMode = false;
+    }
+
     if (typeof viewCustomDatePassbook === "function") {
         viewCustomDatePassbook(typeTitle + " - " + catTitle, entries, "saree_history");
     }
@@ -1467,9 +1472,58 @@ function renderJwBillsTable(customList) {
             "<td><strong style='color:#059669;'>₹ " + Number(b.paidAmt).toFixed(2) + "</strong></td>" +
             "<td><strong style='color:#ea580c; font-size:14px;'>₹ " + baki.toFixed(2) + "</strong></td>" +
             "<td>" + statusBadge + "</td>" +
-            "<td style='text-align:center;'>" + payBtn + raseedBtn + delBtn + "</td>" +
+            "<td style='text-align:center;'><button class='detail-btn' style='background:#7c3aed; font-size:11px;' onclick='viewJwBillPassbook(\"" + b.id + "\")'>📖</button> " + payBtn + raseedBtn + delBtn + "</td>" +
         "</tr>";
     });
+}
+
+function viewJwBillPassbook(billId) {
+    var b = getJwBills().find(function(x) { return String(x.id) === String(billId); });
+    if (!b) return;
+
+    var payments = getJwPayments().filter(function(p) { return p && String(p.billId) === String(billId); });
+    document.getElementById("modal-item-title").textContent = "📖 Bill History: " + (b.billNo || "-") + " (" + b.workerName + ")";
+    var tbody = document.getElementById("modal-history-body");
+    if (!tbody) return;
+    tbody.innerHTML = "";
+
+    if (!payments.length) {
+        tbody.innerHTML = "<tr><td colspan='4' style='text-align:center; padding:15px; color:#888;'>Is Bill par abhi koi payment nahi di gayi hai.</td></tr>";
+    } else {
+        payments.forEach(function(p) {
+            tbody.innerHTML += "<tr>" +
+                "<td>" + formatDateDisplay(p.date) + "</td>" +
+                "<td>" + (p.note || "Bill Payment") + " (" + p.mode + ")</td>" +
+                "<td style='color:#059669; font-weight:700;'>₹ " + Number(p.amount).toFixed(2) + "</td>" +
+                "<td style='text-align:center;'><button class='delete-btn' onclick='deleteJwPaymentEntry(\"" + p.id + "\", \"" + billId + "\")'>🗑️</button></td>" +
+            "</tr>";
+        });
+    }
+
+    setDisplay("item-modal", "flex");
+}
+
+function deleteJwPaymentEntry(payId, billId) {
+    if (!confirm("Kya aap is payment record ko delete karna chahte hain?")) return;
+
+    var payments = getJwPayments();
+    var p = payments.find(function(x) { return x && String(x.id) === String(payId); });
+    if (!p) return;
+
+    var bills = getJwBills();
+    var b = bills.find(function(x) { return x && String(x.id) === String(billId); });
+    if (b) {
+        b.paidAmt = Math.max(0, (Number(b.paidAmt) || 0) - (Number(p.amount) || 0));
+        saveJwBills(bills);
+    }
+
+    payments = payments.filter(function(x) { return !x || String(x.id) !== String(payId); });
+    saveJwPayments(payments);
+
+    viewJwBillPassbook(billId);
+    renderJwBillsTable();
+    updateJobWorkHubBadges();
+    alert("🗑️ Payment entry delete ho gayi aur bill hisab wapas update ho gaya!");
 }
 
 function openJwPayModal(billId) {
@@ -1927,8 +1981,8 @@ function renderJwMovementDaybook() {
                     "<td><strong>" + r.worker + "</strong></td>" +
                     "<td>" + r.sheet + "</td>" +
                     "<td><span style='font-size:11px; font-weight:700; color:#0284c7;'>" + r.source + "</span></td>" +
-                    "<td style='text-align:center;'>" + (r.gayi > 0 ? ("<strong style='color:#dc2626;'>-" + r.gayi + " Pcs</strong>") : "-") + "</td>" +
-                    "<td style='text-align:center;'>" + (r.aayi > 0 ? ("<strong style='color:#059669;'>+" + r.aayi + " Pcs</strong>") : "-") + "</td>" +
+                    "<td style='text-align:center;'><strong style='color:#dc2626;'>-" + r.gayi + " Pcs</strong></td>" +
+                    "<td style='text-align:center;'><strong style='color:#059669;'>+" + r.aayi + " Pcs</strong></td>" +
                     "<td>" + (r.damagePcs > 0 ? ("<strong style='color:#ea580c;'>⚠️ " + r.damagePcs + " Pcs</strong> (-₹" + r.damageAmt + ")") : "-") + "</td>" +
                 "</tr>";
             });
