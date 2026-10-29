@@ -10,7 +10,6 @@ self.addEventListener('activate', (e) => {
 });
 
 self.addEventListener('fetch', (e) => {
-    // Online-first strategy taaki Firebase aur live data me koi rukawat na aaye
     e.respondWith(
         fetch(e.request).catch(() => caches.match(e.request))
     );
