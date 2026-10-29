@@ -22,6 +22,15 @@
 </head>
 <body oncontextmenu="return false;">
 
+    <!-- ⚠️ STICKY BACKUP PREVIEW MODE BANNER (SHOWN ONLY WHEN VIEWING BACKUP) -->
+    <div id="backup-preview-banner" style="display:none; background:#fef08a; color:#854d0e; padding:10px 20px; font-weight:800; border-bottom:2px solid #eab308; position:sticky; top:0; z-index:999999; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; box-shadow:0 4px 10px rgba(0,0,0,0.1);">
+        <div style="display:flex; align-items:center; gap:8px;">
+            <span style="font-size:20px;">👁️</span>
+            <span>BACKUP PREVIEW MODE: Aap Purani Backup File Padh Rahe Hain (<span id="preview-banner-date" style="color:#b45309; text-decoration:underline;">Backup</span>) • Live Data 100% Safe Hai!</span>
+        </div>
+        <button onclick="exitBackupPreviewMode()" style="background:#dc2626; color:white; border:none; padding:6px 14px; border-radius:6px; cursor:pointer; font-weight:bold; font-size:12px; box-shadow:0 2px 6px rgba(220,38,38,0.3);">✕ Exit Preview (Wapas Live Jayein)</button>
+    </div>
+
     <!-- 1. AUTH SCREEN -->
     <div id="login-wrapper">
         <div class="card" id="login-box">
@@ -121,8 +130,15 @@
                 </div>
                 <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
                     <span id="cloud-status-badge" class="sync-badge">🟢 Cloud Synced</span>
-                    <!-- ☁️ DIRECT GMAIL / DRIVE BACKUP BUTTON -->
+                    
+                    <!-- ☁️ 1-CLICK INSTANT BACKUP DOWNLOAD -->
                     <button class="add-btn" style="padding:7px 14px; font-size:12px; font-weight:800; background:linear-gradient(135deg, #0284c7, #2563eb); box-shadow:0 2px 8px rgba(37,99,235,0.25);" onclick="syncToGoogleDrive()">☁️ Gmail / Drive Backup</button>
+                    
+                    <!-- 👁️ READ-ONLY BACKUP VIEWER (ZERO OVERWRITE) -->
+                    <button class="add-btn" style="padding:7px 14px; font-size:12px; font-weight:800; background:#0891b2;" onclick="document.getElementById('banner-view-backup-input').click()">👁️ Backup File Dekhein</button>
+                    <input type="file" id="banner-view-backup-input" style="display:none;" accept=".json" onchange="openBackupViewer(event)">
+
+                    <!-- 📥 FULL RESTORE -->
                     <button class="add-btn" style="padding:7px 14px; font-size:12px; font-weight:700; background:#475569;" onclick="document.getElementById('banner-restore-input').click()">📥 Restore</button>
                     <input type="file" id="banner-restore-input" style="display:none;" accept=".json" onchange="restoreBackupFile(event)">
                 </div>
@@ -367,7 +383,7 @@
                 </div>
             </div>
 
-            <!-- MODULE: KARIGER MASTER (CLEAN - NO TEST BUTTONS) -->
+            <!-- MODULE: KARIGER MASTER -->
             <div id="kariger-section" class="module-section">
                 <div class="module-header">
                     <button class="back-btn" onclick="backToDashboard()">← Dashboard Wapas</button>
@@ -1632,11 +1648,11 @@
         </div>
     </div>
 
-    <!-- JAVASCRIPT SCRIPTS (Auto-Bust Cache v36) -->
-    <script src="auth.js?v=36"></script>
-    <script src="kariger.js?v=36"></script>
-    <script src="stock.js?v=36"></script>
-    <script src="jobwork.js?v=36"></script>
-    <script src="daybook.js?v=36"></script>
+    <!-- JAVASCRIPT SCRIPTS (Auto-Bust Cache v37) -->
+    <script src="auth.js?v=37"></script>
+    <script src="kariger.js?v=37"></script>
+    <script src="stock.js?v=37"></script>
+    <script src="jobwork.js?v=37"></script>
+    <script src="daybook.js?v=37"></script>
 </body>
 </html>
