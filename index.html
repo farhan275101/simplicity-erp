@@ -1654,5 +1654,12 @@
     <script src="stock.js?v=37"></script>
     <script src="jobwork.js?v=37"></script>
     <script src="daybook.js?v=37"></script>
+    <script>
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('sw.js').then(() => {
+            console.log('✅ Simplicity PWA Service Worker Ready!');
+        });
+    }
+    </script>
 </body>
 </html>
