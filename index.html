@@ -66,7 +66,7 @@
         <div class="card" id="forgot-box" style="display:none;">
             <h2>Password Reset</h2>
             <div><span class="creator-tag">by Farhan Jawed</span></div>
-            <p class="card-subtitle">Apne 4-Digit Security PIN Se Password Reset Karein</p>
+            <p class="card-subtitle">Apne 4-Digit Secret PIN Se Password Reset Karein</p>
             <div id="forgot-step-1">
                 <div class="input-group"><label>User ID ya Mobile</label><input type="text" id="forgot-query" placeholder="User ID ya Mobile number"></div>
                 <div class="input-group">
@@ -121,8 +121,9 @@
                 </div>
                 <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
                     <span id="cloud-status-badge" class="sync-badge">🟢 Cloud Synced</span>
-                    <button class="add-btn" style="padding:6px 12px; font-size:12px; background:#0284c7;" onclick="syncToGoogleDrive()">☁️ Save</button>
-                    <button class="add-btn" style="padding:6px 12px; font-size:12px; background:#475569;" onclick="document.getElementById('banner-restore-input').click()">📥 Restore</button>
+                    <!-- ☁️ DIRECT GMAIL / DRIVE BACKUP BUTTON -->
+                    <button class="add-btn" style="padding:7px 14px; font-size:12px; font-weight:800; background:linear-gradient(135deg, #0284c7, #2563eb); box-shadow:0 2px 8px rgba(37,99,235,0.25);" onclick="syncToGoogleDrive()">☁️ Gmail / Drive Backup</button>
+                    <button class="add-btn" style="padding:7px 14px; font-size:12px; font-weight:700; background:#475569;" onclick="document.getElementById('banner-restore-input').click()">📥 Restore</button>
                     <input type="file" id="banner-restore-input" style="display:none;" accept=".json" onchange="restoreBackupFile(event)">
                 </div>
             </div>
@@ -252,22 +253,18 @@
                     </div>
                 </div>
 
-                <!-- DYNAMIC SANCHA KARKHANA TABS -->
                 <div id="sancha-karkhana-tabs-bar" class="sheet-tabs-bar" style="margin-bottom:12px; overflow-x:auto;"></div>
 
-                <!-- SANCHA OPENING STOCK BOX -->
                 <div id="sancha-opening-box" class="summary-box" style="margin-bottom:14px; background:#f0f9ff; border:1px solid #bae6fd; border-left:5px solid #0284c7; text-align:left; padding:12px 16px;">
                     <span style="color:#0284c7; font-weight:800; font-size:12px;">📦 OPENING SANCHA STOCK:</span>
                     <h3 id="sancha-opening-val" style="color:#0284c7; font-size:20px; margin:4px 0;">0.00</h3>
                     <small id="sancha-opening-note" style="color:#64748b; font-weight:600; font-size:11px;">Pichle Session ki 31 March Closing se</small>
                 </div>
 
-                <!-- SANCHA SEARCH BAR -->
                 <div class="filter-panel" style="margin-bottom:14px;">
                     <input type="text" id="search-sancha-input" class="search-box" placeholder="🔍 Search Sancha Item, Name, Date..." oninput="filterSancha()">
                 </div>
 
-                <!-- SANCHA FORM -->
                 <div id="add-sancha-item-form" class="custom-form">
                     <input type="hidden" id="sancha-edit-id">
                     
@@ -370,15 +367,12 @@
                 </div>
             </div>
 
-            <!-- MODULE: KARIGER MASTER (WITH 2000 TEST BUTTONS) -->
+            <!-- MODULE: KARIGER MASTER (CLEAN - NO TEST BUTTONS) -->
             <div id="kariger-section" class="module-section">
                 <div class="module-header">
                     <button class="back-btn" onclick="backToDashboard()">← Dashboard Wapas</button>
                     <h2 style="color:#0f766e; font-size:19px; font-weight:700;">🧵 Kariger Master List</h2>
-                    <div style="display:flex; gap:8px; flex-wrap:wrap;">
-                        <!-- 🧪 2,000 TEST BUTTONS -->
-                        <button id="btn-generate-dummy" class="add-btn" style="background:#7c3aed;" onclick="generate2000TestKarigers()">🧪 +2,000 Test Kariger</button>
-                        <button class="add-btn" style="background:#ef4444;" onclick="clearAllTestKarigers()">🗑️ Saaf Karein</button>
+                    <div style="display:flex; gap:8px;">
                         <button class="add-btn" style="background:#0284c7;" onclick="openKarkhanaManagerModal()">⚙️ Karkhane Manage</button>
                         <button class="add-btn" style="background:#0f766e;" onclick="toggleKarigerForm()">+ Naya Kariger</button>
                     </div>
@@ -713,7 +707,7 @@
                 <div class="table-responsive">
                     <table>
                         <thead>
-                            <tr style="background:#ea580c;"><th>Date</th><th>Zari Name</th><th>Kul Aayi</th><th>Khapat / Gayi</th><th>Bachi Stock</th><th style="text-align:center;">Passbook</th></tr>
+                            <tr style="background:#ea580c;"><th>Date</th><th>Zari Name</th><th>Kul Aayi</th><th>Khapat / Gaya</th><th>Bachi Stock</th><th style="text-align:center;">Passbook</th></tr>
                         </thead>
                         <tbody id="zari-table-body"></tbody>
                     </table>
@@ -1473,20 +1467,22 @@
         </div>
     </div>
 
-    <!-- MODAL 9: YEAR-END CLOSING & NEW SESSION MODAL -->
+    <!-- MODAL 9: YEAR-END CLOSING & DELETE SESSION ZONE (ID & PASSWORD PROTECTED) -->
     <div id="session-closing-modal" class="modal-overlay">
-        <div class="modal-card" style="max-width:520px;">
+        <div class="modal-card" style="max-width:540px;">
             <div class="modal-header" style="background:#7c3aed; color:white;">
-                <div><h3 style="color:white; font-weight:800;">📅 Year-End Closing (Naya Saal)</h3></div>
+                <div><h3 style="color:white; font-weight:800;">📅 Year-End Closing & Session Manager</h3></div>
                 <button class="close-modal-btn" style="color:white;" onclick="closeSessionClosingModal()">X</button>
             </div>
             <div class="modal-body">
+                
+                <!-- 1. START NEW YEAR SECTION -->
                 <div style="background:#f5f3ff; border:1px solid #ddd6fe; padding:12px; border-radius:8px; margin-bottom:14px; font-size:13px; color:#4c1d95; line-height:1.6;">
                     <strong>ℹ️ 1 April / Year-End Closing Kaise Hogi:</strong>
-                    <ul style="margin-top:6px; padding-left:18px;">
+                    <ul style="margin-top:4px; padding-left:18px;">
                         <li>Purana saal hamesha ke liye <strong>सुरक्षित (Locked)</strong> rahega.</li>
-                        <li>Sabhi karigaron ka baki hisab naye saal ka <strong>Opening Balance</strong> ban jayega.</li>
-                        <li>Sabhi karkhanon me bachi sariyan aur raw material naye saal ka <strong>Opening Stock</strong> ban jayega.</li>
+                        <li>Sabhi karigaron ka bakaya naye saal ka <strong>Opening Balance</strong> ban jayega.</li>
+                        <li>Godamo ka bacha maal naye saal ka <strong>Opening Stock</strong> ban jayega.</li>
                     </ul>
                 </div>
 
@@ -1500,16 +1496,147 @@
                     <input type="text" id="session-new-input" placeholder="Jaise: 2027-2028" style="font-weight:bold; font-size:15px; border-color:#c4b5fd;">
                 </div>
 
-                <button class="btn" style="background:#7c3aed; margin-top:10px;" onclick="executeYearEndClosingProcess()">🚀 Close Session & Start New Year</button>
+                <button class="btn" style="background:#7c3aed; margin-top:5px; padding:12px; font-weight:800;" onclick="startSequentialYearClosing()">🚀 Start Step-by-Step Closing</button>
+
+                <!-- 2. DANGER ZONE: DELETE BROKEN / EMPTY SESSION (PASSWORD PROTECTED) -->
+                <div style="margin-top:25px; padding-top:16px; border-top:2px dashed #fca5a5;">
+                    <strong style="color:#b91c1c; font-size:13px; display:block; margin-bottom:6px;">🗑️ Fasa Hua / Khali Session Delete Karein (Danger Zone)</strong>
+                    
+                    <div style="background:#fef2f2; border:1px solid #fecaca; border-radius:8px; padding:10px; margin-bottom:12px; font-size:12px; color:#991b1b; line-height:1.5;">
+                        ⚠️ <strong>DHYAN DEIN:</strong> Is session ka poora data mit jayega. Suraksha ke liye apna User ID aur Password bharein tabhi session delete hoga.
+                    </div>
+
+                    <div class="input-group">
+                        <label style="color:#b91c1c; font-weight:800;">Kis Session Ko Delete Karna Hai:</label>
+                        <select id="session-delete-select" style="border-color:#fca5a5; font-weight:bold; padding:8px;"></select>
+                    </div>
+
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px;">
+                        <div class="input-group">
+                            <label style="color:#475569; font-weight:700;">Aapka User ID:</label>
+                            <input type="text" id="session-del-user-id" placeholder="Apna User ID daalein">
+                        </div>
+                        <div class="input-group">
+                            <label style="color:#475569; font-weight:700;">Aapka Password:</label>
+                            <input type="password" id="session-del-password" placeholder="Password daalein">
+                        </div>
+                    </div>
+
+                    <button class="btn" style="background:#dc2626; padding:11px; font-weight:800;" onclick="confirmAndDeleteSessionWithAuth()">🔒 Verify Karke Session Delete Karein</button>
+                </div>
+
             </div>
         </div>
     </div>
 
-    <!-- JAVASCRIPT SCRIPTS (Auto-Bust Cache) -->
-    <script src="auth.js?v=32"></script>
-    <script src="kariger.js?v=32"></script>
-    <script src="stock.js?v=32"></script>
-    <script src="jobwork.js?v=32"></script>
-    <script src="daybook.js?v=32"></script>
+    <!-- 🎬 MODAL 10: STEP-BY-STEP SEQUENTIAL TRANSFER & WELCOME MODAL -->
+    <div id="session-transfer-modal" class="modal-overlay">
+        <div class="modal-card" style="max-width:600px; padding:25px; border-radius:18px; box-shadow:0 25px 50px -12px rgba(0, 0, 0, 0.25);">
+            
+            <div id="transfer-progress-view">
+                <div style="text-align:center; margin-bottom:20px;">
+                    <span style="font-size:32px;">🎬</span>
+                    <h3 style="color:#1e3a8a; font-weight:900; font-size:20px; margin-top:4px;">SIMPLICITY YEAR-END DATA TRANSFER</h3>
+                    <p style="color:#64748b; font-size:12px; margin-top:2px;">Bari-Bari Har Module Ka Data Naye Saal Me Surakshit Transfer Ho Raha Hai</p>
+                </div>
+
+                <!-- OVERALL MAIN PROGRESS BAR -->
+                <div style="background:#e2e8f0; border-radius:12px; height:12px; overflow:hidden; margin-bottom:20px;">
+                    <div id="transfer-main-bar" style="width:0%; height:100%; background:linear-gradient(90deg, #2563eb, #10b981); transition:width 0.2s ease;"></div>
+                </div>
+
+                <!-- 5 STAGES CHECKLIST -->
+                <div style="display:flex; flex-direction:column; gap:12px; margin-bottom:20px;">
+                    
+                    <!-- STAGE 1 -->
+                    <div id="stage-card-1" style="background:#f8fafc; border:1px solid #cbd5e1; border-radius:10px; padding:12px 14px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <strong style="font-size:13px; color:#1e3a8a;">1. 🧵 Kariger Master & Tani Khata</strong>
+                            <span id="stage-badge-1" style="font-size:11px; font-weight:700; color:#64748b; background:#e2e8f0; padding:3px 8px; border-radius:20px;">⏸️ Waiting</span>
+                        </div>
+                        <div style="background:#e2e8f0; border-radius:6px; height:6px; overflow:hidden; margin-top:8px;">
+                            <div id="stage-bar-1" style="width:0%; height:100%; background:#2563eb; transition:width 0.1s ease;"></div>
+                        </div>
+                        <small id="stage-status-1" style="display:block; font-size:11px; color:#64748b; margin-top:4px;">Wait kar raha hai...</small>
+                    </div>
+
+                    <!-- STAGE 2 -->
+                    <div id="stage-card-2" style="background:#f8fafc; border:1px solid #cbd5e1; border-radius:10px; padding:12px 14px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <strong style="font-size:13px; color:#1e3a8a;">2. 🥻 Saree Stock (Sabhi Godam)</strong>
+                            <span id="stage-badge-2" style="font-size:11px; font-weight:700; color:#64748b; background:#e2e8f0; padding:3px 8px; border-radius:20px;">⏸️ Waiting</span>
+                        </div>
+                        <div style="background:#e2e8f0; border-radius:6px; height:6px; overflow:hidden; margin-top:8px;">
+                            <div id="stage-bar-2" style="width:0%; height:100%; background:#2563eb; transition:width 0.1s ease;"></div>
+                        </div>
+                        <small id="stage-status-2" style="display:block; font-size:11px; color:#64748b; margin-top:4px;">Wait kar raha hai...</small>
+                    </div>
+
+                    <!-- STAGE 3 -->
+                    <div id="stage-card-3" style="background:#f8fafc; border:1px solid #cbd5e1; border-radius:10px; padding:12px 14px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <strong style="font-size:13px; color:#1e3a8a;">3. 🧶 Bana & ✨ Zari Stock Freeze</strong>
+                            <span id="stage-badge-3" style="font-size:11px; font-weight:700; color:#64748b; background:#e2e8f0; padding:3px 8px; border-radius:20px;">⏸️ Waiting</span>
+                        </div>
+                        <div style="background:#e2e8f0; border-radius:6px; height:6px; overflow:hidden; margin-top:8px;">
+                            <div id="stage-bar-3" style="width:0%; height:100%; background:#2563eb; transition:width 0.1s ease;"></div>
+                        </div>
+                        <small id="stage-status-3" style="display:block; font-size:11px; color:#64748b; margin-top:4px;">Wait kar raha hai...</small>
+                    </div>
+
+                    <!-- STAGE 4 -->
+                    <div id="stage-card-4" style="background:#f8fafc; border:1px solid #cbd5e1; border-radius:10px; padding:12px 14px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <strong style="font-size:13px; color:#1e3a8a;">4. ⚙️ Sancha & ✂️ Job Work Accounts</strong>
+                            <span id="stage-badge-4" style="font-size:11px; font-weight:700; color:#64748b; background:#e2e8f0; padding:3px 8px; border-radius:20px;">⏸️ Waiting</span>
+                        </div>
+                        <div style="background:#e2e8f0; border-radius:6px; height:6px; overflow:hidden; margin-top:8px;">
+                            <div id="stage-bar-4" style="width:0%; height:100%; background:#2563eb; transition:width 0.1s ease;"></div>
+                        </div>
+                        <small id="stage-status-4" style="display:block; font-size:11px; color:#64748b; margin-top:4px;">Wait kar raha hai...</small>
+                    </div>
+
+                    <!-- STAGE 5 -->
+                    <div id="stage-card-5" style="background:#f8fafc; border:1px solid #cbd5e1; border-radius:10px; padding:12px 14px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <strong style="font-size:13px; color:#1e3a8a;">5. 🔒 Final Cloud & Session Safe Lock</strong>
+                            <span id="stage-badge-5" style="font-size:11px; font-weight:700; color:#64748b; background:#e2e8f0; padding:3px 8px; border-radius:20px;">⏸️ Waiting</span>
+                        </div>
+                        <div style="background:#e2e8f0; border-radius:6px; height:6px; overflow:hidden; margin-top:8px;">
+                            <div id="stage-bar-5" style="width:0%; height:100%; background:#2563eb; transition:width 0.1s ease;"></div>
+                        </div>
+                        <small id="stage-status-5" style="display:block; font-size:11px; color:#64748b; margin-top:4px;">Wait kar raha hai...</small>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- 🎉 CELEBRATION & WELCOME MESSAGE VIEW -->
+            <div id="transfer-welcome-view" style="display:none; text-align:center; padding:15px 10px;">
+                <div style="font-size:55px; margin-bottom:10px;">🎉 ✨ 🚀</div>
+                <h2 style="color:#059669; font-weight:900; font-size:24px; margin-bottom:6px;">MUBARAK HO! TRANSFER SAFAL RAHA!</h2>
+                <div style="display:inline-block; background:#ecfdf5; border:1px solid #a7f3d0; color:#059669; padding:4px 14px; border-radius:20px; font-weight:800; font-size:13px; margin-bottom:16px;">
+                    📅 Naya Saal: <span id="welcome-session-name">-</span>
+                </div>
+                
+                <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:16px; text-align:left; font-size:13px; color:#334155; line-height:1.8; margin-bottom:20px;">
+                    <div style="color:#059669; font-weight:700;">✔️ Sabhi Karigaron Ka Baki Bakaya Tani 1 Opening Ban Gaya!</div>
+                    <div style="color:#059669; font-weight:700;">✔️ Sabhi Godamo Ka Bacha Saree, Bana & Zari Opening Stock Freeze Ho Gaya!</div>
+                    <div style="color:#0284c7; font-weight:700;">✔️ Pichla Saal Hamesha Ke Liye Surakshit (Locked) Ho Chuka Hai!</div>
+                    <div style="color:#7c3aed; font-weight:700;">✔️ Naye Saal Me ERP Bilkul Halka, Fresh Aur Superfast Khul Chuka Hai!</div>
+                </div>
+
+                <button class="btn" style="background:linear-gradient(135deg, #059669, #10b981); padding:14px; font-size:16px; font-weight:800; box-shadow:0 8px 20px rgba(5,150,105,0.3);" onclick="finishSessionTransferAndEnter()">🚀 Naye Saal Ka Karobar Shuru Karein</button>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT SCRIPTS (Auto-Bust Cache v36) -->
+    <script src="auth.js?v=36"></script>
+    <script src="kariger.js?v=36"></script>
+    <script src="stock.js?v=36"></script>
+    <script src="jobwork.js?v=36"></script>
+    <script src="daybook.js?v=36"></script>
 </body>
 </html>
