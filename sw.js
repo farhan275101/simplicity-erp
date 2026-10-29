@@ -1,22 +1,28 @@
-// SIMPLICITY ERP - SERVICE WORKER
-const CACHE_NAME = 'simplicity-cache-v1';
+// SIMPLICITY ERP - BULLETPROOF SERVICE WORKER
+const CACHE_NAME = 'simplicity-cache-v2';
 const urlsToCache = [
-  './',
-  './index.html',
-  './style.css',
-  './manifest.json'
+  'index.html',
+  'style.css',
+  'manifest.json'
 ];
 
-// 1. Install Service Worker
+// 1. Install Event (Safe Cache)
 self.addEventListener('install', event => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => {
-      return cache.addAll(urlsToCache);
+    caches.open(CACHE_NAME).then(async cache => {
+      // Har file ko alag add karega taaki 1 file se poora app block na ho
+      for (const url of urlsToCache) {
+        try {
+          await cache.add(url);
+        } catch (err) {
+          console.warn('Caching skipped for:', url);
+        }
+      }
     }).then(() => self.skipWaiting())
   );
 });
 
-// 2. Activate & Clean Old Caches
+// 2. Activate Event
 self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys().then(cacheNames => {
@@ -31,7 +37,7 @@ self.addEventListener('activate', event => {
   );
 });
 
-// 3. Fetch Event (Mandatory for Chrome PWA Installation)
+// 3. Fetch Event (Chrome PWA Requirement)
 self.addEventListener('fetch', event => {
   event.respondWith(
     caches.match(event.request).then(response => {
