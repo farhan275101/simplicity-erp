@@ -1,7 +1,7 @@
 /* ========================================================
-   SIMPLICITY ERP - FIREBASE, INDEXEDDB (NO 5MB LIMIT), AUTH & ADMIN ENGINE
+   SIMPLICITY ERP - FIREBASE, INDEXEDDB (NO 5MB LIMIT), AUTH & BACKUP ENGINE
    File 1 of 5 • Developed by Farhan Jawed
-   (Enterprise Storage Engine: IndexedDB + In-Memory RAM Cache + Cloud Sync)
+   (Enterprise Storage Engine: IndexedDB + In-Memory RAM Cache + One-Tap Drive/Gmail Sync)
 ======================================================== */
 
 // 1. FIREBASE CONFIGURATION & INITIALIZATION
@@ -151,7 +151,6 @@ function initIndexedDBPreload(callback) {
                     APP_MEMORY_CACHE[cursor.key] = cursor.value;
                     cursor.continue();
                 } else {
-                    // IndexedDB loaded, ab purane localStorage se agar kuch bacha ho to sync karein
                     migrateLocalStorageToCache();
                     if (callback) callback();
                 }
@@ -249,7 +248,7 @@ function getStore(key) {
             return val;
         }
 
-        // 2. Fallback to LocalStorage (Agar memory me na mila ho)
+        // 2. Fallback to LocalStorage
         var raw = localStorage.getItem(fullKey);
         if (raw === null || raw === undefined) {
             var oldKey = currentUserId + "_" + key;
@@ -262,7 +261,6 @@ function getStore(key) {
         if (raw === null || raw === undefined || raw === "") return [];
         var parsed = JSON.parse(raw);
 
-        // Save to cache & IndexedDB for permanent unlimited storage
         APP_MEMORY_CACHE[fullKey] = parsed;
         idbPut(fullKey, parsed);
 
@@ -291,12 +289,10 @@ function setStore(key, data) {
         // 2. High-Capacity IndexedDB Save (No 5MB Limit!)
         idbPut(fullKey, toSave);
 
-        // 3. LocalStorage safety try-catch (Agar space bachi ho to save kare, overflow par na tute)
+        // 3. LocalStorage safety try-catch
         try {
             localStorage.setItem(fullKey, JSON.stringify(toSave));
-        } catch(storageLimitErr) {
-            // LocalStorage bhar bhi jaye to koi parwah nahi, IndexedDB me data 100% safe hai
-        }
+        } catch(storageLimitErr) {}
 
         // 4. Firebase Cloud Sync
         if (db && !isRemoteUpdating && currentUserId) {
@@ -387,7 +383,7 @@ function sanitizeKarigerList() {
     return clean;
 }
 
-// 4. DATA BACKUP & RESTORE
+// 4. DATA BACKUP & RESTORE (TAREEQA 2: ONE-TAP GOOGLE DRIVE / GMAIL SHARE)
 function exportUserFullData() {
     var sess = (typeof getActiveFinancialSession === "function") ? getActiveFinancialSession() : "2026-2027";
     var keys = [
@@ -437,9 +433,14 @@ async function syncToGoogleDrive() {
     var fileName = currentUserId + "_" + sess + "_Backup_" + formatDateDisplay(getTodayDate()) + ".json";
     var file = new File([JSON.stringify(data, null, 2)], fileName, { type: "application/json" });
 
+    // Tareeqa 2: Phone par Google Drive ("Save to Drive") aur Gmail popup khulega
     if (navigator.canShare && navigator.canShare({ files: [file] })) {
         try {
-            await navigator.share({ files: [file], title: "Karkhana ERP Backup" });
+            await navigator.share({ 
+                files: [file], 
+                title: "Simplicity ERP Backup",
+                text: "Simplicity ERP Backup File (" + sess + " • " + formatDateDisplay(getTodayDate()) + ")"
+            });
         } catch (err) {
             downloadBackupFile();
         }
@@ -459,6 +460,7 @@ function downloadBackupFile() {
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
+    alert("📥 Backup file download ho gayi hai! Ise apne Gmail ya Google Drive par safe rakh lein.");
 }
 
 function restoreBackupFile(e) {
@@ -686,7 +688,6 @@ function handleLogin() {
             setDisplay("nav-admin-btn", "none");
         }
 
-        // Fast RAM Preload before dashboard shows
         initIndexedDBPreload(function() {
             initFirebaseLiveListeners();
             if (typeof populateSessionDropdown === "function") populateSessionDropdown();
