@@ -383,4 +383,215 @@ function renderDashboardDayBook() {
                     safeArray(sh.rows).forEach(function(r) {
                         if (r && r.date === d) {
                             var itName = r.zariItemName || (zStock.length > 0 ? zStock[0].name : "Zari");
-                            if (Numbe
+                            if (Number(r.netZari) > 0) zDayRows.push({ name: itName, desc: k.name + " (" + sh.title + ")", inQty: 0, outQty: Number(r.netZari) });
+                            if (Number(r.retZari) > 0) zDayRows.push({ name: itName, desc: k.name + " (" + sh.title + ") Return", inQty: Number(r.retZari), outQty: 0 });
+                        }
+                    });
+                }
+            });
+        });
+
+        if (!zDayRows.length) {
+            tbody.innerHTML = "<tr><td colspan='4' style='text-align:center; padding:15px; color:#888;'>Is tarikh me Zari ki koi entry nahi hai.</td></tr>";
+        } else {
+            var zBuf = "";
+            zDayRows.forEach(function(r) {
+                zBuf += "<tr><td><strong>" + r.name + "</strong></td><td>" + r.desc + "</td><td>" + (r.inQty > 0 ? ("<span style='color:#059669; font-weight:700;'>+" + r.inQty.toFixed(2) + "</span>") : "-") + "</td><td>" + (r.outQty > 0 ? ("<span style='color:#dc2626; font-weight:700;'>-" + r.outQty.toFixed(2) + "</span>") : "-") + "</td></tr>";
+            });
+            tbody.innerHTML = zBuf;
+        }
+        tfoot.innerHTML = "<tr><td colspan='2'><strong>Total Rozana Zari:</strong></td><td><strong style='color:#059669;'>+" + zIn.toFixed(2) + "</strong></td><td><strong style='color:#dc2626;'>-" + zOut.toFixed(2) + "</strong></td></tr>";
+
+    } else if (currentDayBookTab === "saree") {
+        thead.innerHTML = "<tr style='background:#2563eb;'><th style='width:25%;'>Saree Ka Naam</th><th style='width:20%;'>Kariger / Godam</th><th style='background:#047857; color:#a7f3d0; width:20%;'>📥 Aayi (In)</th><th style='background:#b91c1c; color:#fecaca; width:20%;'>📤 Gayi (Out)</th><th>Vivran</th></tr>";
+        var filteredSH = sH.filter(function(h) {
+            var typeStr = String(h.type || "");
+            var isTransfer = (typeStr.indexOf("Transfer") !== -1) || (typeStr.indexOf("Branch Transfer") !== -1);
+            var isJobWork = (typeStr.indexOf("Cutting") !== -1) || (typeStr.indexOf("Calender") !== -1) || (typeStr.indexOf("Finished Sale") !== -1);
+            return !isTransfer && !isJobWork;
+        });
+
+        if (!filteredSH.length) {
+            tbody.innerHTML = "<tr><td colspan='5' style='text-align:center; padding:15px; color:#888;'>Is tarikh me Factory Saree ki koi entry nahi hai.</td></tr>";
+        } else {
+            var sBuf = "";
+            filteredSH.forEach(function(h) {
+                var isA = String(h.type || "").indexOf("In") !== -1;
+                sBuf += "<tr><td><strong>" + h.name + "</strong></td><td>" + (h.kariger || "-") + "</td><td>" + (isA ? ("<strong style='color:#059669;'>+" + h.pcs + " Pcs</strong>") : "-") + "</td><td>" + (!isA ? ("<strong style='color:#dc2626;'>-" + h.pcs + " Pcs</strong>") : "-") + "</td><td>" + (h.note || "-") + "</td></tr>";
+            });
+            tbody.innerHTML = sBuf;
+        }
+        tfoot.innerHTML = "<tr><td colspan='2'><strong>Kul Fresh Saree:</strong></td><td><strong style='color:#059669;'>+" + sIn + " Pcs</strong></td><td><strong style='color:#dc2626;'>-" + sOut + " Pcs</strong></td><td>-</td></tr>";
+
+    } else if (currentDayBookTab === "payment") {
+        thead.innerHTML = "<tr style='background:#7c3aed;'><th style='width:35%;'>Kariger</th><th style='width:35%;'>Tani / Vivran</th><th style='background:#b91c1c; color:#fecaca; width:30%;'>📤 Payment Diya (Out)</th></tr>";
+        var dayPayments = [];
+        karList.forEach(function(k) {
+            var sheets = (typeof getKarigerSheets === "function") ? getKarigerSheets(k.id) : [];
+            sheets.forEach(function(sh) {
+                if (sh && sh.rows) {
+                    safeArray(sh.rows).forEach(function(r) {
+                        if (r && r.date === d && Number(r.paid) > 0) {
+                            dayPayments.push({ kariger: k.name, tani: sh.title, amount: Number(r.paid) });
+                        }
+                    });
+                }
+            });
+        });
+
+        if (!dayPayments.length) {
+            tbody.innerHTML = "<tr><td colspan='3' style='text-align:center; padding:15px; color:#888;'>Is tarikh me koi payment nahi di gayi.</td></tr>";
+        } else {
+            var pBuf = "";
+            dayPayments.forEach(function(dp) {
+                pBuf += "<tr><td><strong>" + dp.kariger + "</strong></td><td>" + dp.tani + "</td><td><strong style='color:#dc2626;'>- ₹ " + dp.amount.toFixed(2) + "</strong></td></tr>";
+            });
+            tbody.innerHTML = pBuf;
+        }
+        tfoot.innerHTML = "<tr><td colspan='2'><strong>Total Rozana Bhugtan:</strong></td><td><strong style='color:#dc2626;'>- ₹ " + pOut.toFixed(2) + "</strong></td></tr>";
+    }
+}
+
+// ================= 4. DASHBOARD BADGES =================
+var badgeCalculationTimer = null;
+
+function updateDashboardBadgeTotals() {
+    var setT = function(id, v) { var el = document.getElementById(id); if (el) el.textContent = v; };
+
+    var karList = (typeof sanitizeKarigerList === "function") ? sanitizeKarigerList() : [];
+    setT("btn-total-kariger", "Total: " + karList.length);
+    setT("btn-total-info", "Total: " + safeArray(getStore("info_ledger")).length);
+
+    var ts = 0;
+    safeArray(getStore("saree_stock")).forEach(function(s) { if (s) ts += (Number(s.pcs) || 0); });
+    setT("btn-total-saree", "Stock: " + ts + " Pcs");
+
+    if (typeof getJobWorkers === "function") setT("btn-total-jobwork", "Workers: " + getJobWorkers().length);
+    if (typeof updateJobWorkHubBadges === "function") updateJobWorkHubBadges();
+
+    if (badgeCalculationTimer) clearTimeout(badgeCalculationTimer);
+
+    badgeCalculationTimer = setTimeout(function() {
+        var tb = 0;
+        var seenBana = [];
+        safeArray(getStore("bana_stock")).forEach(function(b) {
+            if (b && b.name) {
+                var nLow = b.name.trim().toLowerCase();
+                if (seenBana.indexOf(nLow) === -1) {
+                    seenBana.push(nLow);
+                    if (typeof getBanaItemStats === "function") {
+                        try { tb += Number(getBanaItemStats(b.name, "k_main").bacha || 0); } catch(e) {}
+                    }
+                }
+            }
+        });
+        setT("btn-total-bana", "Bacha: " + tb.toFixed(2) + " Kg");
+
+        var tz = 0;
+        var seenZari = [];
+        safeArray(getStore("zari_stock")).forEach(function(z) {
+            if (z && z.name) {
+                var nLow = z.name.trim().toLowerCase();
+                if (seenZari.indexOf(nLow) === -1) {
+                    seenZari.push(nLow);
+                    if (typeof getZariItemStats === "function") {
+                        try { tz += Number(getZariItemStats(z.name, "k_main").bacha || 0); } catch(e) {}
+                    }
+                }
+            }
+        });
+        setT("btn-total-zari", "Bacha: " + tz.toFixed(2) + " Kg");
+
+        var tsc = 0;
+        var seenSancha = [];
+        if (typeof getSanchaItems === "function") {
+            getSanchaItems().forEach(function(s) {
+                if (s && s.name) {
+                    var nLow = s.name.trim().toLowerCase();
+                    if (seenSancha.indexOf(nLow) === -1) {
+                        seenSancha.push(nLow);
+                        if (typeof getSanchaItemStats === "function") {
+                            try { tsc += Number(getSanchaItemStats(s.id, s.name, "k_main").bacha || 0); } catch(e) {}
+                        } else {
+                            tsc += (Number(s.totalQty) || 0);
+                        }
+                    }
+                }
+            });
+        }
+        setT("btn-total-sancha", "Bacha: " + tsc.toFixed(2));
+
+        var totalBakiAll = 0;
+        karList.forEach(function(k) {
+            if (k && k.id) {
+                var fin = getKarigerFinanceSummary(k.id);
+                totalBakiAll += fin.currentBakaya;
+            }
+        });
+        setT("btn-total-payment", "Baki: ₹ " + totalBakiAll.toFixed(0));
+    }, 60);
+}
+
+function hideAllSections() {
+    [
+        "dashboard-view", "admin-section", "info-section",
+        "kariger-section", "kariger-sheet-section", "bana-section",
+        "zari-section", "saree-section", "payment-section", "sancha-section",
+        "jobwork-section"
+    ].forEach(function(id) {
+        setDisplay(id, "none");
+    });
+}
+
+function backToDashboard() {
+    hideAllSections();
+    setDisplay("dashboard-view", "block");
+    if (typeof populateSessionDropdown === "function") populateSessionDropdown();
+    renderDashboardDayBook();
+    updateDashboardBadgeTotals();
+}
+
+function initApp() {
+    var dEl = document.getElementById("dash-day-date");
+    if (dEl) dEl.value = getTodayDate();
+    if (typeof populateSessionDropdown === "function") populateSessionDropdown();
+    renderDashboardDayBook();
+    updateDashboardBadgeTotals();
+    syncUsersWithFirebase();
+}
+
+// 5. STRICT CLEAN STARTUP
+window.onload = function() {
+    if (typeof clearMemoryCache === "function") clearMemoryCache();
+    currentUserId = null;
+    currentUserRole = null;
+    activeKarigerId = null;
+    activeSheetId = null;
+
+    if (typeof setDisplay === "function") {
+        setDisplay("login-wrapper", "flex");
+        setDisplay("desktop-screen", "none");
+    }
+    if (typeof showLogin === "function") showLogin();
+
+    var idInp = document.getElementById("login-id");
+    var passInp = document.getElementById("login-pass");
+    if (idInp) idInp.value = "";
+    if (passInp) passInp.value = "";
+
+    var errMsg = document.getElementById("login-error");
+    if (errMsg) errMsg.style.display = "none";
+
+    if (idInp) {
+        idInp.addEventListener("keypress", function(e) {
+            if (e.key === "Enter" && typeof handleLogin === "function") handleLogin();
+        });
+    }
+    if (passInp) {
+        passInp.addEventListener("keypress", function(e) {
+            if (e.key === "Enter" && typeof handleLogin === "function") handleLogin();
+        });
+    }
+
+    if (typeof syncUsersWithFirebase === "function") syncUsersWithFirebase();
+};
