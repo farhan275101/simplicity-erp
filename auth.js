@@ -1,10 +1,8 @@
 /* ========================================================
-   SIMPLICITY ERP - FIREBASE, INDEXEDDB, BACKUP VIEWER & DOWNLOAD ENGINE
-   File 1 of 5 • Developed by Farhan Jawed
-   (Enterprise Storage Engine: IndexedDB + RAM Cache + Universal Download + Read-Only Backup Viewer)
+   SIMPLICITY ERP - AUTH & STORAGE ENGINE (File 1 of 5)
+   Developed by Farhan Jawed
 ======================================================== */
 
-// 1. FIREBASE CONFIGURATION & INITIALIZATION
 const firebaseConfig = {
     apiKey: "AIzaSyDkLlLPFnZexLWxtvqg3UiE9XG_IclaSAk",
     authDomain: "simplicity-erp.firebaseapp.com",
@@ -27,29 +25,22 @@ var currentPassbookContext = null;
 var activeSanchaItemId = null;
 var isRemoteUpdating = false;
 
-// 👁️ READ-ONLY BACKUP VIEWER STATE
 var isBackupPreviewMode = false;
 var PREVIEW_BACKUP_DATA = null;
-
-// FAST RUNTIME RAM CACHE
 var APP_MEMORY_CACHE = {};
 
-// Helper to flush RAM cache on session switch or logout
 function clearMemoryCache() {
     APP_MEMORY_CACHE = {};
 }
 
 try {
-    if (!firebase.apps.length) {
-        firebase.initializeApp(firebaseConfig);
-    }
+    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
     db = firebase.database();
     console.log("✅ Firebase Database Connected Successfully!");
 } catch (error) {
-    console.error("❌ Firebase Initialization Error:", error);
+    console.error("❌ Firebase Init Error:", error);
 }
 
-// 2. BASIC UTILITY FUNCTIONS
 function setDisplay(id, val) {
     var el = document.getElementById(id);
     if (el) el.style.display = val;
@@ -79,66 +70,42 @@ function isDateInRange(itemDate, fromDate, toDate) {
 function showSyncStatus(status) {
     var badge = document.getElementById("cloud-status-badge");
     if (!badge) return;
-
     if (isBackupPreviewMode) {
         badge.className = "sync-badge";
-        badge.style.background = "#fef08a";
-        badge.style.color = "#854d0e";
-        badge.style.borderColor = "#eab308";
+        badge.style.background = "#fef08a"; badge.style.color = "#854d0e"; badge.style.borderColor = "#eab308";
         badge.innerHTML = "👁️ Preview Mode (No Sync)";
         return;
     }
-
     if (status === "syncing") {
         badge.className = "sync-badge sync-syncing";
         badge.innerHTML = "🔄 Syncing...";
     } else if (status === "offline") {
         badge.className = "sync-badge";
-        badge.style.background = "#fff7ed";
-        badge.style.color = "#ea580c";
-        badge.style.borderColor = "#fed7aa";
+        badge.style.background = "#fff7ed"; badge.style.color = "#ea580c"; badge.style.borderColor = "#fed7aa";
         badge.innerHTML = "🟠 Offline Mode";
     } else if (status === "error") {
         badge.className = "sync-badge";
-        badge.style.background = "#fef2f2";
-        badge.style.color = "#dc2626";
-        badge.style.borderColor = "#fecaca";
+        badge.style.background = "#fef2f2"; badge.style.color = "#dc2626"; badge.style.borderColor = "#fecaca";
         badge.innerHTML = "⚠️ Sync Error";
     } else {
         badge.className = "sync-badge";
-        badge.style.background = "#ecfdf5";
-        badge.style.color = "#059669";
-        badge.style.borderColor = "#a7f3d0";
+        badge.style.background = "#ecfdf5"; badge.style.color = "#059669"; badge.style.borderColor = "#a7f3d0";
         badge.innerHTML = "🟢 Cloud Synced";
     }
 }
 
-// 3. ENTERPRISE INDEXEDDB ENGINE
 var idbInstance = null;
-
 function openEnterpriseIndexedDB(callback) {
-    if (idbInstance) {
-        if (callback) callback(idbInstance);
-        return;
-    }
+    if (idbInstance) { if (callback) callback(idbInstance); return; }
     try {
-        var request = window.indexedDB.open("SimplicityERP_DB", 1);
-        request.onupgradeneeded = function(e) {
-            var database = e.target.result;
-            if (!database.objectStoreNames.contains("app_store")) {
-                database.createObjectStore("app_store");
-            }
+        var req = window.indexedDB.open("SimplicityERP_DB", 1);
+        req.onupgradeneeded = function(e) {
+            var dbase = e.target.result;
+            if (!dbase.objectStoreNames.contains("app_store")) dbase.createObjectStore("app_store");
         };
-        request.onsuccess = function(e) {
-            idbInstance = e.target.result;
-            if (callback) callback(idbInstance);
-        };
-        request.onerror = function() {
-            if (callback) callback(null);
-        };
-    } catch(err) {
-        if (callback) callback(null);
-    }
+        req.onsuccess = function(e) { idbInstance = e.target.result; if (callback) callback(idbInstance); };
+        req.onerror = function() { if (callback) callback(null); };
+    } catch(err) { if (callback) callback(null); }
 }
 
 function idbPut(key, value) {
@@ -146,23 +113,17 @@ function idbPut(key, value) {
         if (!dbase) return;
         try {
             var tx = dbase.transaction("app_store", "readwrite");
-            var store = tx.objectStore("app_store");
-            store.put(value, key);
+            tx.objectStore("app_store").put(value, key);
         } catch(e) {}
     });
 }
 
 function initIndexedDBPreload(callback) {
     openEnterpriseIndexedDB(function(dbase) {
-        if (!dbase) {
-            migrateLocalStorageToCache();
-            if (callback) callback();
-            return;
-        }
+        if (!dbase) { migrateLocalStorageToCache(); if (callback) callback(); return; }
         try {
             var tx = dbase.transaction("app_store", "readonly");
-            var store = tx.objectStore("app_store");
-            var req = store.openCursor();
+            var req = tx.objectStore("app_store").openCursor();
             req.onsuccess = function(e) {
                 var cursor = e.target.result;
                 if (cursor) {
@@ -173,14 +134,8 @@ function initIndexedDBPreload(callback) {
                     if (callback) callback();
                 }
             };
-            req.onerror = function() {
-                migrateLocalStorageToCache();
-                if (callback) callback();
-            };
-        } catch(err) {
-            migrateLocalStorageToCache();
-            if (callback) callback();
-        }
+            req.onerror = function() { migrateLocalStorageToCache(); if (callback) callback(); };
+        } catch(err) { migrateLocalStorageToCache(); if (callback) callback(); }
     });
 }
 
@@ -203,25 +158,15 @@ function migrateLocalStorageToCache() {
     } catch(e) {}
 }
 
-var GLOBAL_APP_KEYS = [
-    "app_sessions_list",
-    "app_active_session",
-    "karkhana_list",
-    "app_users",
-    "info_ledger"
-];
+var GLOBAL_APP_KEYS = ["app_sessions_list", "app_active_session", "karkhana_list", "app_users", "info_ledger"];
 
 function safeArray(data) {
     if (!data) return [];
-    if (Array.isArray(data)) {
-        return data.filter(function(item) {
-            return item !== null && item !== undefined;
-        });
-    }
+    if (Array.isArray(data)) return data.filter(function(item) { return item !== null && item !== undefined; });
     if (typeof data === "object") {
         var keys = Object.keys(data);
-        var isNumeric = keys.length > 0 && keys.every(function(k) { return !isNaN(parseInt(k, 10)); });
-        if (isNumeric) {
+        var isNum = keys.length > 0 && keys.every(function(k) { return !isNaN(parseInt(k, 10)); });
+        if (isNum) {
             var arr = [];
             keys.sort(function(a, b) { return parseInt(a, 10) - parseInt(b, 10); }).forEach(function(k) {
                 if (data[k] !== null && data[k] !== undefined) arr.push(data[k]);
@@ -235,9 +180,7 @@ function safeArray(data) {
 
 function getStorageKey(key) {
     if (!currentUserId) return key;
-    if (GLOBAL_APP_KEYS.indexOf(key) !== -1) {
-        return currentUserId + "_" + key;
-    }
+    if (GLOBAL_APP_KEYS.indexOf(key) !== -1) return currentUserId + "_" + key;
     var sess = "2026-2027";
     if (typeof getActiveFinancialSession === "function") {
         sess = getActiveFinancialSession();
@@ -249,7 +192,6 @@ function getStorageKey(key) {
     return currentUserId + "_" + sess + "_" + key;
 }
 
-// ULTRA-FAST GETSTORE (WITH BACKUP PREVIEW INTERCEPTOR)
 function getStore(key) {
     if (isBackupPreviewMode && PREVIEW_BACKUP_DATA) {
         if (key.indexOf("kariger_sheets_") === 0) {
@@ -266,65 +208,43 @@ function getStore(key) {
         }
         return [];
     }
-
     if (!currentUserId) return [];
-
     try {
         var fullKey = getStorageKey(key);
-
         if (APP_MEMORY_CACHE.hasOwnProperty(fullKey)) {
             var val = APP_MEMORY_CACHE[fullKey];
             if (typeof val === "string" || typeof val === "number" || typeof val === "boolean") return val;
-            if (Array.isArray(val)) return safeArray(val);
-            if (typeof val === "object" && val !== null) return safeArray(val);
-            return val;
+            return safeArray(val);
         }
-
         var raw = localStorage.getItem(fullKey);
         if (raw === null || raw === undefined) {
             var oldKey = currentUserId + "_" + key;
             var oldRaw = localStorage.getItem(oldKey);
-            if (oldRaw !== null && oldRaw !== undefined) {
-                raw = oldRaw;
-            }
+            if (oldRaw !== null && oldRaw !== undefined) raw = oldRaw;
         }
-
-        if (raw === null || raw === undefined || raw === "") return [];
+        if (!raw) return [];
         var parsed = JSON.parse(raw);
-
         APP_MEMORY_CACHE[fullKey] = parsed;
         idbPut(fullKey, parsed);
-
         if (typeof parsed === "string" || typeof parsed === "number" || typeof parsed === "boolean") return parsed;
-        if (Array.isArray(parsed)) return safeArray(parsed);
-        if (typeof parsed === "object" && parsed !== null) return safeArray(parsed);
-        return parsed;
+        return safeArray(parsed);
     } catch (e) {
         return [];
     }
 }
 
-// UNLIMITED CAPACITY SETSTORE
 function setStore(key, data) {
     if (isBackupPreviewMode) {
-        console.warn("Write blocked: App is currently in Read-Only Backup Preview Mode.");
+        console.warn("Write blocked: Read-Only Backup Preview Mode.");
         return;
     }
-
     if (!currentUserId) return;
     try {
         var fullKey = getStorageKey(key);
-        var toSave = data;
-        if (Array.isArray(data)) {
-            toSave = safeArray(data);
-        }
-
+        var toSave = Array.isArray(data) ? safeArray(data) : data;
         APP_MEMORY_CACHE[fullKey] = toSave;
         idbPut(fullKey, toSave);
-
-        try {
-            localStorage.setItem(fullKey, JSON.stringify(toSave));
-        } catch(storageLimitErr) {}
+        try { localStorage.setItem(fullKey, JSON.stringify(toSave)); } catch(err) {}
 
         if (db && !isRemoteUpdating && currentUserId) {
             showSyncStatus("syncing");
@@ -360,10 +280,7 @@ function initFirebaseLiveListeners() {
                 isRemoteUpdating = true;
                 for (var k in val) {
                     try {
-                        var itemData = val[k];
-                        if (Array.isArray(itemData)) {
-                            itemData = safeArray(itemData);
-                        }
+                        var itemData = Array.isArray(val[k]) ? safeArray(val[k]) : val[k];
                         var fullKey = currentUserId + "_" + k;
                         APP_MEMORY_CACHE[fullKey] = itemData;
                         idbPut(fullKey, itemData);
@@ -396,7 +313,6 @@ function initFirebaseLiveListeners() {
                     if (typeof renderJobWorkWorkersTable === "function") renderJobWorkWorkersTable();
                     if (typeof updateJobWorkHubBadges === "function") updateJobWorkHubBadges();
                 }
-
                 if (typeof updateDashboardBadgeTotals === "function") updateDashboardBadgeTotals();
                 showSyncStatus("online");
             }
@@ -406,16 +322,9 @@ function initFirebaseLiveListeners() {
 
 function sanitizeKarigerList() {
     var list = safeArray(getStore("kariger_list"));
-    var clean = list.filter(function(k) {
-        return k && k.name && String(k.name).trim() !== "";
-    });
-    if (clean.length !== list.length) {
-        setStore("kariger_list", clean);
-    }
-    return clean;
+    return list.filter(function(k) { return k && k.name && String(k.name).trim() !== ""; });
 }
 
-// 4. BULLETPROOF DOWNLOAD, VIEWER & RESTORE ENGINE
 function exportUserFullData() {
     var sess = (typeof getActiveFinancialSession === "function") ? getActiveFinancialSession() : "2026-2027";
     var keys = [
@@ -426,27 +335,14 @@ function exportUserFullData() {
         "sancha_items", "sancha_history",
         "jobwork_workers", "jw_bills_list", "jw_payments_list", "dukan_transfer_history"
     ];
+    var obj = { userId: currentUserId, session: sess, exportDate: new Date().toISOString(), data: {}, sheets: {}, jobwork_sheets: {} };
+    keys.forEach(function(k) { obj.data[k] = getStore(k); });
 
-    var obj = {
-        userId: currentUserId,
-        session: sess,
-        exportDate: new Date().toISOString(),
-        data: {},
-        sheets: {},
-        jobwork_sheets: {}
-    };
-
-    keys.forEach(function(k) { 
-        obj.data[k] = getStore(k); 
-    });
-
-    var karigers = (typeof sanitizeKarigerList === "function") ? sanitizeKarigerList() : safeArray(getStore("kariger_list"));
+    var karigers = sanitizeKarigerList();
     karigers.forEach(function(k) {
         if (k && k.id) {
             var sh = (typeof getKarigerSheets === "function") ? getKarigerSheets(k.id) : getStore("kariger_sheets_" + k.id);
-            if (sh && sh.length) {
-                obj.sheets[k.id] = sh;
-            }
+            if (sh && sh.length) obj.sheets[k.id] = sh;
         }
     });
 
@@ -454,49 +350,35 @@ function exportUserFullData() {
     jwWorkers.forEach(function(w) {
         if (w && w.id) {
             var jwSh = (typeof getJobWorkerSheets === "function") ? getJobWorkerSheets(w.id) : getStore("jobwork_sheets_" + w.id);
-            if (jwSh && jwSh.length) {
-                obj.jobwork_sheets[w.id] = jwSh;
-            }
+            if (jwSh && jwSh.length) obj.jobwork_sheets[w.id] = jwSh;
         }
     });
-
     return obj;
 }
 
-function syncToGoogleDrive() {
-    downloadBackupFile();
-}
+function syncToGoogleDrive() { downloadBackupFile(); }
 
 function downloadBackupFile() {
     if (!currentUserId) return alert("Pehle login karein!");
-
     var btn = document.querySelector(".welcome-banner button[onclick*='syncToGoogleDrive']");
     var origHtml = btn ? btn.innerHTML : "";
     if (btn) btn.innerHTML = "⏳ File Ban Rahi Hai...";
-
     setTimeout(function() {
         try {
             var data = exportUserFullData();
             var sess = (typeof getActiveFinancialSession === "function") ? getActiveFinancialSession() : "2026-2027";
             var fileName = currentUserId + "_" + sess + "_Backup_" + formatDateDisplay(getTodayDate()) + ".json";
-
-            var jsonString = JSON.stringify(data);
-            var blob = new Blob([jsonString], { type: "application/json;charset=utf-8" });
-
+            var blob = new Blob([JSON.stringify(data)], { type: "application/json;charset=utf-8" });
             var downloadUrl = window.URL.createObjectURL(blob);
             var a = document.createElement("a");
             a.style.display = "none";
-            a.href = downloadUrl;
-            a.download = fileName;
-            document.body.appendChild(a);
-            a.click();
-
+            a.href = downloadUrl; a.download = fileName;
+            document.body.appendChild(a); a.click();
             setTimeout(function() {
                 document.body.removeChild(a);
                 window.URL.revokeObjectURL(downloadUrl);
                 if (btn) btn.innerHTML = origHtml;
             }, 300);
-
         } catch (err) {
             if (btn) btn.innerHTML = origHtml;
             alert("Download Error: " + err.message);
@@ -507,7 +389,6 @@ function downloadBackupFile() {
 function openBackupViewer(e) {
     var file = e.target.files[0];
     if (!file) return;
-
     var reader = new FileReader();
     reader.onload = function(evt) {
         try {
@@ -515,7 +396,6 @@ function openBackupViewer(e) {
             if (parsed && (parsed.data || parsed.sheets)) {
                 isBackupPreviewMode = true;
                 PREVIEW_BACKUP_DATA = parsed;
-
                 var banner = document.getElementById("backup-preview-banner");
                 var dateText = document.getElementById("preview-banner-date");
                 if (banner) banner.style.display = "flex";
@@ -524,20 +404,13 @@ function openBackupViewer(e) {
                     var dLabel = parsed.exportDate ? formatDateDisplay(String(parsed.exportDate).substring(0, 10)) : "Purana Backup";
                     dateText.textContent = sLabel + dLabel;
                 }
-
                 if (typeof backToDashboard === "function") backToDashboard();
                 showSyncStatus("preview");
-
-                alert("👁️ BACKUP PREVIEW MODE CHALU HO GAYA!\n\n" +
-                      "• Yeh data sirf dekhne ke liye khula hai.\n" +
-                      "• Aapka aaj ka live data 100% surakshit hai.\n" +
-                      "• Preview band karne ke liye upar laal 'Exit Preview' button dabayein.");
+                alert("👁️ BACKUP PREVIEW MODE CHALU HO GAYA!\n\n• Yeh data sirf dekhne ke liye khula hai.\n• Aaj ka live data 100% surakshit hai.");
             } else {
-                alert("Galat backup file format! Kripya ERP ki sahi .json file chunein.");
+                alert("Galat backup file format!");
             }
-        } catch(err) {
-            alert("File Padhne Me Error: " + err.message);
-        }
+        } catch(err) { alert("File Error: " + err.message); }
     };
     reader.readAsText(file);
     e.target.value = "";
@@ -548,10 +421,64 @@ function exitBackupPreviewMode() {
     PREVIEW_BACKUP_DATA = null;
     var banner = document.getElementById("backup-preview-banner");
     if (banner) banner.style.display = "none";
-
     clearMemoryCache();
     initIndexedDBPreload(function() {
         if (typeof backToDashboard === "function") backToDashboard();
         showSyncStatus("online");
-        alert("✅ Preview Mode band ho gaya! Ab aap apne live current ERP me hain.");
-    })
+        alert("✅ Preview Mode band ho gaya!");
+    });
+}
+
+function restoreBackupFile(e) {
+    var file = e.target.files[0];
+    if (!file) return;
+    if (!confirm("⚠️ KYA AAP IS BACKUP KO LIVE RESTORE KARNA CHAHTE HAIN?")) { e.target.value = ""; return; }
+    var reader = new FileReader();
+    reader.onload = function(evt) {
+        try {
+            var parsed = JSON.parse(evt.target.result);
+            if (parsed && parsed.data) {
+                clearMemoryCache();
+                for (var key in parsed.data) setStore(key, parsed.data[key]);
+                if (parsed.sheets) {
+                    for (var sheetKarId in parsed.sheets) setStore("kariger_sheets_" + sheetKarId, parsed.sheets[sheetKarId]);
+                }
+                if (parsed.jobwork_sheets) {
+                    for (var jwWorkerId in parsed.jobwork_sheets) setStore("jobwork_sheets_" + jwWorkerId, parsed.jobwork_sheets[jwWorkerId]);
+                }
+                alert("✅ Data successfully live restore ho gaya!");
+                if (typeof populateSessionDropdown === "function") populateSessionDropdown();
+                if (typeof backToDashboard === "function") backToDashboard();
+            }
+        } catch (err) { alert("Restore Error: " + err.message); }
+    };
+    reader.readAsText(file);
+    e.target.value = "";
+}
+
+function getUsersList() {
+    var defaultAdmin = [{
+        id: "farhan", name: "Farhan Bhai (Admin)", pass: "1234",
+        mobile: "9876543210", pin: "1234", role: "admin", status: "active",
+        date: "2026-01-01", expiryDate: ""
+    }];
+    try {
+        var local = APP_MEMORY_CACHE["app_users"] || localStorage.getItem("app_users");
+        if (local) {
+            var parsed = (typeof local === "string") ? JSON.parse(local) : local;
+            if (Array.isArray(parsed) && parsed.length > 0) {
+                if (!parsed.some(function(u) { return u.id === "farhan"; })) parsed.push(defaultAdmin[0]);
+                return parsed;
+            }
+        }
+    } catch (e) {}
+    localStorage.setItem("app_users", JSON.stringify(defaultAdmin));
+    APP_MEMORY_CACHE["app_users"] = defaultAdmin;
+    idbPut("app_users", defaultAdmin);
+    return defaultAdmin;
+}
+
+function syncUsersWithFirebase() {
+    if (!db) return;
+    try {
+        db.ref(
