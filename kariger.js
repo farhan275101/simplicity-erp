@@ -460,4 +460,553 @@ function runStage3_BanaZariStock(curSess, newSess) {
         if (badge3) { badge3.textContent = "✅ Done"; badge3.style.background = "#ecfdf5"; badge3.style.color = "#059669"; }
         if (status3) status3.textContent = "✅ Bana & Zari Opening Stock Freeze!";
         if (mainBar) mainBar.style.width = "72%";
-        setTimeout(function() { runStage4_SanchaJobwo
+        setTimeout(function() {
+            runStage4_SanchaJobwork(curSess, newSess);
+        }, 200);
+    }, 150);
+}
+
+// --- STAGE 4: ⚙️ SANCHA & ✂️ JOB WORK ACCOUNTS ---
+function runStage4_SanchaJobwork(curSess, newSess) {
+    var badge4 = document.getElementById("stage-badge-4");
+    var bar4 = document.getElementById("stage-bar-4");
+    var status4 = document.getElementById("stage-status-4");
+    var mainBar = document.getElementById("transfer-main-bar");
+
+    if (badge4) {
+        badge4.textContent = "⏳ Processing...";
+        badge4.style.background = "#eff6ff";
+        badge4.style.color = "#2563eb";
+    }
+    if (bar4) bar4.style.width = "40%";
+    if (status4) status4.textContent = "⚙️ Sancha & ✂️ Job Work Accounts Transfer...";
+
+    var karkhanas = getKarkhanas();
+    var sanchaItems = safeArray(getStore("sancha_items"));
+    stage4_newSanchaItems = [];
+    sanchaItems.forEach(function(item) {
+        if (!item || !item.name) return;
+        karkhanas.forEach(function(k) {
+            var bachaQty = 0;
+            if (typeof getSanchaItemStats === "function") {
+                try { bachaQty = getSanchaItemStats(item.id, item.name, k.id).bacha; } catch(e) {}
+            } else if (k.isDefault) {
+                bachaQty = Number(item.aaya || 0);
+            }
+            if (bachaQty > 0) {
+                stage4_newSanchaItems.push({
+                    id: (item.id || "sancha_" + Date.now()) + "_" + k.id,
+                    name: item.name,
+                    person: item.person || "-",
+                    karkhanaId: k.id,
+                    karkhanaName: k.name,
+                    date: getTodayDate(),
+                    aaya: Math.max(0, bachaQty),
+                    openingAaya: Math.max(0, bachaQty),
+                    note: "📦 Opening Stock (" + curSess + " Se Aaya)",
+                    isOpening: true
+                });
+            }
+        });
+    });
+
+    stage4_oldJwWorkers = safeArray(getStore("jobwork_workers"));
+    stage4_newJwSheetsMap = {};
+    stage4_oldJwWorkers.forEach(function(w) {
+        if (!w || !w.id) return;
+        var sheets = (typeof getJobWorkerSheets === "function") ? getJobWorkerSheets(w.id) : [];
+        var lastSh = sheets.length ? sheets[sheets.length - 1] : null;
+        var calc = (lastSh && typeof calculateJobWorkSheetTotals === "function")
+            ? calculateJobWorkSheetTotals(lastSh)
+            : { pendingSaree: 0 };
+
+        stage4_newJwSheetsMap[w.id] = [{
+            id: "jw_sh_" + Date.now() + "_" + w.id,
+            title: "Month 1 (Opening " + newSess + ")",
+            closingPendingSaree: calc.pendingSaree || 0,
+            closingBakiAmt: 0,
+            note: "📦 Pichle Saal (" + curSess + ") ki Baki Saree",
+            rows: []
+        }];
+    });
+
+    stage4_pendingBills = safeArray(getStore("jw_bills_list")).filter(function(b) {
+        var baki = Math.max(0, (Number(b.billAmt) || 0) - (Number(b.paidAmt) || 0));
+        return baki > 0;
+    }).map(function(b) {
+        return Object.assign({}, b, { note: (b.note || "") + " (Opening Bill from " + curSess + ")" });
+    });
+
+    setTimeout(function() {
+        if (bar4) bar4.style.width = "100%";
+        if (badge4) {
+            badge4.textContent = "✅ Done";
+            badge4.style.background = "#ecfdf5";
+            badge4.style.color = "#059669";
+        }
+        if (status4) status4.textContent = "✅ Sancha & Job Work Accounts Tayyar!";
+        if (mainBar) mainBar.style.width = "88%";
+
+        setTimeout(function() {
+            runStage5_AtomicLock(curSess, newSess);
+        }, 200);
+    }, 150);
+}
+
+// --- STAGE 5: 🔒 10-10 CHUNKS FREEZE-PROOF SAVE ---
+function runStage5_AtomicLock(curSess, newSess) {
+    var badge5 = document.getElementById("stage-badge-5");
+    var bar5 = document.getElementById("stage-bar-5");
+    var status5 = document.getElementById("stage-status-5");
+
+    if (badge5) {
+        badge5.textContent = "⏳ Saving...";
+        badge5.style.background = "#eff6ff";
+        badge5.style.color = "#2563eb";
+    }
+    if (bar5) bar5.style.width = "5%";
+    if (status5) status5.textContent = "🔒 Session & Master Stock Save Ho Raha Hai...";
+
+    if (typeof isRemoteUpdating !== "undefined") isRemoteUpdating = true;
+    if (typeof clearMemoryCache === "function") clearMemoryCache();
+
+    var sessions = getAppSessions();
+    if (sessions.indexOf(newSess) === -1) sessions.push(newSess);
+
+    localStorage.setItem((currentUserId || "app") + "_app_sessions_list", JSON.stringify(sessions));
+    localStorage.setItem((currentUserId || "app") + "_app_active_session", newSess);
+    setStore("app_sessions_list", sessions);
+    setStore("app_active_session", newSess);
+
+    setStore("kariger_list", stage1_oldKarigers);
+    setStore("saree_stock", stage2_newSareeStock);
+    setStore("finished_saree_stock", stage2_newFinStock);
+    setStore("lott_saree_stock", stage2_newLottStock);
+    setStore("bana_stock", stage3_newBanaStock);
+    setStore("zari_stock", stage3_newZariStock);
+    setStore("sancha_items", stage4_newSanchaItems);
+    setStore("sancha_history", []);
+    setStore("jobwork_workers", stage4_oldJwWorkers);
+    for (var wId in stage4_newJwSheetsMap) {
+        setStore("jobwork_sheets_" + wId, stage4_newJwSheetsMap[wId]);
+    }
+    setStore("jw_bills_list", stage4_pendingBills);
+    setStore("jw_payments_list", []);
+    setStore("saree_history", []);
+    setStore("bana_history", []);
+    setStore("zari_history", []);
+    setStore("material_transfers", []);
+    setStore("saree_transfers", []);
+    setStore("dukan_transfer_history", []);
+
+    stage5_keys = Object.keys(stage1_newKarigerSheetsMap);
+    stage5_idx = 0;
+
+    setTimeout(function() {
+        processNextSaveChunk(newSess);
+    }, 100);
+}
+
+function processNextSaveChunk(newSess) {
+    var total = stage5_keys.length;
+    var end = Math.min(stage5_idx + stage5_chunkSize, total);
+
+    for (var i = stage5_idx; i < end; i++) {
+        var kId = stage5_keys[i];
+        setStore("kariger_sheets_" + kId, stage1_newKarigerSheetsMap[kId]);
+    }
+
+    stage5_idx = end;
+
+    var pct = total > 0 ? Math.floor((stage5_idx / total) * 100) : 100;
+    var bar5 = document.getElementById("stage-bar-5");
+    var status5 = document.getElementById("stage-status-5");
+    var mainBar = document.getElementById("transfer-main-bar");
+
+    if (bar5) bar5.style.width = pct + "%";
+    if (status5) status5.textContent = "🔒 Database Save: " + stage5_idx + " / " + total + " (" + pct + "%)";
+    if (mainBar) mainBar.style.width = (88 + Math.floor(pct * 0.12)) + "%";
+
+    if (stage5_idx < total) {
+        setTimeout(function() {
+            processNextSaveChunk(newSess);
+        }, 20);
+    } else {
+        if (typeof isRemoteUpdating !== "undefined") isRemoteUpdating = false;
+
+        var badge5 = document.getElementById("stage-badge-5");
+        if (badge5) {
+            badge5.textContent = "✅ Done";
+            badge5.style.background = "#ecfdf5";
+            badge5.style.color = "#059669";
+        }
+        if (status5) status5.textContent = "✅ Naya Saal Safalta-purvak Surakshit Ho Chuka Hai!";
+        if (mainBar) mainBar.style.width = "100%";
+
+        setTimeout(function() {
+            setDisplay("transfer-progress-view", "none");
+            setDisplay("transfer-welcome-view", "block");
+            var welSess = document.getElementById("welcome-session-name");
+            if (welSess) welSess.textContent = newSess;
+        }, 300);
+    }
+}
+
+function finishSessionTransferAndEnter() {
+    setDisplay("session-transfer-modal", "none");
+    if (typeof clearMemoryCache === "function") clearMemoryCache();
+
+    if (typeof initIndexedDBPreload === "function") {
+        initIndexedDBPreload(function() {
+            populateSessionDropdown();
+            if (typeof backToDashboard === "function") backToDashboard();
+            if (typeof renderKarigerKarkhanaTabs === "function") renderKarigerKarkhanaTabs();
+            if (typeof renderKarigerTable === "function") renderKarigerTable();
+            if (typeof renderStockKarkhanaTabs === "function") renderStockKarkhanaTabs();
+            if (typeof updateDashboardBadgeTotals === "function") updateDashboardBadgeTotals();
+            if (typeof renderDashboardDayBook === "function") renderDashboardDayBook();
+        });
+    } else {
+        populateSessionDropdown();
+        if (typeof backToDashboard === "function") backToDashboard();
+    }
+}
+
+// ================= 2. DYNAMIC KARKHANA MASTER =================
+
+function getKarkhanas() {
+    var list = safeArray(getStore("karkhana_list"));
+    if (!list.length) {
+        list = [{ id: "k_main", name: "Main Godown", location: "Head Office", isDefault: true }];
+        saveKarkhanas(list);
+    }
+    return list;
+}
+
+function saveKarkhanas(list) {
+    setStore("karkhana_list", safeArray(list));
+}
+
+function openKarkhanaManagerModal() {
+    renderKarkhanaManagerTable();
+    document.getElementById("karkhana-edit-id").value = "";
+    document.getElementById("karkhana-input-name").value = "";
+    document.getElementById("karkhana-input-location").value = "";
+    document.getElementById("karkhana-save-btn").textContent = "Save";
+    setDisplay("karkhana-manager-modal", "flex");
+}
+
+function closeKarkhanaManagerModal() {
+    setDisplay("karkhana-manager-modal", "none");
+    renderKarigerKarkhanaTabs();
+    populateKarigerKarkhanaSelect();
+    if (typeof renderStockKarkhanaTabs === "function") renderStockKarkhanaTabs();
+}
+
+function renderKarkhanaManagerTable() {
+    var tbody = document.getElementById("karkhana-manager-table-body");
+    if (!tbody) return;
+    tbody.innerHTML = "";
+
+    var list = getKarkhanas();
+    list.forEach(function(k, idx) {
+        var delBtn = k.isDefault ? 
+            "<span style='color:#64748b; font-size:11px;'>Default</span>" : 
+            ("<button class='delete-btn' onclick='deleteKarkhanaFromManager(\"" + k.id + "\")'>🗑️</button>");
+
+        tbody.innerHTML += "<tr>" +
+            "<td>" + (idx + 1) + "</td>" +
+            "<td><strong style='color:#0284c7;'>🏭 " + k.name + "</strong></td>" +
+            "<td>" + (k.location || "-") + "</td>" +
+            "<td style='text-align:center;'><button class='edit-btn' onclick='editKarkhanaFromManager(\"" + k.id + "\")'>✏️ Edit</button> " + delBtn + "</td>" +
+        "</tr>";
+    });
+}
+
+function saveKarkhanaFromManager() {
+    var editId = document.getElementById("karkhana-edit-id").value;
+    var name = (document.getElementById("karkhana-input-name").value || "").trim();
+    var loc = (document.getElementById("karkhana-input-location").value || "").trim();
+
+    if (!name) return alert("Karkhane ka naam likhein!");
+
+    var list = getKarkhanas();
+
+    if (editId) {
+        var it = list.find(function(x) { return String(x.id) === String(editId); });
+        if (it) {
+            it.name = name;
+            it.location = loc;
+
+            var karigers = safeArray(getStore("kariger_list"));
+            karigers.forEach(function(w) {
+                if (String(w.karkhanaId) === String(editId)) {
+                    w.karkhanaName = name;
+                }
+            });
+            setStore("kariger_list", karigers);
+        }
+    } else {
+        list.push({
+            id: "k_" + Date.now(),
+            name: name,
+            location: loc,
+            isDefault: false
+        });
+    }
+
+    saveKarkhanas(list);
+    document.getElementById("karkhana-edit-id").value = "";
+    document.getElementById("karkhana-input-name").value = "";
+    document.getElementById("karkhana-input-location").value = "";
+    document.getElementById("karkhana-save-btn").textContent = "Save";
+
+    renderKarkhanaManagerTable();
+    renderKarigerKarkhanaTabs();
+    populateKarigerKarkhanaSelect();
+    renderKarigerTable();
+    if (typeof renderStockKarkhanaTabs === "function") renderStockKarkhanaTabs();
+    alert("✅ Karkhana save ho gaya!");
+}
+
+function editKarkhanaFromManager(id) {
+    var k = getKarkhanas().find(function(x) { return String(x.id) === String(id); });
+    if (!k) return;
+
+    document.getElementById("karkhana-edit-id").value = k.id;
+    document.getElementById("karkhana-input-name").value = k.name;
+    document.getElementById("karkhana-input-location").value = k.location || "";
+    document.getElementById("karkhana-save-btn").textContent = "Update";
+    document.getElementById("karkhana-input-name").focus();
+}
+
+function deleteKarkhanaFromManager(id) {
+    var k = getKarkhanas().find(function(x) { return String(x.id) === String(id); });
+    if (!k || k.isDefault) return alert("Default Godown delete nahi ho sakta!");
+
+    if (!confirm("Kya '" + k.name + "' ko delete karna chahte hain? Sabhi kariger Main Godown me shift ho jayenge.")) return;
+
+    var karigers = safeArray(getStore("kariger_list"));
+    karigers.forEach(function(w) {
+        if (String(w.karkhanaId) === String(id)) {
+            w.karkhanaId = "k_main";
+            w.karkhanaName = "Main Godown";
+        }
+    });
+    setStore("kariger_list", karigers);
+
+    var list = getKarkhanas().filter(function(x) { return String(x.id) !== String(id); });
+    saveKarkhanas(list);
+
+    renderKarkhanaManagerTable();
+    renderKarigerKarkhanaTabs();
+    populateKarigerKarkhanaSelect();
+    renderKarigerTable();
+    if (typeof renderStockKarkhanaTabs === "function") renderStockKarkhanaTabs();
+}
+
+// ================= 3. DYNAMIC KARKHANA TABS IN KARIGER MASTER =================
+
+function renderKarigerKarkhanaTabs() {
+    var bar = document.getElementById("kariger-karkhana-tabs-bar");
+    if (!bar) return;
+    bar.innerHTML = "";
+
+    var allKarigers = sanitizeKarigerList();
+    var karkhanas = getKarkhanas();
+
+    var allActive = (currentKarigerKarkhanaFilter === "all") ? " active" : "";
+    bar.innerHTML += "<button class='sheet-tab" + allActive + "' onclick='switchKarigerKarkhanaTab(\"all\")'>👥 Sabhi Kariger (" + allKarigers.length + ")</button>";
+
+    karkhanas.forEach(function(k) {
+        var count = allKarigers.filter(function(w) { 
+            return String(w.karkhanaId) === String(k.id) || (!w.karkhanaId && k.isDefault); 
+        }).length;
+
+        var isActive = (String(currentKarigerKarkhanaFilter) === String(k.id)) ? " active" : "";
+        bar.innerHTML += "<button class='sheet-tab" + isActive + "' onclick='switchKarigerKarkhanaTab(\"" + k.id + "\")'>🏭 " + k.name + " (" + count + ")</button>";
+    });
+}
+
+function switchKarigerKarkhanaTab(kId) {
+    currentKarigerKarkhanaFilter = kId;
+    currentKarigerPage = 1;
+    renderKarigerKarkhanaTabs();
+    renderKarigerTable();
+}
+
+function populateKarigerKarkhanaSelect() {
+    var sel = document.getElementById("kar-karkhana");
+    if (!sel) return;
+    sel.innerHTML = "";
+
+    var list = getKarkhanas();
+    list.forEach(function(k) {
+        var opt = document.createElement("option");
+        opt.value = k.id;
+        opt.textContent = "🏭 " + k.name + (k.location ? " (" + k.location + ")" : "");
+        sel.appendChild(opt);
+    });
+
+    if (currentKarigerKarkhanaFilter !== "all") {
+        sel.value = currentKarigerKarkhanaFilter;
+    }
+}
+
+// ================= 4. KARIGER MASTER ENGINE =================
+
+function openKarigerModule() {
+    if (typeof hideAllSections === "function") hideAllSections();
+    setDisplay("kariger-section", "block");
+    populateSessionDropdown();
+    renderKarigerKarkhanaTabs();
+    populateKarigerKarkhanaSelect();
+    currentKarigerPage = 1;
+    renderKarigerTable();
+}
+
+function sanitizeKarigerList() {
+    return safeArray(getStore("kariger_list"));
+}
+
+function saveKarigerList(list) {
+    setStore("kariger_list", safeArray(list));
+}
+
+function getKarigerSheets(karigerId) {
+    if (!karigerId) return [];
+    var sheets = safeArray(getStore("kariger_sheets_" + karigerId));
+    sheets.forEach(function(sh) {
+        if (sh) sh.rows = safeArray(sh.rows);
+    });
+    return sheets;
+}
+
+function saveKarigerSheets(karigerId, sheets) {
+    if (!karigerId) return;
+    var clean = safeArray(sheets);
+    clean.forEach(function(sh) {
+        if (sh) sh.rows = safeArray(sh.rows);
+    });
+    setStore("kariger_sheets_" + karigerId, clean);
+}
+
+function deleteSheetRowByRefId(refId) {
+    if (!refId) return false;
+    var karigers = sanitizeKarigerList();
+    var found = false;
+
+    karigers.forEach(function(k) {
+        var sheets = getKarigerSheets(k.id);
+        var changed = false;
+
+        sheets.forEach(function(sh) {
+            if (sh && sh.rows) {
+                var initialLen = sh.rows.length;
+                sh.rows = safeArray(sh.rows).filter(function(r) {
+                    return !r || String(r.id) !== String(refId);
+                });
+                if (sh.rows.length !== initialLen) {
+                    changed = true;
+                    found = true;
+                }
+            }
+        });
+
+        if (changed) {
+            saveKarigerSheets(k.id, sheets);
+        }
+    });
+
+    return found;
+}
+
+function getKarigerLastActiveInfo(karigerId) {
+    var sheets = getKarigerSheets(karigerId);
+    var latestDate = null;
+
+    sheets.forEach(function(sh) {
+        if (sh && sh.rows) {
+            safeArray(sh.rows).forEach(function(r) {
+                if (r && r.date) {
+                    if (!latestDate || r.date > latestDate) latestDate = r.date;
+                }
+            });
+        }
+    });
+
+    var k = sanitizeKarigerList().find(function(x) { return String(x.id) === String(karigerId); });
+    if (!latestDate) latestDate = (k && k.date) ? k.date : null;
+    if (!latestDate) return { lastDate: "-", daysAbsent: 0 };
+
+    var diffTime = new Date(getTodayDate()) - new Date(latestDate);
+    var diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    return { lastDate: latestDate, daysAbsent: Math.max(0, diffDays) };
+}
+
+function toggleKarigerForm() {
+    var f = document.getElementById("add-kariger-form");
+    if (!f) return;
+    f.style.display = (f.style.display === "block") ? "none" : "block";
+    document.getElementById("kar-date").value = getTodayDate();
+    cancelKarigerEdit();
+    populateKarigerKarkhanaSelect();
+}
+
+function cancelKarigerEdit() {
+    document.getElementById("kar-edit-id").value = "";
+    document.getElementById("kar-name").value = "";
+    document.getElementById("kar-saree").value = "";
+    document.getElementById("kar-date").value = getTodayDate();
+    document.getElementById("kar-save-btn").textContent = "Save Kariger";
+    setDisplay("kar-cancel-btn", "none");
+}
+
+function saveNewKariger() {
+    var editId = document.getElementById("kar-edit-id").value;
+    var n = (document.getElementById("kar-name").value || "").trim().toUpperCase();
+    var s = (document.getElementById("kar-saree").value || "").trim();
+    var d = document.getElementById("kar-date").value || getTodayDate();
+
+    var kId = document.getElementById("kar-karkhana") ? document.getElementById("kar-karkhana").value : "k_main";
+    var kObj = getKarkhanas().find(function(x) { return String(x.id) === String(kId); });
+    var kName = kObj ? kObj.name : "Main Godown";
+
+    if (!n) return alert("Kariger ka naam zaroori hai!");
+
+    var list = sanitizeKarigerList();
+
+    if (editId) {
+        var it = list.find(function(x) { return String(x.id) === String(editId); });
+        if (it) {
+            it.name = n;
+            it.saree = s;
+            it.date = d;
+            it.karkhanaId = kId;
+            it.karkhanaName = kName;
+        }
+    } else {
+        list.push({
+            id: "kar_" + Date.now(),
+            name: n,
+            saree: s,
+            date: d,
+            karkhanaId: kId,
+            karkhanaName: kName
+        });
+    }
+
+    saveKarigerList(list);
+    cancelKarigerEdit();
+    setDisplay("add-kariger-form", "none");
+    renderKarigerKarkhanaTabs();
+    renderKarigerTable();
+    if (typeof updateDashboardBadgeTotals === "function") updateDashboardBadgeTotals();
+    alert("✅ Kariger (" + kName + ") me save ho gaya!");
+}
+
+function editKariger(id) {
+    var k = sanitizeKarigerList().find(function(x) { return String(x.id) === String(id); });
+    if (!k) return;
+
+    toggle
