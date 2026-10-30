@@ -100,12 +100,26 @@ function renderPaymentTable(flist) {
         });
     }
 
+    // 🔴 FIX: Calculate overall totals for ALL karigers in this view (not just page slice)
+    var overallPaid = 0;
+    var overallBaki = 0;
+    list.forEach(function(k) {
+        if (!k) return;
+        var fin = getKarigerFinanceSummary(k.id);
+        overallPaid += fin.totalPaid;
+        overallBaki += fin.currentBakaya;
+    });
+
+    var dispP = document.getElementById("total-paid-display");
+    var dispB = document.getElementById("total-baki-display");
+    if (dispP) dispP.textContent = "₹ " + overallPaid.toFixed(2);
+    if (dispB) dispB.textContent = "₹ " + overallBaki.toFixed(2);
+
     var totalItems = list.length;
     var totalPages = Math.ceil(totalItems / paymentPageSize) || 1;
     if (currentPaymentPage > totalPages) currentPaymentPage = totalPages;
     if (currentPaymentPage < 1) currentPaymentPage = 1;
 
-    // Pagination bar setup
     var pagContainer = document.getElementById("payment-pagination-bar");
     if (!pagContainer) {
         var tableWrap = tbody.closest(".table-responsive");
@@ -119,10 +133,6 @@ function renderPaymentTable(flist) {
 
     if (!totalItems) {
         tbody.innerHTML = "<tr><td colspan='9' style='text-align:center; padding:25px; color:#888;'>Is Godam/Karkhane me koi Kariger hisab nahi mila.</td></tr>";
-        var elP = document.getElementById("total-paid-display");
-        var elB = document.getElementById("total-baki-display");
-        if (elP) elP.textContent = "₹ 0";
-        if (elB) elB.textContent = "₹ 0";
         if (pagContainer) pagContainer.style.display = "none";
         return;
     }
@@ -144,17 +154,12 @@ function renderPaymentTable(flist) {
             "</div>";
     }
 
-    // 0ms Fast Slice & Single Buffer Render
     var pageList = list.slice((currentPaymentPage - 1) * paymentPageSize, currentPaymentPage * paymentPageSize);
     var htmlBuffer = "";
-    var overallPaid = 0;
-    var overallBaki = 0;
 
     pageList.forEach(function(k, idx) {
         if (!k) return;
         var fin = getKarigerFinanceSummary(k.id);
-        overallPaid += fin.totalPaid;
-        overallBaki += fin.currentBakaya;
 
         var bakiBadgeClass = fin.currentBakaya > 0 ? "badge-red" : "badge-green";
         var kNameBadge = "<span class='badge-blue' style='font-size:11px; font-weight:700;'>🏭 " + (k.karkhanaName || "Main Godown") + "</span>";
@@ -174,11 +179,6 @@ function renderPaymentTable(flist) {
     });
 
     tbody.innerHTML = htmlBuffer;
-
-    var dispP = document.getElementById("total-paid-display");
-    var dispB = document.getElementById("total-baki-display");
-    if (dispP) dispP.textContent = "₹ " + overallPaid.toFixed(2);
-    if (dispB) dispB.textContent = "₹ " + overallBaki.toFixed(2);
 }
 
 function nextPaymentPage() {
@@ -348,15 +348,14 @@ function renderDashboardDayBook() {
     };
 
     var bIn = 0, bOut = 0, zIn = 0, zOut = 0, pOut = 0;
-    var bStock = getStore("bana_stock");
-    var zStock = getStore("zari_stock");
+    var bStock = safeArray(getStore("bana_stock"));
+    var zStock = safeArray(getStore("zari_stock"));
 
     bStock.forEach(function(b) { if (b && b.date === d) bIn += (Number(b.aaya) || 0); });
     zStock.forEach(function(z) { if (z && z.date === d) zIn += (Number(z.aaya) || 0); });
 
     var karList = (typeof sanitizeKarigerList === "function") ? sanitizeKarigerList() : [];
     karList.forEach(function(k) {
-        // Fast Check: agar koi entry nahi hai to sheets loop me na ghuse
         var sheets = (typeof getKarigerSheets === "function") ? getKarigerSheets(k.id) : [];
         if (!sheets.length) return;
         sheets.forEach(function(sh) {
@@ -375,7 +374,7 @@ function renderDashboardDayBook() {
         });
     });
 
-    var sH = getStore("saree_history").filter(function(h) { return h && h.date === d; });
+    var sH = safeArray(getStore("saree_history")).filter(function(h) { return h && h.date === d; });
     var sIn = 0, sOut = 0;
     sH.forEach(function(h) {
         var typeStr = String(h.type || "");
@@ -552,7 +551,7 @@ function renderDashboardDayBook() {
     }
 }
 
-// ================= 4. DASHBOARD BADGES (NON-BLOCKING ZERO-LAG ENGINE) =================
+// ================= 4. DASHBOARD BADGES (ACCURATE ZERO-MULTIPLY ENGINE) =================
 
 var badgeCalculationTimer = null;
 
@@ -562,13 +561,12 @@ function updateDashboardBadgeTotals() {
         if (el) el.textContent = v;
     };
 
-    // 1. FAST METRICS (0ms lag - Turant update honge)
     var karList = (typeof sanitizeKarigerList === "function") ? sanitizeKarigerList() : [];
     setT("btn-total-kariger", "Total: " + karList.length);
     setT("btn-total-info", "Total: " + safeArray(getStore("info_ledger")).length);
 
     var ts = 0;
-    getStore("saree_stock").forEach(function(s) { if (s) ts += (Number(s.pcs) || 0); });
+    safeArray(getStore("saree_stock")).forEach(function(s) { if (s) ts += (Number(s.pcs) || 0); });
     setT("btn-total-saree", "Stock: " + ts + " Pcs");
 
     if (typeof getJobWorkers === "function") {
@@ -578,53 +576,71 @@ function updateDashboardBadgeTotals() {
         updateJobWorkHubBadges();
     }
 
-    // 2. HEAVY METRICS (Background Non-Blocking Loop - Phone 1 second bhi nahi freeze hoga)
     if (badgeCalculationTimer) clearTimeout(badgeCalculationTimer);
 
     badgeCalculationTimer = setTimeout(function() {
-        // Live Bana Total
+        // 🔴 FIX: Unique item names only (Deduplication prevents multiplying stock)
         var tb = 0;
-        getStore("bana_stock").forEach(function(b) {
-            if (b && b.name && typeof getBanaItemStats === "function") {
-                try {
-                    var st = getBanaItemStats(b.name, "k_main");
-                    tb += Number(st.bacha || 0);
-                } catch(e) {}
+        var seenBana = [];
+        safeArray(getStore("bana_stock")).forEach(function(b) {
+            if (b && b.name) {
+                var nLow = b.name.trim().toLowerCase();
+                if (seenBana.indexOf(nLow) === -1) {
+                    seenBana.push(nLow);
+                    if (typeof getBanaItemStats === "function") {
+                        try {
+                            var st = getBanaItemStats(b.name, "k_main");
+                            tb += Number(st.bacha || 0);
+                        } catch(e) {}
+                    }
+                }
             }
         });
-        setT("btn-total-bana", "Bacha: " + tb.toFixed(2));
+        setT("btn-total-bana", "Bacha: " + tb.toFixed(2) + " Kg");
 
-        // Live Zari Total
+        // 🔴 FIX: Unique Zari deduplication
         var tz = 0;
-        getStore("zari_stock").forEach(function(z) {
-            if (z && z.name && typeof getZariItemStats === "function") {
-                try {
-                    var st = getZariItemStats(z.name, "k_main");
-                    tz += Number(st.bacha || 0);
-                } catch(e) {}
+        var seenZari = [];
+        safeArray(getStore("zari_stock")).forEach(function(z) {
+            if (z && z.name) {
+                var nLow = z.name.trim().toLowerCase();
+                if (seenZari.indexOf(nLow) === -1) {
+                    seenZari.push(nLow);
+                    if (typeof getZariItemStats === "function") {
+                        try {
+                            var st = getZariItemStats(z.name, "k_main");
+                            tz += Number(st.bacha || 0);
+                        } catch(e) {}
+                    }
+                }
             }
         });
-        setT("btn-total-zari", "Bacha: " + tz.toFixed(2));
+        setT("btn-total-zari", "Bacha: " + tz.toFixed(2) + " Kg");
 
-        // Sancha Total
+        // 🔴 FIX: Unique Sancha deduplication
         var tsc = 0;
+        var seenSancha = [];
         if (typeof getSanchaItems === "function") {
             getSanchaItems().forEach(function(s) {
-                if (s) {
-                    if (typeof getSanchaItemStats === "function") {
-                        try {
-                            var st = getSanchaItemStats(s.id, s.name, "k_main");
-                            tsc += (Number(st.bacha) || 0);
-                        } catch(e) {}
-                    } else {
-                        tsc += (Number(s.totalQty) || 0);
+                if (s && s.name) {
+                    var nLow = s.name.trim().toLowerCase();
+                    if (seenSancha.indexOf(nLow) === -1) {
+                        seenSancha.push(nLow);
+                        if (typeof getSanchaItemStats === "function") {
+                            try {
+                                var st = getSanchaItemStats(s.id, s.name, "k_main");
+                                tsc += Number(st.bacha || 0);
+                            } catch(e) {}
+                        } else {
+                            tsc += (Number(s.totalQty) || 0);
+                        }
                     }
                 }
             });
         }
         setT("btn-total-sancha", "Bacha: " + tsc.toFixed(2));
 
-        // Total Bakaya (Kariger Sheet Loop in Background)
+        // Total Bakaya
         var totalBakiAll = 0;
         karList.forEach(function(k) {
             if (k && k.id) {
@@ -634,7 +650,7 @@ function updateDashboardBadgeTotals() {
         });
         setT("btn-total-payment", "Baki: ₹ " + totalBakiAll.toFixed(0));
 
-    }, 60); // 60ms delay ensures UI renders instantly first!
+    }, 60);
 }
 
 function hideAllSections() {
@@ -669,6 +685,7 @@ function initApp() {
 
 // STRICT CLEAN STARTUP
 window.onload = function() {
+    if (typeof clearMemoryCache === "function") clearMemoryCache();
     currentUserId = null;
     currentUserRole = null;
     activeKarigerId = null;
