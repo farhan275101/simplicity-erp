@@ -1,6 +1,7 @@
 /* ========================================================
    SIMPLICITY ERP - FIREBASE CLOUD & REALTIME SYNC (FIXED)
    File: core/database.js • Developed by Farhan Jawed
+   (Instant Multi-Device Session Sync: Laptop <-> Mobile)
 ======================================================== */
 
 const firebaseConfig = {
@@ -51,7 +52,7 @@ function showSyncStatus(status) {
     }
 }
 
-// 🔒 STRICT FIREBASE LISTENER (Delete Restore Bug Fixed)
+// 🔒 MULTI-DEVICE LIVE SYNC (Laptop & Mobile Always Same)
 function initFirebaseLiveListeners() {
     if (!db || !currentUserId) return;
     var uid = String(currentUserId).trim().toLowerCase();
@@ -64,9 +65,8 @@ function initFirebaseLiveListeners() {
             if (val) {
                 isRemoteUpdating = true;
                 
+                // 1. Cloud se saara data aur sessions download karo
                 for (var k in val) {
-                    if (k === "app_active_session") continue; // Session change ko disturb mat karo
-
                     try {
                         var itemData = Array.isArray(val[k]) ? safeArray(val[k]) : val[k];
                         var fullKey = uid + "_" + k;
@@ -78,9 +78,23 @@ function initFirebaseLiveListeners() {
                 
                 isRemoteUpdating = false;
 
-                if (typeof triggerActiveSectionRefresh === "function") {
-                    triggerActiveSectionRefresh();
+                // 2. 🚨 SESSIONS & ACTIVE SAAL AUTO-ALIGN (Dono Device Par Ek Jaisa Hoga)
+                if (typeof populateSessionDropdown === "function") {
+                    populateSessionDropdown();
                 }
+
+                if (val["app_active_session"]) {
+                    var cleanCloudSess = String(val["app_active_session"]).replace(/['"]+/g, '').trim();
+                    var sel = document.getElementById("app-session-select");
+                    if (sel && sel.value !== cleanCloudSess) {
+                        sel.value = cleanCloudSess;
+                    }
+                }
+
+                // 3. Live Dashboard aur Badges Refresh
+                if (typeof renderDashboardDayBook === "function") renderDashboardDayBook();
+                if (typeof updateDashboardBadgeTotals === "function") updateDashboardBadgeTotals();
+                if (typeof triggerActiveSectionRefresh === "function") triggerActiveSectionRefresh();
 
                 showSyncStatus("online");
             }
