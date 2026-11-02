@@ -1,41 +1,67 @@
 /* ========================================================
-   SIMPLICITY ERP - OFFLINE STORAGE & DATA CACHE ENGINE (FIXED)
+   SIMPLICITY ERP - OFFLINE STORAGE & DATA CACHE ENGINE
    File: core/storage.js • Developed by Farhan Jawed
-   (Strict User Isolation + Accurate Session Storage)
+   (Strict User Isolation + Multi-Karkhana & Session Support)
 ======================================================== */
 
+// Global Memory Cache & State
 var APP_MEMORY_CACHE = {};
 var idbInstance = null;
 var isRemoteUpdating = false;
 var isBackupPreviewMode = false;
 var PREVIEW_BACKUP_DATA = null;
 
-// 🔒 SANCHA KO GLOBAL SE HATA DIYA (Ab Sancha ka bhi Session Opening banega)
+// Safe Array Helper (Script loading safety)
+if (typeof safeArray !== "function") {
+    window.safeArray = function(arr) {
+        if (!arr) return [];
+        return Array.isArray(arr) ? arr : [];
+    };
+}
+
+// 🔒 GLOBAL KEYS (Ye keys har session me common aur live rahengi)
 var GLOBAL_APP_KEYS = [
     "app_sessions_list", 
     "app_active_session", 
     "karkhana_list", 
+    "active_karkhana_id",
+    "karkhana_transfers",
     "app_users", 
     "info_ledger"
 ];
 
+// Memory Cache Clear
 function clearMemoryCache() {
     APP_MEMORY_CACHE = {};
 }
 
+// Enterprise IndexedDB Initialization
 function openEnterpriseIndexedDB(callback) {
-    if (idbInstance) { if (callback) callback(idbInstance); return; }
+    if (idbInstance) { 
+        if (callback) callback(idbInstance); 
+        return; 
+    }
     try {
         var req = window.indexedDB.open("SimplicityERP_DB", 1);
         req.onupgradeneeded = function(e) {
             var dbase = e.target.result;
-            if (!dbase.objectStoreNames.contains("app_store")) dbase.createObjectStore("app_store");
+            if (!dbase.objectStoreNames.contains("app_store")) {
+                dbase.createObjectStore("app_store");
+            }
         };
-        req.onsuccess = function(e) { idbInstance = e.target.result; if (callback) callback(idbInstance); };
-        req.onerror = function() { if (callback) callback(null); };
-    } catch(err) { if (callback) callback(null); }
+        req.onsuccess = function(e) { 
+            idbInstance = e.target.result; 
+            if (callback) callback(idbInstance); 
+        };
+        req.onerror = function() { 
+            if (callback) callback(null); 
+        };
+    } catch(err) { 
+        if (callback) callback(null); 
+    }
 }
 
+// IndexedDB Put Record
 function idbPut(key, value) {
     openEnterpriseIndexedDB(function(dbase) {
         if (!dbase) return;
@@ -46,6 +72,7 @@ function idbPut(key, value) {
     });
 }
 
+// IndexedDB Delete Record
 function idbDelete(key) {
     openEnterpriseIndexedDB(function(dbase) {
         if (!dbase) return;
@@ -56,11 +83,15 @@ function idbDelete(key) {
     });
 }
 
-// 🔒 SIRF CURRENT USER KA DATA MEMORY ME LOAD HOGA (Doosre user ka mix nahi hoga)
+// IndexedDB Preload into Memory Cache (User Isolated)
 function initIndexedDBPreload(callback) {
     var uid = getEffectiveUserId();
     openEnterpriseIndexedDB(function(dbase) {
-        if (!dbase) { migrateLocalStorageToCache(); if (callback) callback(); return; }
+        if (!dbase) { 
+            migrateLocalStorageToCache(); 
+            if (callback) callback(); 
+            return; 
+        }
         try {
             var tx = dbase.transaction("app_store", "readonly");
             var req = tx.objectStore("app_store").openCursor();
@@ -68,7 +99,7 @@ function initIndexedDBPreload(callback) {
                 var cursor = e.target.result;
                 if (cursor) {
                     var k = String(cursor.key);
-                    // Sirf current user aur global app keys memory mein aayengi
+                    // Sirf current user aur global app keys memory me aayengi
                     if (k.indexOf(uid + "_") === 0 || k === "app_users") {
                         APP_MEMORY_CACHE[k] = cursor.value;
                     }
@@ -78,11 +109,18 @@ function initIndexedDBPreload(callback) {
                     if (callback) callback();
                 }
             };
-            req.onerror = function() { migrateLocalStorageToCache(); if (callback) callback(); };
-        } catch(err) { migrateLocalStorageToCache(); if (callback) callback(); }
+            req.onerror = function() { 
+                migrateLocalStorageToCache(); 
+                if (callback) callback(); 
+            };
+        } catch(err) { 
+            migrateLocalStorageToCache(); 
+            if (callback) callback(); 
+        }
     });
 }
 
+// Migration from LocalStorage to Memory Cache
 function migrateLocalStorageToCache() {
     var uid = getEffectiveUserId();
     try {
@@ -103,11 +141,15 @@ function migrateLocalStorageToCache() {
     } catch(e) {}
 }
 
+// Current User ID Resolver
 function getEffectiveUserId() {
-    if (typeof currentUserId !== "undefined" && currentUserId) return String(currentUserId).trim().toLowerCase();
+    if (typeof currentUserId !== "undefined" && currentUserId) {
+        return String(currentUserId).trim().toLowerCase();
+    }
     return "app";
 }
 
+// Key Generator: Session & Multi-Tenant Isolated
 function getStorageKey(key) {
     var uid = getEffectiveUserId();
     if (GLOBAL_APP_KEYS.indexOf(key) !== -1) {
@@ -124,7 +166,7 @@ function getStorageKey(key) {
     return uid + "_" + sess + "_" + key;
 }
 
-// 🔒 STRICT SECURE STORE: Naya user aayega toh 0 data milega (Farhan wala data nahi aayega)
+// Strict Secure Store Getter
 function getStore(key) {
     if (isBackupPreviewMode && PREVIEW_BACKUP_DATA) {
         if (key.indexOf("kariger_sheets_") === 0) {
@@ -167,6 +209,7 @@ function getStore(key) {
     }
 }
 
+// Strict Secure Store Setter with Realtime Firebase Sync
 function setStore(key, data) {
     if (isBackupPreviewMode) return;
 
@@ -177,20 +220,26 @@ function setStore(key, data) {
         APP_MEMORY_CACHE[fullKey] = toSave;
         idbPut(fullKey, toSave);
         
-        try { localStorage.setItem(fullKey, JSON.stringify(toSave)); } catch(err) {}
+        try { 
+            localStorage.setItem(fullKey, JSON.stringify(toSave)); 
+        } catch(err) {}
 
         var uid = getEffectiveUserId();
         if (typeof db !== "undefined" && db && !isRemoteUpdating && uid && uid !== "app") {
             if (typeof showSyncStatus === "function") showSyncStatus("syncing");
             var fbKey = fullKey.replace(uid + "_", "");
             db.ref("users/" + uid + "/" + fbKey).set(toSave)
-                .then(function() { if (typeof showSyncStatus === "function") showSyncStatus("online"); })
-                .catch(function() { if (typeof showSyncStatus === "function") showSyncStatus("error"); });
+                .then(function() { 
+                    if (typeof showSyncStatus === "function") showSyncStatus("online"); 
+                })
+                .catch(function() { 
+                    if (typeof showSyncStatus === "function") showSyncStatus("error"); 
+                });
         }
     } catch (e) {}
 }
 
-// 🗑️ PERMANENT DELETE SYNC (Cloud + Local Both Cleaned)
+// Permanent Delete Key (Cloud + Local Both Cleaned)
 function deleteStoreKey(key) {
     try {
         var fullKey = getStorageKey(key);
