@@ -1,7 +1,7 @@
 /* ========================================================
    SIMPLICITY ERP - 5-STAGE ENTERPRISE BULLETPROOF CLOSING
    File: session/session-closing.js • Developed by Farhan Jawed
-   (20-Chunk Micro Batching • 100% Screen-Matched Bana & Zari Opening)
+   (Multi-Godam Separate Opening Stock • 2000+ Kariger Safe)
 ======================================================== */
 
 var pendingTransferNewSession = null;
@@ -68,7 +68,7 @@ function startSequentialYearClosing() {
             "</div>" +
             "<div><span id='stage-badge-1' class='badge-blue'>Waiting</span> <small id='stage-status-1'>1. Kariger Opening Carry-Forward</small><div style='background:#e2e8f0; height:4px; margin-top:4px;'><div id='stage-bar-1' style='background:#2563eb; width:0%; height:100%;'></div></div></div>" +
             "<div style='margin-top:10px;'><span id='stage-badge-2' class='badge-blue'>Waiting</span> <small id='stage-status-2'>2. Saree Opening Stock</small><div style='background:#e2e8f0; height:4px; margin-top:4px;'><div id='stage-bar-2' style='background:#2563eb; width:0%; height:100%;'></div></div></div>" +
-            "<div style='margin-top:10px;'><span id='stage-badge-3' class='badge-blue'>Waiting</span> <small id='stage-status-3'>3. Bana & Zari Opening Stock</small><div style='background:#e2e8f0; height:4px; margin-top:4px;'><div id='stage-bar-3' style='background:#2563eb; width:0%; height:100%;'></div></div></div>" +
+            "<div style='margin-top:10px;'><span id='stage-badge-3' class='badge-blue'>Waiting</span> <small id='stage-status-3'>3. Bana & Zari Multi-Godam Opening</small><div style='background:#e2e8f0; height:4px; margin-top:4px;'><div id='stage-bar-3' style='background:#2563eb; width:0%; height:100%;'></div></div></div>" +
             "<div style='margin-top:10px;'><span id='stage-badge-4' class='badge-blue'>Waiting</span> <small id='stage-status-4'>4. Sancha & Job Work Carry-Forward</small><div style='background:#e2e8f0; height:4px; margin-top:4px;'><div id='stage-bar-4' style='background:#2563eb; width:0%; height:100%;'></div></div></div>" +
             "<div style='margin-top:10px;'><span id='stage-badge-5' class='badge-blue'>Waiting</span> <small id='stage-status-5'>5. Safe 20-Chunk Batch Commit</small><div style='background:#e2e8f0; height:4px; margin-top:4px;'><div id='stage-bar-5' style='background:#2563eb; width:0%; height:100%;'></div></div></div>";
     }
@@ -168,7 +168,7 @@ function runStage2_SareeStock(curSess, newSess) {
 
         rows.forEach(function(r) {
             var bachiQty = Number(r.bachi || (r.aai - r.gai) || 0);
-            if (bachiQty > 0) {
+            if (bachachiQty = bachiQty, bachiQty > 0) {
                 if (tb === "fresh") stage2_totFreshPcs += bachiQty;
                 else if (tb === "finished") stage2_totFinPcs += bachiQty;
                 else if (tb === "lott") stage2_totLottPcs += bachiQty;
@@ -204,12 +204,21 @@ function runStage2_SareeStock(curSess, newSess) {
     setTimeout(function() { runStage3_BanaZariStock(curSess, newSess); }, 100);
 }
 
-// ================= STAGE 3: ⭐ 100% SCREEN-MATCHED BANA & ZARI STOCK =================
+// ================= STAGE 3: ⭐ MULTI-GODAM BANA & ZARI OPENING (SEPARATE PER GODOWN) =================
 function runStage3_BanaZariStock(curSess, newSess) {
     stage3_newBanaStock = [];
     stage3_newBanaHistory = [];
 
-    // 1. BANA OPENING (Unique Names collect karke exact "all" balance uthana)
+    // Sabhi karkhane / godamon ki list nikalna
+    var karkhanas = [];
+    if (typeof getKarkhanasSafe === "function") {
+        karkhanas = getKarkhanasSafe();
+    } else {
+        karkhanas = safeArray(getStore("karkhana_list"));
+        if (!karkhanas.length) karkhanas = [{ id: "k_main", name: "Main Godown", isDefault: true }];
+    }
+
+    // 1. BANA OPENING (Har Godam ka alag-alag hisab)
     var rawBana = safeArray(getStore("bana_stock"));
     var uniqueBanaNames = [];
     rawBana.forEach(function(b) {
@@ -221,42 +230,74 @@ function runStage3_BanaZariStock(curSess, newSess) {
     });
 
     uniqueBanaNames.forEach(function(bName) {
-        // ⭐ FIX: "all" filter use karke wahi exact wazan nikala jo user ke screen par dikh raha tha
-        var stats = (typeof getBanaItemStats === "function") 
-            ? getBanaItemStats(bName, "all") 
-            : { bacha: 0 };
+        if (karkhanas.length <= 1) {
+            // Sirf ek Godam (Main Godown): Poora bacha wazan Main me jayega
+            var stats = (typeof getBanaItemStats === "function") ? getBanaItemStats(bName, "all") : { bacha: 0 };
+            var bachaVal = Math.max(0, Number((stats.bacha !== undefined ? stats.bacha : 0).toFixed(2)));
 
-        var bachaVal = Math.max(0, Number((stats.bacha !== undefined ? stats.bacha : 0).toFixed(2)));
+            if (bachaVal > 0) {
+                stage3_newBanaStock.push({
+                    id: "bana_open_" + Date.now() + "_" + Math.floor(Math.random() * 1000),
+                    name: bName,
+                    date: getTodayDate(),
+                    aaya: bachaVal,
+                    openingAaya: bachaVal,
+                    gaya: 0,
+                    bacha: bachaVal,
+                    karkhanaId: "k_main",
+                    isOpening: true,
+                    note: "📦 Opening Stock (" + curSess + " Se Aaya)"
+                });
 
-        if (bachaVal > 0) {
-            stage3_newBanaStock.push({
-                id: "bana_open_" + Date.now() + "_" + Math.floor(Math.random() * 1000),
-                name: bName,
-                date: getTodayDate(),
-                aaya: bachaVal,
-                openingAaya: bachaVal,
-                gaya: 0,
-                bacha: bachaVal,
-                karkhanaId: "k_main",
-                isOpening: true,
-                note: "📦 Opening Stock (" + curSess + " Se Aaya)"
-            });
+                stage3_newBanaHistory.push({
+                    id: "bhist_open_" + Date.now() + "_" + Math.floor(Math.random() * 1000),
+                    date: getTodayDate(),
+                    name: bName,
+                    kariger: "📦 Opening Stock",
+                    type: "📦 Opening Stock (" + curSess + " Se Aaya)",
+                    aaya: bachaVal,
+                    gaya: 0,
+                    karkhanaId: "k_main",
+                    isOpening: true
+                });
+            }
+        } else {
+            // ⭐ MULTI-GODAM: Har godam ka apna bacha wazan usi godam ki ID ke sath alag opening banega
+            karkhanas.forEach(function(k) {
+                var statsK = (typeof getBanaItemStats === "function") ? getBanaItemStats(bName, k.id) : { bacha: 0 };
+                var bachaValK = Math.max(0, Number((statsK.bacha !== undefined ? statsK.bacha : 0).toFixed(2)));
 
-            stage3_newBanaHistory.push({
-                id: "bhist_open_" + Date.now() + "_" + Math.floor(Math.random() * 1000),
-                date: getTodayDate(),
-                name: bName,
-                kariger: "📦 Opening Stock",
-                type: "📦 Opening Stock (" + curSess + " Se Aaya)",
-                aaya: bachaVal,
-                gaya: 0,
-                karkhanaId: "k_main",
-                isOpening: true
+                if (bachaValK > 0) {
+                    stage3_newBanaStock.push({
+                        id: "bana_open_" + Date.now() + "_" + Math.floor(Math.random() * 1000),
+                        name: bName,
+                        date: getTodayDate(),
+                        aaya: bachaValK,
+                        openingAaya: bachaValK,
+                        gaya: 0,
+                        bacha: bachaValK,
+                        karkhanaId: k.id, // 🎯 Godam ki apni alag ID
+                        isOpening: true,
+                        note: "📦 Opening Stock (" + curSess + " Se Aaya)"
+                    });
+
+                    stage3_newBanaHistory.push({
+                        id: "bhist_open_" + Date.now() + "_" + Math.floor(Math.random() * 1000),
+                        date: getTodayDate(),
+                        name: bName,
+                        kariger: "📦 Opening Stock",
+                        type: "📦 Opening Stock (" + curSess + " Se Aaya)",
+                        aaya: bachaValK,
+                        gaya: 0,
+                        karkhanaId: k.id, // 🎯 Godam ki apni alag ID
+                        isOpening: true
+                    });
+                }
             });
         }
     });
 
-    // 2. ZARI OPENING (Unique Names collect karke exact "all" balance uthana)
+    // 2. ZARI OPENING (Har Godam ka alag-alag hisab)
     stage3_newZariStock = [];
     stage3_newZariHistory = [];
 
@@ -271,37 +312,69 @@ function runStage3_BanaZariStock(curSess, newSess) {
     });
 
     uniqueZariNames.forEach(function(zName) {
-        // ⭐ FIX: "all" filter use karke wahi exact wazan nikala jo user ke screen par dikh raha tha
-        var statsZ = (typeof getZariItemStats === "function") 
-            ? getZariItemStats(zName, "all") 
-            : { bacha: 0 };
+        if (karkhanas.length <= 1) {
+            // Sirf ek Godam (Main Godown)
+            var statsZ = (typeof getZariItemStats === "function") ? getZariItemStats(zName, "all") : { bacha: 0 };
+            var bachaValZ = Math.max(0, Number((statsZ.bacha !== undefined ? statsZ.bacha : 0).toFixed(2)));
 
-        var bachaValZ = Math.max(0, Number((statsZ.bacha !== undefined ? statsZ.bacha : 0).toFixed(2)));
+            if (bachaValZ > 0) {
+                stage3_newZariStock.push({
+                    id: "zari_open_" + Date.now() + "_" + Math.floor(Math.random() * 1000),
+                    name: zName,
+                    date: getTodayDate(),
+                    aaya: bachaValZ,
+                    openingAaya: bachaValZ,
+                    gaya: 0,
+                    bacha: bachaValZ,
+                    karkhanaId: "k_main",
+                    isOpening: true,
+                    note: "📦 Opening Stock (" + curSess + " Se Aaya)"
+                });
 
-        if (bachaValZ > 0) {
-            stage3_newZariStock.push({
-                id: "zari_open_" + Date.now() + "_" + Math.floor(Math.random() * 1000),
-                name: zName,
-                date: getTodayDate(),
-                aaya: bachaValZ,
-                openingAaya: bachaValZ,
-                gaya: 0,
-                bacha: bachaValZ,
-                karkhanaId: "k_main",
-                isOpening: true,
-                note: "📦 Opening Stock (" + curSess + " Se Aaya)"
-            });
+                stage3_newZariHistory.push({
+                    id: "zhist_open_" + Date.now() + "_" + Math.floor(Math.random() * 1000),
+                    date: getTodayDate(),
+                    name: zName,
+                    kariger: "📦 Opening Stock",
+                    type: "📦 Opening Stock (" + curSess + " Se Aaya)",
+                    aaya: bachaValZ,
+                    gaya: 0,
+                    karkhanaId: "k_main",
+                    isOpening: true
+                });
+            }
+        } else {
+            // ⭐ MULTI-GODAM: Har godam ka apna bacha wazan usi godam ki ID ke sath alag opening banega
+            karkhanas.forEach(function(k) {
+                var statsZK = (typeof getZariItemStats === "function") ? getZariItemStats(zName, k.id) : { bacha: 0 };
+                var bachaValZK = Math.max(0, Number((statsZK.bacha !== undefined ? statsZK.bacha : 0).toFixed(2)));
 
-            stage3_newZariHistory.push({
-                id: "zhist_open_" + Date.now() + "_" + Math.floor(Math.random() * 1000),
-                date: getTodayDate(),
-                name: zName,
-                kariger: "📦 Opening Stock",
-                type: "📦 Opening Stock (" + curSess + " Se Aaya)",
-                aaya: bachaValZ,
-                gaya: 0,
-                karkhanaId: "k_main",
-                isOpening: true
+                if (bachaValZK > 0) {
+                    stage3_newZariStock.push({
+                        id: "zari_open_" + Date.now() + "_" + Math.floor(Math.random() * 1000),
+                        name: zName,
+                        date: getTodayDate(),
+                        aaya: bachaValZK,
+                        openingAaya: bachaValZK,
+                        gaya: 0,
+                        bacha: bachaValZK,
+                        karkhanaId: k.id, // 🎯 Godam ki apni alag ID
+                        isOpening: true,
+                        note: "📦 Opening Stock (" + curSess + " Se Aaya)"
+                    });
+
+                    stage3_newZariHistory.push({
+                        id: "zhist_open_" + Date.now() + "_" + Math.floor(Math.random() * 1000),
+                        date: getTodayDate(),
+                        name: zName,
+                        kariger: "📦 Opening Stock",
+                        type: "📦 Opening Stock (" + curSess + " Se Aaya)",
+                        aaya: bachaValZK,
+                        gaya: 0,
+                        karkhanaId: k.id, // 🎯 Godam ki apni alag ID
+                        isOpening: true
+                    });
+                }
             });
         }
     });
@@ -524,7 +597,7 @@ function showClosingCelebrationScreen(newSess) {
                         "<div>⚙️ <strong>Sancha Stock:</strong> Carry Forward</div>" +
                         "<div>✂️ <strong>Job Work Khata:</strong> Carry Forward</div>" +
                     "</div>" +
-                    "<p style='font-size:12px; color:#64748b; margin-bottom:15px;'>* 20-20 Micro Batches ke zariye bina freeze hue sara data cloud aur memory me lock ho chuka hai.</p>" +
+                    "<p style='font-size:12px; color:#64748b; margin-bottom:15px;'>* Sabhi godamon ka bacha hua maal unhi ke godam me alag-alag opening stock ban kar live ho chuka hai.</p>" +
                     "<button class='btn' style='background:linear-gradient(135deg, #10b981, #059669); font-size:15px; font-weight:bold; padding:12px; cursor:pointer;' onclick='completeNewSessionStartup(\"" + newSess + "\")'>🚀 Naye Saal Me Kaam Shuru Karein</button>" +
                 "</div>";
         }
