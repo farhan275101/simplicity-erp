@@ -1,4 +1,3 @@
-
 /* ========================================================
    SIMPLICITY ERP - ADMIN CONTROL & APPROVAL ENGINE
    File: admin/admin.js • Developed by Farhan Jawed
