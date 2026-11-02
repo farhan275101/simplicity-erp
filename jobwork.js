@@ -1,6 +1,7 @@
 /* ========================================================
    SIMPLICITY ERP - JOB WORK HUB, BATCH & BILLING ENGINE
    File: jobwork.js • Developed by Farhan Jawed
+   (Accurate Fresh vs Cutting Deduct + Live Kariger Stock Badge)
 ======================================================== */
 
 var currentJobWorkMode = "hub";
@@ -337,6 +338,84 @@ function getJobWorkerOverallSummary(workerId) {
     return { totGayi: gTot, totAayi: aTot, totDmg: dTot, pendingSaree: calculateJobWorkSheetTotals(sheets[sheets.length - 1]).pendingSaree };
 }
 
+// ================= LIVE KARIGER SAREE STOCK CHECKER =================
+function getKarigerAvailableSareeStock(karigerName) {
+    var kName = (karigerName || "").trim().toUpperCase();
+    if (!kName) return { fresh: 0, cutting: 0, total: 0 };
+
+    var sH = safeArray(getStore("saree_history"));
+    var fAai = 0, fGai = 0, cAai = 0, cGai = 0;
+
+    sH.forEach(function(r) {
+        if (!r) return;
+        var rk = (r.karigerName || r.kariger || "").trim().toUpperCase();
+        if (rk === kName) {
+            var t = String(r.type || "fresh").toLowerCase();
+            var a = Number(r.aai || 0);
+            var g = Number(r.gai || 0);
+            if (t === "fresh") {
+                fAai += a; fGai += g;
+            } else if (t === "cutting") {
+                cAai += a; cGai += g;
+            }
+        }
+    });
+
+    var fBacha = Math.max(0, fAai - fGai);
+    var cBacha = Math.max(0, cAai - cGai);
+    return { fresh: fBacha, cutting: cBacha, total: fBacha + cBacha };
+}
+
+function updateJwKarigerLiveStockBadge() {
+    var kInp = document.getElementById("jw-diya-karigar");
+    if (!kInp) return;
+    var kName = (kInp.value || "").trim().toUpperCase();
+    var badge = document.getElementById("jw-kariger-live-stock-badge");
+
+    if (!badge && kInp.parentNode) {
+        badge = document.createElement("div");
+        badge.id = "jw-kariger-live-stock-badge";
+        badge.style.cssText = "margin-top:6px; font-size:12px; font-weight:700; border-radius:6px; padding:6px 10px; display:none;";
+        kInp.parentNode.insertBefore(badge, kInp.nextSibling);
+    }
+
+    if (!badge) return;
+
+    if (!kName) {
+        badge.style.display = "none";
+        return;
+    }
+
+    var stock = getKarigerAvailableSareeStock(kName);
+    var worker = getJobWorkers().find(function(x) { return String(x.id) === String(activeJobWorkerId); });
+    var isCalender = (worker && worker.type === "calender");
+
+    badge.style.display = "block";
+    badge.style.background = "#f0fdf4";
+    badge.style.border = "1px solid #86efac";
+    badge.style.color = "#166534";
+
+    var stockHtml = "🧵 <strong>" + kName + " Saree Stock:</strong> ";
+    stockHtml += "<span style='color:#0284c7; margin-left:5px;'>Fresh: <b>" + stock.fresh + " Pcs</b></span>";
+    stockHtml += " | <span style='color:#ea580c;'>Cutting: <b>" + stock.cutting + " Pcs</b></span>";
+
+    if (isCalender) {
+        var radCut = document.getElementById("jw-source-cutting");
+        var isCutSelected = (radCut && radCut.checked);
+        var selStock = isCutSelected ? stock.cutting : stock.fresh;
+        var sourceName = isCutSelected ? "Cutting" : "Fresh";
+
+        stockHtml += "<br><small style='color:#475569;'>👉 Calender me <b>" + sourceName + "</b> se jayega (Available: <b>" + selStock + " Pcs</b>)</small>";
+        if (selStock <= 0) {
+            badge.style.background = "#fff1f2";
+            badge.style.border = "1px solid #fecdd3";
+            badge.style.color = "#9f1239";
+        }
+    }
+
+    badge.innerHTML = stockHtml;
+}
+
 function openJobWorkerSheet(workerId) {
     var w = getJobWorkers().find(function(x) { return String(x.id) === String(workerId); });
     if (!w) return alert("Kariger nahi mila!");
@@ -355,13 +434,32 @@ function openJobWorkerSheet(workerId) {
 
     var stockSelectWrap = document.getElementById("jw-calender-stock-source-wrap");
     var cuttingNotice = document.getElementById("jw-cutting-notice");
+
     if (w.type === "calender") {
         if (stockSelectWrap) stockSelectWrap.style.display = "flex";
         if (cuttingNotice) cuttingNotice.style.display = "none";
+
+        // 🌟 Ensure Radio inputs have mutual exclusive group name
+        var rCut = document.getElementById("jw-source-cutting");
+        var rFresh = document.getElementById("jw-source-fresh");
+        if (rCut && rFresh) {
+            rCut.name = "jw_calender_source";
+            rFresh.name = "jw_calender_source";
+            rCut.onchange = updateJwKarigerLiveStockBadge;
+            rFresh.onchange = updateJwKarigerLiveStockBadge;
+        }
     } else {
         if (stockSelectWrap) stockSelectWrap.style.display = "none";
         if (cuttingNotice) cuttingNotice.style.display = "block";
     }
+
+    // Attach Live Stock badge listener on input
+    var kInp = document.getElementById("jw-diya-karigar");
+    if (kInp) {
+        kInp.oninput = updateJwKarigerLiveStockBadge;
+        kInp.onchange = updateJwKarigerLiveStockBadge;
+    }
+    updateJwKarigerLiveStockBadge();
 
     setDisplay("jw-workers-view", "none");
     setDisplay("jw-sheet-view", "block");
@@ -471,11 +569,13 @@ function addDiyaBatchKarigarItem() {
     var kName = (document.getElementById("jw-diya-karigar").value || "").trim().toUpperCase();
     var qty = parseInt(document.getElementById("jw-diya-qty").value, 10) || 0;
     if (!kName || qty <= 0) return alert("Karigar aur Saree QTY bharein!");
+
     currentDiyaBatch.push({ id: "d_item_" + Date.now() + "_" + Math.floor(Math.random() * 1000), karigar: kName, qty: qty });
     document.getElementById("jw-diya-karigar").value = "";
     document.getElementById("jw-diya-qty").value = "";
     document.getElementById("jw-diya-karigar").focus();
     renderDiyaBatchChips();
+    updateJwKarigerLiveStockBadge();
 }
 
 function removeDiyaBatchItem(idx) { currentDiyaBatch.splice(idx, 1); renderDiyaBatchChips(); }
@@ -539,7 +639,22 @@ function saveJobWorkBatchLine() {
 
     if (totGayi === 0 && totAayi === 0 && damagePcs === 0) return alert("Jane ya Aane wali saree ke karigar [+] jodein!");
 
-    var stockSource = (isCalender && document.getElementById("jw-source-cutting") && document.getElementById("jw-source-cutting").checked) ? "cutting" : "fresh";
+    // 🌟 ACCURATE STOCK SOURCE RESOLUTION (FRESH vs CUTTING)
+    var stockSource = "fresh";
+    if (isCalender) {
+        var radCut = document.getElementById("jw-source-cutting");
+        var radFresh = document.getElementById("jw-source-fresh");
+        if (radFresh && radFresh.checked) {
+            stockSource = "fresh";
+        } else if (radCut && radCut.checked) {
+            stockSource = "cutting";
+        } else {
+            stockSource = "fresh";
+        }
+    } else {
+        stockSource = "fresh"; // Cutting me hamesha Fresh se jata hai
+    }
+
     var batchRowId = "jwb_" + Date.now();
     var dDate = (document.getElementById("jw-form-diya-date") && document.getElementById("jw-form-diya-date").value) || getTodayDate();
     var aDate = (document.getElementById("jw-form-aayi-date") && document.getElementById("jw-form-aayi-date").value) || getTodayDate();
@@ -564,12 +679,12 @@ function saveJobWorkBatchLine() {
                 karigerName: wKarName,
                 kariger: wKarName,
                 karkhanaId: kGodown,
-                type: (stockSource === "cutting") ? "cutting" : "fresh",
-                typeLabel: workerName + " (" + (isCalender ? "Calender" : "Cutting Worker") + ") ko bheja",
+                type: stockSource, // "fresh" ya "cutting" accurately darj hoga
+                typeLabel: workerName + " (" + (isCalender ? "Calender" : "Cutting Worker") + ") ko bheja [" + (stockSource === "cutting" ? "Cutting Stock" : "Fresh Stock") + "]",
                 aai: 0,
                 gai: Number(item.qty || 0),
                 isOut: true,
-                note: workerName + " ko bheja"
+                note: workerName + " ko bheja (" + stockSource + ")"
             });
         });
         setStore("saree_history", sH);
@@ -643,13 +758,15 @@ function saveJobWorkBatchLine() {
     currentAayiBatch = [];
     renderDiyaBatchChips();
     renderAayiBatchChips();
+    updateJwKarigerLiveStockBadge();
+
     document.getElementById("jw-form-damage-pcs").value = "";
     document.getElementById("jw-form-damage-amt").value = "";
     renderJobWorkSheetTable(sh);
     updateJobWorkHubBadges();
     if (typeof renderSareeTable === "function") renderSareeTable();
     if (typeof updateDashboardBadgeTotals === "function") updateDashboardBadgeTotals();
-    alert("✅ Batch Entry Save ho gayi!");
+    alert("✅ Batch Entry Save ho gayi (" + (stockSource === "cutting" ? "Cutting Se" : "Fresh Se") + ")!");
 }
 
 function renderJobWorkSheetTable(sh) {
@@ -663,7 +780,11 @@ function renderJobWorkSheetTable(sh) {
     } else {
         rows.forEach(function(r, idx) {
             if (!r) return;
-            var gayiBtn = (r.gayiQty > 0) ? ("<button class='detail-btn' style='background:#e11d48; font-size:11px;' onclick='openJwBatchModal(\"" + sh.id + "\", \"" + r.id + "\", \"gayi\")'>📖 " + (r.gayiItems ? r.gayiItems.length : 1) + " Kariger</button>") : "-";
+            var sourceBadge = (r.stockSource === "cutting") 
+                ? "<span style='font-size:10px; background:#fef3c7; color:#b45309; padding:1px 5px; border-radius:4px; margin-left:4px;'>Cutting</span>"
+                : "<span style='font-size:10px; background:#eff6ff; color:#1d4ed8; padding:1px 5px; border-radius:4px; margin-left:4px;'>Fresh</span>";
+
+            var gayiBtn = (r.gayiQty > 0) ? ("<button class='detail-btn' style='background:#e11d48; font-size:11px;' onclick='openJwBatchModal(\"" + sh.id + "\", \"" + r.id + "\", \"gayi\")'>📖 " + (r.gayiItems ? r.gayiItems.length : 1) + " Kariger</button>" + sourceBadge) : "-";
             var aayiBtn = (r.aayiQty > 0) ? ("<button class='detail-btn' style='background:#059669; font-size:11px;' onclick='openJwBatchModal(\"" + sh.id + "\", \"" + r.id + "\", \"aayi\")'>📖 " + (r.aayiItems ? r.aayiItems.length : 1) + " Kariger</button>") : "-";
 
             tbody.innerHTML += "<tr>" +
