@@ -1,7 +1,7 @@
 /* ========================================================
-   SIMPLICITY ERP - AUTH & ADMIN APPROVAL ENGINE (LIVE SYNC)
+   SIMPLICITY ERP - AUTH, PERSISTENT SESSION & 5-POINT SYNC
    File: auth/auth.js • Developed by Farhan Jawed
-   (Manager Approval Contact: +91 79854 02962)
+   (Auto-Login on Refresh + Background 5-Point Match + Live Profile Sync)
 ======================================================== */
 
 var currentUserId = null;
@@ -190,13 +190,21 @@ function handleRegister() {
     var msg = document.getElementById("signup-msg");
 
     if (!name || !id || !pass || !mobile || !pin || pin.length !== 4) {
-        msg.textContent = "Sabhi details bharein (4-digit PIN zaroori hai)!";
+        msg.textContent = "Sabhi 5 details bharein (4-digit PIN zaroori hai)!";
         msg.className = "message error"; msg.style.display = "block";
         return;
     }
+
     var users = getUsersList();
+
     if (users.some(function(u) { return u.id && u.id.toLowerCase() === id; })) {
-        msg.textContent = "Yeh User ID pehle se maujood hai!";
+        msg.textContent = "Yeh User ID pehle se kisi aur ke paas hai! Alag ID banayein.";
+        msg.className = "message error"; msg.style.display = "block";
+        return;
+    }
+
+    if (users.some(function(u) { return u.mobile && String(u.mobile).trim() === mobile; })) {
+        msg.textContent = "Yeh Mobile Number pehle se registered hai! Alag mobile number daalein.";
         msg.className = "message error"; msg.style.display = "block";
         return;
     }
@@ -242,16 +250,34 @@ function handleRegister() {
     }, 3000);
 }
 
-// 🔓 LOGIN ENGINE (Manager Contact Added)
+/**
+ * 🔒 5-POINT BACKGROUND VALIDATION HELPER
+ * Data sync karne se pehle background me check karega
+ */
+function validate5PointSecurity(userRecord) {
+    if (!userRecord) return false;
+    var savedSession = JSON.parse(localStorage.getItem("app_active_session_auth") || "null");
+    if (!savedSession) return true; // Pehla fresh login pass hone do
+
+    var matchId = String(userRecord.id || "").toLowerCase() === String(savedSession.id || "").toLowerCase();
+    var matchName = String(userRecord.name || "").trim().toLowerCase() === String(savedSession.name || "").trim().toLowerCase();
+    var matchMob = String(userRecord.mobile || "").trim() === String(savedSession.mobile || "").trim();
+    var matchPass = String(userRecord.pass || "").trim() === String(savedSession.pass || "").trim();
+    var matchPin = String(userRecord.pin || "").trim() === String(savedSession.pin || "").trim();
+
+    return matchId && matchName && matchMob && matchPass && matchPin;
+}
+
+// 🔓 LOGIN ENGINE (Simple ID/Mobile + Password)
 function handleLogin() {
     var idInput = document.getElementById("login-id");
     var passInput = document.getElementById("login-pass");
     var err = document.getElementById("login-error");
 
-    var id = (idInput ? idInput.value : "").trim().toLowerCase();
+    var inputVal = (idInput ? idInput.value : "").trim().toLowerCase();
     var pass = (passInput ? passInput.value : "").trim();
 
-    if (!id || !pass) {
+    if (!inputVal || !pass) {
         if (err) {
             err.textContent = "Kripya User ID aur Password dono bharein!";
             err.style.display = "block";
@@ -260,64 +286,54 @@ function handleLogin() {
     }
 
     var verifyAndProceed = function(users) {
+        // ID match pehle, mobile match baad me
         var user = users.find(function(u) {
-            var matchId = (u.id && String(u.id).toLowerCase() === id);
-            var matchMob = (u.mobile && String(u.mobile).trim() === id);
-            return (matchId || matchMob) && String(u.pass) === String(pass);
+            return u.id && String(u.id).toLowerCase() === inputVal && String(u.pass) === String(pass);
         });
 
+        if (!user) {
+            user = users.find(function(u) {
+                return u.mobile && String(u.mobile).trim() === inputVal && String(u.pass) === String(pass);
+            });
+        }
+
         if (user) {
-            // 🚨 PENDING CHECK (Manager Number)
             if (user.status === "pending") {
                 if (err) {
-                    err.innerHTML = "⏳ <strong>Account Approval Pending Hai!</strong><br>Approval ke liye Manager se sampark karein:<br>📞 <a href='tel:+917985402962' style='color:#2563eb; font-weight:800; text-decoration:underline;'>+91 79854 02962</a> &bull; <a href='https://wa.me/917985402962?text=Hello%20Manager%20Sahab,%20mera%20Simplicity%20ERP%20account%20(ID:%20" + user.id + ")%20approve%20kar%20dijiye.' target='_blank' style='color:#16a34a; font-weight:800;'>📲 WhatsApp</a>";
+                    err.innerHTML = "⏳ <strong>Account Approval Pending Hai!</strong><br>Manager se sampark karein:<br>📞 <a href='tel:+917985402962' style='color:#2563eb; font-weight:800;'>+91 79854 02962</a>";
                     err.style.display = "block";
                 }
                 return;
             }
 
-            // 🚨 BLOCKED CHECK
             if (user.status === "blocked") {
                 if (err) {
-                    err.innerHTML = "⛔ Account Block hai! Manager se contact karein:<br>📞 <a href='tel:+917985402962' style='color:#2563eb; font-weight:bold;'>+91 79854 02962</a>";
+                    err.innerHTML = "⛔ Account Block hai! Manager se contact karein.";
                     err.style.display = "block";
                 }
                 return;
             }
 
-            // 🚨 EXPIRED CHECK
             if (isUserExpired(user)) {
                 if (err) {
-                    err.innerHTML = "⌛ Account Expired (" + formatDateDisplay(user.expiryDate) + ")! Renew karane ke liye Manager se contact karein:<br>📞 <a href='tel:+917985402962' style='color:#2563eb; font-weight:bold;'>+91 79854 02962</a>";
+                    err.innerHTML = "⌛ Account Expired (" + formatDateDisplay(user.expiryDate) + ")!";
                     err.style.display = "block";
                 }
                 return;
             }
 
-            if (typeof clearMemoryCache === "function") clearMemoryCache();
-            currentUserId = user.id;
-            currentUserRole = user.role || (user.id === "farhan" ? "admin" : "user");
+            // ⭐ 1. PERSISTENT SESSION SAVE (Refresh par logout nahi hone dega)
             localStorage.setItem("app_current_user_id", user.id);
+            localStorage.setItem("app_active_session_auth", JSON.stringify({
+                id: user.id,
+                name: user.name,
+                mobile: user.mobile,
+                pass: user.pass,
+                pin: user.pin
+            }));
 
-            if (err) err.style.display = "none";
-            setDisplay("login-wrapper", "none");
-            setDisplay("desktop-screen", "flex");
+            executeSuccessfulLogin(user);
 
-            if (currentUserRole === "admin") {
-                document.getElementById("welcome-text").textContent = "👑 Swagat hai Admin, " + user.name + "!";
-                setDisplay("nav-admin-btn", "inline-block");
-            } else {
-                document.getElementById("welcome-text").textContent = "Swagat hai, " + user.name + "!";
-                setDisplay("nav-admin-btn", "none");
-            }
-
-            if (typeof initIndexedDBPreload === "function") {
-                initIndexedDBPreload(function() {
-                    if (typeof initFirebaseLiveListeners === "function") initFirebaseLiveListeners();
-                    if (typeof populateSessionDropdown === "function") populateSessionDropdown();
-                    if (typeof backToDashboard === "function") backToDashboard();
-                });
-            }
         } else {
             if (err) {
                 err.textContent = "Galat User ID ya Password!";
@@ -346,13 +362,122 @@ function handleLogin() {
     }
 }
 
+/**
+ * 🚀 SUCCESSFUL LOGIN EXECUTION & DATA SYNC
+ */
+function executeSuccessfulLogin(user) {
+    if (typeof clearMemoryCache === "function") clearMemoryCache();
+    currentUserId = user.id;
+    currentUserRole = user.role || (user.id === "farhan" ? "admin" : "user");
+
+    var err = document.getElementById("login-error");
+    if (err) err.style.display = "none";
+
+    setDisplay("login-wrapper", "none");
+    setDisplay("desktop-screen", "flex");
+
+    if (currentUserRole === "admin") {
+        document.getElementById("welcome-text").textContent = "👑 Swagat hai Admin, " + user.name + "!";
+        setDisplay("nav-admin-btn", "inline-block");
+    } else {
+        document.getElementById("welcome-text").textContent = "Swagat hai, " + user.name + "!";
+        setDisplay("nav-admin-btn", "none");
+    }
+
+    var finishLoginInit = function() {
+        if (typeof initFirebaseLiveListeners === "function") initFirebaseLiveListeners();
+        if (typeof populateNavbarKarkhanaDropdown === "function") populateNavbarKarkhanaDropdown();
+        if (typeof populateSessionDropdown === "function") populateSessionDropdown();
+        if (typeof backToDashboard === "function") backToDashboard();
+        if (typeof showSyncStatus === "function") showSyncStatus("online");
+    };
+
+    // 🔒 5-POINT SECURITY CHECK BEFORE DATA PULL
+    if (typeof db !== "undefined" && db) {
+        if (typeof showSyncStatus === "function") showSyncStatus("syncing");
+        
+        // Cloud se taaza profile verify karein
+        db.ref("app_users/" + user.id).once("value", function(userSnap) {
+            var cloudUser = userSnap.val() || user;
+            
+            // Paancho cheezein check karein
+            if (!validate5PointSecurity(cloudUser)) {
+                alert("⚠️ Security Alert: Account credentials mismatch! Data sync rok diya gaya hai.");
+                logout();
+                return;
+            }
+
+            // Sab verify hone par hi data load karein
+            db.ref("users/" + user.id).once("value", function(snapshot) {
+                var val = snapshot.val();
+                if (val) {
+                    for (var k in val) {
+                        try {
+                            var itemData = Array.isArray(val[k]) ? safeArray(val[k]) : val[k];
+                            var fullKey = user.id + "_" + k;
+                            APP_MEMORY_CACHE[fullKey] = itemData;
+                            if (typeof idbPut === "function") idbPut(fullKey, itemData);
+                            try { localStorage.setItem(fullKey, JSON.stringify(itemData)); } catch(e) {}
+                        } catch(e) {}
+                    }
+                }
+                finishLoginInit();
+            }).catch(function() {
+                if (typeof initIndexedDBPreload === "function") {
+                    initIndexedDBPreload(finishLoginInit);
+                } else {
+                    finishLoginInit();
+                }
+            });
+        });
+    } else {
+        if (typeof initIndexedDBPreload === "function") {
+            initIndexedDBPreload(finishLoginInit);
+        } else {
+            finishLoginInit();
+        }
+    }
+}
+
+/**
+ * 🔄 AUTO LOGIN ON REFRESH CHECK
+ */
+function checkAutoLogin() {
+    var savedUid = localStorage.getItem("app_current_user_id");
+    var savedSession = JSON.parse(localStorage.getItem("app_active_session_auth") || "null");
+
+    if (!savedUid || !savedSession) {
+        showLogin();
+        return;
+    }
+
+    var users = getUsersList();
+    var user = users.find(function(u) { return u.id && u.id.toLowerCase() === savedUid.toLowerCase(); });
+
+    if (user && user.status === "active" && !isUserExpired(user)) {
+        // Auto-login proceed karein bina ID-Password maange
+        executeSuccessfulLogin(user);
+    } else {
+        showLogin();
+    }
+}
+
+/**
+ * 🚪 LOGOUT (Sirf button dabane par hi logout hoga)
+ */
 function logout() {
+    if (typeof db !== "undefined" && db && currentUserId) {
+        try { db.ref("users/" + currentUserId).off(); } catch(e) {}
+    }
     if (typeof clearMemoryCache === "function") clearMemoryCache();
     currentUserId = null;
     currentUserRole = null;
     activeKarigerId = null;
     activeSheetId = null;
+    
+    // Auto-login session delete
     localStorage.removeItem("app_current_user_id");
+    localStorage.removeItem("app_active_session_auth");
 
     var idInput = document.getElementById("login-id");
     var passInput = document.getElementById("login-pass");
@@ -434,6 +559,9 @@ function openProfileModal() {
 
 function closeProfileModal() { setDisplay("profile-modal", "none"); }
 
+/**
+ * 🌟 LIVE PROFILE SYNC (Cloud + Local Both Updated)
+ */
 function saveProfileSettings() {
     var n = (document.getElementById("prof-name").value || "").trim();
     var m = (document.getElementById("prof-mobile").value || "").trim();
@@ -446,13 +574,34 @@ function saveProfileSettings() {
     var users = getUsersList();
     var idx = users.findIndex(function(x) { return x.id === currentUserId; });
     if (idx !== -1) {
-        users[idx].name = n; users[idx].mobile = m; users[idx].pin = p; users[idx].pass = pass;
+        users[idx].name = n; 
+        users[idx].mobile = m; 
+        users[idx].pin = p; 
+        users[idx].pass = pass;
+
+        // 1. Local update
         localStorage.setItem("app_users", JSON.stringify(users));
         if (typeof APP_MEMORY_CACHE !== "undefined") APP_MEMORY_CACHE["app_users"] = users;
         if (typeof idbPut === "function") idbPut("app_users", users);
-        if (typeof db !== "undefined" && db) try { db.ref("app_users/" + currentUserId).set(users[idx]); } catch (e) {}
+
+        // 2. Persistent Session me naya data update (taaki 5-point sync na toote)
+        localStorage.setItem("app_active_session_auth", JSON.stringify({
+            id: currentUserId,
+            name: n,
+            mobile: m,
+            pass: pass,
+            pin: p
+        }));
+
+        // 3. Cloud par turant live sync
+        if (typeof db !== "undefined" && db) {
+            try { 
+                db.ref("app_users/" + currentUserId).set(users[idx]); 
+            } catch (e) {}
+        }
+
         document.getElementById("welcome-text").textContent = "Swagat hai, " + n + "!";
         closeProfileModal();
-        alert("✅ Settings successfully save ho gayi!");
+        alert("✅ Profile settings aur Cloud credentials dono successfully update ho gaye!");
     }
 }
