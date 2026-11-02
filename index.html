@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Welcome to Simplicity - ERP by Farhan Jawed</title>
     
-    <!-- 🚀 PWA MANIFEST & ICONS (Desktop & Mobile Install Ready) -->
+    <!-- 🚀 PWA MANIFEST & MOBILE ICONS -->
     <link rel="manifest" href="./manifest.json">
     <link rel="apple-touch-icon" href="./icon-192.png">
     <meta name="theme-color" content="#0f172a">
@@ -112,6 +112,9 @@
                 </div>
             </div>
             <div class="navbar-user-area">
+                <!-- 📲 ONE-CLICK PWA INSTALL BUTTON FOR COMPUTER -->
+                <button id="pwa-install-nav-btn" style="display:none; background:#10b981; color:white; border:none; padding:5px 12px; border-radius:6px; font-weight:bold; font-size:12px; cursor:pointer;" onclick="triggerPwaInstall()">📲 Install App</button>
+
                 <!-- MULTI-KARKHANA NAVBAR SWITCHER -->
                 <div style="display:inline-flex; align-items:center; gap:6px; background:#1e293b; padding:4px 8px; border-radius:6px;">
                     <span style="font-size:12px; color:#38bdf8; font-weight:700;">🏭 Karkhana:</span>
@@ -149,7 +152,6 @@
 
             <!-- DASHBOARD HOME VIEW -->
             <div id="dashboard-view">
-                <!-- DASHBOARD KARKHANA TABS BAR -->
                 <div id="dash-karkhana-tabs-bar" class="sheet-tabs-bar" style="margin-bottom:14px;"></div>
 
                 <div class="menu-grid">
@@ -1095,19 +1097,47 @@
         };
     </script>
 
-    <!-- 🚀 PWA REGISTRATION SCRIPT (Desktop Install & Offline Engine) -->
+    <!-- 🚀 PWA REGISTRATION SCRIPT & DIRECT IN-APP INSTALL TRIGGER -->
     <script>
-      if ('serviceWorker' in navigator) {
-        window.addEventListener('load', function() {
-          navigator.serviceWorker.register('./sw.js')
-            .then(function(reg) {
-              console.log('✅ Simplicity PWA Service Worker Registered:', reg.scope);
-            })
-            .catch(function(err) {
-              console.error('❌ Service Worker Registration Failed:', err);
-            });
+        let pwaDeferredPrompt = null;
+
+        // 1. Capture the Chrome install prompt
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            pwaDeferredPrompt = e;
+            const btn = document.getElementById('pwa-install-nav-btn');
+            if (btn) btn.style.display = 'inline-flex';
         });
-      }
+
+        // 2. Direct click handler on Navbar Button
+        function triggerPwaInstall() {
+            if (pwaDeferredPrompt) {
+                pwaDeferredPrompt.prompt();
+                pwaDeferredPrompt.userChoice.then((choiceResult) => {
+                    if (choiceResult.outcome === 'accepted') {
+                        console.log('✅ PWA Installed successfully!');
+                    }
+                    pwaDeferredPrompt = null;
+                    const btn = document.getElementById('pwa-install-nav-btn');
+                    if (btn) btn.style.display = 'none';
+                });
+            } else {
+                alert("Agar install prompt na khule, toh Chrome ke 3-dots (⋮) par click karein aur 'Install Simplicity ERP' chunein!");
+            }
+        }
+
+        // 3. Register Service Worker with safe fallback
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function() {
+                navigator.serviceWorker.register('./sw.js')
+                    .then(function(reg) {
+                        console.log('✅ Simplicity PWA Service Worker Registered:', reg.scope);
+                    })
+                    .catch(function(err) {
+                        console.error('❌ Service Worker Registration Failed:', err);
+                    });
+            });
+        }
     </script>
 </body>
 </html>
