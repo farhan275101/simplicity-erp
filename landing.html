@@ -5,22 +5,21 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     
-    <!-- 🔍 GOOGLE SEO META TAGS (GOOGLE SEARCH ME LAANE KE LIYE) -->
-    <title>Simplicity ERP • Saree Manufacturer Business Portal by Farhan Jawed (Mau Nath Bhanjan)</title>
-    <meta name="description" content="Simplicity ERP by Farhan Jawed (Mau Nath Bhanjan). India's leading digital ERP software designed specifically for Saree & Textile Manufacturers. Manage Karigers, Looms, Raw Material, Bana, Zari, Sancha, Job Work, and Day-Book in real-time.">
-    <meta name="keywords" content="Simplicity ERP, Simplicity Saree ERP, Simplicity Farhan Jawed, Farhan Jawed Mau Nath Bhanjan, Mau Saree Manufacturer Software, Textile Karkhana Software, Karigar Khata App, Bana Zari Stock Management, Powerloom Jacquard Software">
+    <!-- 🔍 SEO & SOCIAL PREVIEW -->
+    <title>Simplicity ERP • Saree Manufacturer Business Portal</title>
+    <meta name="description" content="Simplicity ERP. India's digital ERP portal designed for Saree & Textile Manufacturers. Manage Karigers, Looms, Bana, Zari, Sancha, Job Work, and Saree Stock in real-time.">
+    <meta name="keywords" content="Simplicity ERP, Saree Manufacturer Software, Textile Karkhana Software, Karigar Khata App, Bana Zari Stock Management, Powerloom Jacquard Software">
     <meta name="author" content="Farhan Jawed">
     <meta name="robots" content="index, follow">
 
     <!-- Open Graph (WhatsApp / Facebook Link Preview) -->
     <meta property="og:title" content="Simplicity ERP • Digital Karkhana Portal for Saree Manufacturers">
-    <meta property="og:description" content="Purani Diary Chhodo, Karkhana Digital Karo! 1-1 Saree, 1-1 Gram Zari aur Karigar ki Mazdoori ka pakka hisab. By Farhan Jawed (Mau Nath Bhanjan). Contact: +91 7065572191">
+    <meta property="og:description" content="Purani Diary Chhodo, Karkhana Digital Karo! 1-1 Saree, 1-1 Gram Zari aur Karigar ki Mazdoori ka pakka hisab. Manager Contact: +91 7985402962">
     <meta property="og:type" content="website">
 
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#1e3a8a">
 
-    <!-- Embedded High-Performance Modern CSS -->
     <style>
         * {
             margin: 0;
@@ -197,11 +196,102 @@
         .stat-item h4 { font-size: 24px; font-weight: 800; color: #38bdf8; }
         .stat-item p { font-size: 12px; color: #94a3b8; font-weight: 600; text-transform: uppercase; }
 
+        /* ULTRA HD BANARASI SAREE VISUAL SHOWCASE */
+        .saree-visual-container {
+            max-width: 1000px;
+            margin: -40px auto 40px;
+            padding: 0 20px;
+            position: relative;
+            z-index: 10;
+        }
+
+        .saree-visual-card {
+            background: #ffffff;
+            border-radius: 20px;
+            padding: 14px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.12);
+            border: 2px solid #e2e8f0;
+            display: grid;
+            grid-template-columns: 1.2fr 0.8fr;
+            gap: 20px;
+            align-items: center;
+        }
+
+        @media (max-width: 820px) {
+            .saree-visual-card { grid-template-columns: 1fr; }
+            .saree-visual-container { margin-top: -20px; }
+        }
+
+        .saree-image-wrap {
+            position: relative;
+            border-radius: 14px;
+            overflow: hidden;
+            height: 280px;
+            background: #0f172a;
+        }
+
+        .saree-image-wrap img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.4s ease;
+        }
+        .saree-image-wrap:hover img { transform: scale(1.04); }
+
+        .saree-image-badge {
+            position: absolute;
+            bottom: 12px;
+            left: 12px;
+            background: rgba(15, 23, 42, 0.85);
+            color: #f59e0b;
+            padding: 6px 12px;
+            border-radius: 30px;
+            font-size: 11px;
+            font-weight: 800;
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(245, 158, 11, 0.4);
+        }
+
+        .saree-content-wrap {
+            padding: 10px 14px;
+            text-align: left;
+        }
+
+        .saree-content-wrap h3 {
+            font-size: 20px;
+            font-weight: 800;
+            color: #0f172a;
+            margin-bottom: 8px;
+        }
+
+        .saree-content-wrap p {
+            font-size: 13px;
+            color: #475569;
+            line-height: 1.6;
+            margin-bottom: 14px;
+        }
+
+        .saree-tag-list {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .saree-tag {
+            background: #f1f5f9;
+            color: #0369a1;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 4px 10px;
+            border-radius: 6px;
+            border: 1px solid #e2e8f0;
+        }
+
         /* 3. CONTAINER */
         .container {
             max-width: 1200px;
             margin: 0 auto;
-            padding: 60px 20px;
+            padding: 50px 20px;
         }
 
         .section-header {
@@ -361,12 +451,12 @@
         .step-card h5 { font-size: 15px; font-weight: 700; color: white; margin-bottom: 6px; }
         .step-card p { font-size: 12px; color: #cbd5e1; margin: 0; }
 
-        /* 7. FOUNDER BRANDING & DIRECT CONTACT */
+        /* 7. RESPECTFUL & HUMBLE CONTACT CARD */
         .founder-box {
             background: white;
             border-radius: 18px;
             border: 1px solid #e2e8f0;
-            padding: 40px 30px;
+            padding: 35px 30px;
             margin-top: 70px;
             display: flex;
             align-items: center;
@@ -377,24 +467,16 @@
             border-left: 6px solid #2563eb;
         }
 
-        .founder-info h4 { font-size: 24px; font-weight: 900; color: #0f172a; }
+        .founder-info h4 { font-size: 22px; font-weight: 800; color: #0f172a; }
         .founder-info p { font-size: 14px; color: #64748b; margin-top: 4px; }
-        .founder-info .location-tag {
-            font-size: 13px;
-            color: #c2410c;
-            font-weight: 700;
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-            margin-top: 6px;
-        }
+        
         .founder-info .tag {
             background: #eff6ff;
             color: #2563eb;
             padding: 4px 12px;
             border-radius: 20px;
             font-size: 12px;
-            font-weight: 800;
+            font-weight: 700;
             border: 1px solid #bfdbfe;
             display: inline-block;
             margin-top: 10px;
@@ -458,11 +540,12 @@
             <span>✨</span>
             <div>
                 <h1>Simplicity ERP</h1>
-                <small>By Farhan Jawed • Mau Nath Bhanjan</small>
+                <small>Textile & Saree Karkhana Portal</small>
             </div>
         </a>
         <div class="nav-actions">
-            <a href="tel:+917065572191" class="btn-call-nav">📞 +91 7065572191</a>
+            <!-- 📞 Manager Direct Call -->
+            <a href="tel:+917985402962" class="btn-call-nav">📞 Manager: +91 7985402962</a>
             <a href="index.html" class="btn-launch">🚀 Launch App</a>
         </div>
     </header>
@@ -471,14 +554,16 @@
     <section class="hero">
         <div class="badge-pill">🇮🇳 Dedicated for Saree & Textile Manufacturers</div>
         <h2>Purani Diary Chhodo, <span>Apna Karkhana Digital Karo!</span></h2>
-        <p>Loom se lekar Dukan tak — 1-1 Saree, 1-1 Gram Zari, Bana, Sancha aur Karigar ki Mazdoori ka pakka aur transparent hisab aapke mobile me.</p>
+        <p>Loom se lekar Dukan tak — 1-1 Saree, 1-1 Gram Zari, Bana, Sancha aur Karigar ki Mazdoori ka pakka hisab mobile me.</p>
 
         <div class="hero-cta-group">
-            <a href="https://wa.me/917065572191?text=Hello%20Mr.%20Farhan,%20mujhe%20Simplicity%20ERP%20ke%20bare%20me%20janna%20hai%20aur%20apne%20karkhane%20me%20lagwana%20hai." target="_blank" class="btn-primary-hero">
+            <!-- 📲 Manager WhatsApp -->
+            <a href="https://wa.me/917985402962?text=Hello%20Manager%20Sahab,%20mujhe%20Simplicity%20ERP%20ke%20bare%20me%20janna%20hai%20aur%20apne%20karkhane%20me%20lagwana%20hai." target="_blank" class="btn-primary-hero">
                 📲 WhatsApp Par Demo Maangein
             </a>
-            <a href="tel:+917065572191" class="btn-secondary-hero">
-                📞 Call Mr. Farhan: 7065572191
+            <!-- 📞 Manager Phone Call -->
+            <a href="tel:+917985402962" class="btn-secondary-hero">
+                📞 Call Manager: 7985402962
             </a>
             <a href="index.html" class="btn-secondary-hero" style="background:#2563eb; border-color:#2563eb;">
                 🚀 Karkhana Portal Kholein
@@ -487,16 +572,16 @@
 
         <div class="stats-ribbon">
             <div class="stat-item">
-                <h4>1000+</h4>
-                <p>Karigers / Looms Capacity</p>
+                <h4>2000+</h4>
+                <p>Karigers Khata Capacity</p>
             </div>
             <div class="stat-item">
                 <h4>100%</h4>
-                <p>Theft & Loss Protected</p>
+                <p>Zari & Bana Safe</p>
             </div>
             <div class="stat-item">
-                <h4>1 April</h4>
-                <p>Auto Session Closing</p>
+                <h4>Minto Me</h4>
+                <p>1 April Naya Saal Transfer</p>
             </div>
             <div class="stat-item">
                 <h4>1-Sec</h4>
@@ -504,6 +589,26 @@
             </div>
         </div>
     </section>
+
+    <!-- 🥻 ULTRA HD BANARASI SAREE VISUAL SHOWCASE -->
+    <div class="saree-visual-container">
+        <div class="saree-visual-card">
+            <div class="saree-image-wrap">
+                <img src="https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=1200&q=80" alt="Authentic Banarasi Golden Zari Saree Weave">
+                <span class="saree-image-badge">✨ Banarasi Zari & Silk Craft</span>
+            </div>
+            <div class="saree-content-wrap">
+                <h3>Virasat Saree Ki, Hisab Digital</h3>
+                <p>Banarasi aur karkhane ki sadiyon purani virasat ke liye banaya gaya aasan portal. Loom se lekar finishing aur dukan tak, har ek saree aur wazan hamesha saaf aur mehfooz rahega.</p>
+                <div class="saree-tag-list">
+                    <span class="saree-tag">🧵 Tani & Kargha</span>
+                    <span class="saree-tag">🧶 Bana & Zari</span>
+                    <span class="saree-tag">✂️ Booti Cutting</span>
+                    <span class="saree-tag">🎛️ Calender</span>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- 3. PROBLEMS SOLVED FOR MANUFACTURERS -->
     <section class="container">
@@ -516,24 +621,24 @@
             <div class="problem-card">
                 <span class="icon">🧶</span>
                 <h4>Zari & Bana Ka Jhol</h4>
-                <p>Munshi diary me Less TP ya Topi ka wazan kat-kut kar deta hai. Karigar se tootan aur jhuth ka hisab na hone se mahine me kilon raw material bina hisab ke gayab ho jata hai.</p>
+                <p>Diary me Less TP ya Topi ka hisab saaf na hone se mahine me kilon raw material bina pata chale idhar-udhar ho jata hai.</p>
             </div>
             <div class="problem-card" style="border-top-color:#ea580c;">
                 <span class="icon">✂️</span>
                 <h4>Job Work me Saree Loss</h4>
-                <p>Karkhane se Booti Cutting gayi aur Calender gayi — raste me kitni saree kharab hui aur kitni gayab hui, iska koi pakka register na hone se malik ko seedha nuksan hota hai.</p>
+                <p>Karkhane se Booti Cutting aur Calender ke raste me kitni saree kharab hui ya gayab hui, iska koi pakka digital record nahi rehta.</p>
             </div>
             <div class="problem-card" style="border-top-color:#8b5cf6;">
                 <span class="icon">📖</span>
-                <h4>Munshi & Diary Par Nirbharta</h4>
-                <p>Agar munshi chhutti par chala jaye ya panna fat jaye, to pura hisab ruk jata hai. Gaddi ya dukan par baith kar malik ko 1000+ loom ka live stock kabhi pata nahi chalta.</p>
+                <h4>Diary & Panne Par Nirbharta</h4>
+                <p>Panna fatne ya purani diary kho jaane par hisab ruk jata hai. Maalik ko apne karkhane ka live stock mobile par nahi mil pata.</p>
             </div>
         </div>
 
         <!-- 4. WORKFLOW SHOWCASE (THE 6 MODULES) -->
         <div class="section-header">
             <h3>Simplicity ERP Ka Complete Digital Solution</h3>
-            <p>Zameen se juda software jo aapke karkhane ke har mod par maal aur paise ko 100% lock kar deta hai.</p>
+            <p>Aapke karkhane ke har mod par maal aur hisab ko aasan aur surakshit banane ka tarika.</p>
         </div>
 
         <div class="feature-grid">
@@ -559,7 +664,7 @@
                     <li>✔️ Godam-wise Multi-Karkhana Tabs</li>
                     <li>✔️ Sancha Item with Person Name & Search</li>
                     <li>✔️ Karigar Returning Maal Auto-Add (+)</li>
-                    <li>✔️ Stock Out Par Negative Alert Warning</li>
+                    <li>✔️ Negative Balance Alert Warning</li>
                 </ul>
             </div>
 
@@ -572,7 +677,7 @@
                     <li>✔️ Fresh Saree (Loom Weave Inward)</li>
                     <li>✔️ Finished Saree (Calender Se Tayyar)</li>
                     <li>✔️ Lott / Damage Saree Ka Alag Khata</li>
-                    <li>✔️ Passbook: Hara (Aayi) aur Laal (Main Gayi)</li>
+                    <li>✔️ Passbook: Aayi aur Gayi Ka Clear View</li>
                 </ul>
             </div>
 
@@ -580,12 +685,12 @@
             <div class="feature-card">
                 <span class="feature-badge" style="background:#fff1f2; color:#e11d48; border:1px solid #fecdd3;">MODULE 4</span>
                 <h4>✂️ Job Work Hub (Cutting & Calender)</h4>
-                <p>Batch Entry System jisme 50 karigar ka maal 1 single line me darj ho jata hai bina register bhare.</p>
+                <p>Batch Entry System jisme sabhi karigar ka maal 1 single line me darj ho jata hai bina register bhare.</p>
                 <ul class="feature-points">
-                    <li>✔️ Cutting: Sirf Main Godam Fresh Stock Se</li>
-                    <li>✔️ Calender: Fresh Ya Cutting Se Aayi Saree</li>
-                    <li>✔️ Live Register: Cutting Aayi, Calender Gayi</li>
-                    <li>✔️ Job Work Bills, Katuti & Payment Raseed</li>
+                    <li>✔️ Cutting: Fresh Stock Se Out</li>
+                    <li>✔️ Calender: Fresh Ya Cutting Se Saree Bhejo</li>
+                    <li>✔️ Live Movement Register</li>
+                    <li>✔️ Job Work Bills & Payment Raseed</li>
                 </ul>
             </div>
 
@@ -604,21 +709,21 @@
             <!-- MODULE 6 -->
             <div class="feature-card">
                 <span class="feature-badge" style="background:#f5f3ff; color:#7c3aed; border:1px solid #ddd6fe;">MODULE 6</span>
-                <h4>📅 1 April Year-End Closing (Naya Saal)</h4>
-                <p>Pura saal hamesha ke liye सुरक्षित (Locked). Naye saal me app bilkul halka aur fresh khulega.</p>
+                <h4>📅 1 April Naya Saal (Minto Me Transfer)</h4>
+                <p>2000 Kariger ka pichla bacha hisab naye saal me minton me transfer, naye sire se khata likhne ki koi zaroorat nahi.</p>
                 <ul class="feature-points">
-                    <li>✔️ Sabhi Godamo ka Bacha Maal ➔ Opening Stock</li>
+                    <li>✔️ Har Godam Ka Alag Bacha Maal ➔ Opening Stock</li>
                     <li>✔️ Karigar Closing ➔ Nayi Tani 1 Opening</li>
                     <li>✔️ Purane Saal me switch karke dekhne ki azaadi</li>
-                    <li>✔️ Top Opening Stock Box har module ke upar</li>
+                    <li>✔️ Naya saal bilkul fresh aur halka</li>
                 </ul>
             </div>
         </div>
 
         <!-- 5. HOW TO INSTALL / USE APP (PWA GUIDE) -->
         <div class="install-guide-box">
-            <h3>📱 Apne Mobile Me App Kaise Install Karein?</h3>
-            <p>Simplicity ERP ko chalane ke liye kisi heavy download ki zaroorat nahi hai. Google Chrome se 5 second me aapke phone par app install ho jata hai.</p>
+            <h3>📱 Apne Mobile Me App Kaise Chalayein?</h3>
+            <p>Simplicity ERP chalane ke liye kisi heavy download ki zaroorat nahi hai. Google Chrome se 5 second me aapke phone screen par app lag jata hai.</p>
 
             <div class="steps-flex">
                 <div class="step-card">
@@ -639,19 +744,23 @@
             </div>
         </div>
 
-        <!-- 6. FOUNDER BRANDING & DIRECT CONTACT -->
+        <!-- 6. RESPECTFUL CONTACT & MANAGER SUPPORT -->
         <div class="founder-box">
             <div class="founder-info">
-                <h4>Created with Pride by Farhan Jawed</h4>
-                <p>Saree & Textile Manufacturing Industry ke liye Bharat ka pehla ground-level Digital ERP Portal.</p>
-                <div class="location-tag">📍 Mau Nath Bhanjan, Uttar Pradesh (India)</div>
-                <div><span class="tag">👑 Trusted by Progressive Textile Manufacturers</span></div>
+                <h4>Simplicity ERP</h4>
+                <p>Saree Karkhana Bhaaiyon ke Kaam ko Aasan Banane ki Ek Chhoti si Koshish.</p>
+                <p style="font-size:13px; color:#475569; margin-top:8px;">
+                    <strong>Software Sahyog:</strong> Farhan Jawed &nbsp;|&nbsp; <strong>Karkhana Sahyog:</strong> Manager
+                </p>
+                <div><span class="tag">🤝 Dedicated Textile & Saree ERP Portal</span></div>
             </div>
             <div class="contact-action-group">
-                <a href="tel:+917065572191" class="btn-call-large">
-                    📞 Call Mr. Farhan: 7065572191
+                <!-- 📞 Manager Phone Call -->
+                <a href="tel:+917985402962" class="btn-call-large">
+                    📞 Call Manager: 7985402962
                 </a>
-                <a href="https://wa.me/917065572191?text=Hello%20Mr.%20Farhan,%20mujhe%20apne%20karkhane%20me%20Simplicity%20ERP%20lagwana%20hai." target="_blank" class="btn-whatsapp-large">
+                <!-- 💬 Manager WhatsApp -->
+                <a href="https://wa.me/917985402962?text=Hello%20Manager%20Sahab,%20mujhe%20apne%20karkhane%20me%20Simplicity%20ERP%20lagwana%20hai." target="_blank" class="btn-whatsapp-large">
                     💬 WhatsApp Chat
                 </a>
             </div>
@@ -660,7 +769,7 @@
 
     <!-- 7. FOOTER -->
     <footer class="footer">
-        <p>© 2026 <strong>Simplicity ERP</strong> • Crafted with pride by <span>Farhan Jawed</span> • Mau Nath Bhanjan (U.P.) • All Rights Reserved.</p>
+        <p>© 2026 <strong>Simplicity ERP</strong> • Software Sahyog: <span>Farhan Jawed</span> • All Rights Reserved.</p>
     </footer>
 
 </body>
