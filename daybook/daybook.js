@@ -1,10 +1,11 @@
 /* ========================================================
    SIMPLICITY ERP - ROZANA DAY-BOOK & DASHBOARD ENGINE
    File: daybook/daybook.js • Developed by Farhan Jawed
-   (Bana, Zari, Saree, Cash & Sancha Register + Double Badges + App Startup)
+   (Multi-Godam Daybook, Cash Transfer, Auto-Login & Badges)
 ======================================================== */
 
 var currentDayBookTab = "bana";
+var currentDashboardKarkhanaFilter = "all";
 var badgeCalculationTimer = null;
 
 function setElementText(id, v) {
@@ -23,7 +24,7 @@ function setT(id, v) {
 
 function setDashboardToday() {
     var dateInput = document.getElementById("dash-day-date");
-    if (dateInput) dateInput.value = getTodayDate();
+    if (dateInput) dateInput.value = (typeof getTodayDate === "function") ? getTodayDate() : new Date().toISOString().split("T")[0];
     renderDashboardDayBook();
 }
 
@@ -39,24 +40,82 @@ function switchDayBookTab(tab) {
     renderDashboardDayBook();
 }
 
-// 1. ROZANA DAY-BOOK RENDER ENGINE
+/**
+ * 0. Dashboard Karkhana Filter Tabs Generator
+ */
+function renderDashboardKarkhanaTabs() {
+    var bar = document.getElementById("dash-karkhana-tabs-bar");
+    if (!bar) return;
+    bar.innerHTML = "";
+
+    var karkhanas = [];
+    if (typeof getKarkhanasSafe === "function") {
+        karkhanas = getKarkhanasSafe();
+    } else {
+        karkhanas = safeArray(getStore("karkhana_list"));
+        if (!karkhanas.length) karkhanas = [{ id: "k_main", name: "Main Godown", isDefault: true }];
+    }
+
+    var allActive = (currentDashboardKarkhanaFilter === "all") ? " active" : "";
+    var html = "<div style='display:flex; gap:6px; flex-wrap:wrap; align-items:center; margin-bottom:12px;'>" +
+               "<button type='button' class='sheet-tab" + allActive + "' onclick='switchDashboardKarkhanaTab(\"all\")'>👥 Sabhi Karkhane</button>";
+
+    karkhanas.forEach(function(k) {
+        var isMain = (k.id === "k_main" || k.isDefault);
+        var icon = isMain ? "🏢 " : "🏭 ";
+        var isActive = (String(currentDashboardKarkhanaFilter) === String(k.id)) ? " active" : "";
+        html += "<button type='button' class='sheet-tab" + isActive + "' onclick='switchDashboardKarkhanaTab(\"" + k.id + "\")'>" + icon + k.name + "</button>";
+    });
+
+    html += "</div>";
+    bar.innerHTML = html;
+}
+
+function switchDashboardKarkhanaTab(kId) {
+    currentDashboardKarkhanaFilter = kId || "all";
+    renderDashboardKarkhanaTabs();
+    renderDashboardDayBook();
+    updateDashboardBadgeTotals();
+}
+
+/**
+ * 1. ROZANA DAY-BOOK RENDER ENGINE (Multi-Godam Aware)
+ */
 function renderDashboardDayBook() {
-    var d = (document.getElementById("dash-day-date") && document.getElementById("dash-day-date").value) || getTodayDate();
+    var d = (document.getElementById("dash-day-date") && document.getElementById("dash-day-date").value) || 
+            (typeof getTodayDate === "function" ? getTodayDate() : new Date().toISOString().split("T")[0]);
     var thead = document.getElementById("dash-daybook-thead");
     var tbody = document.getElementById("dash-daybook-tbody");
     var tfoot = document.getElementById("dash-daybook-tfoot");
     if (!thead || !tbody || !tfoot) return;
     tbody.innerHTML = "";
 
-    var bIn = 0, bOut = 0, zIn = 0, zOut = 0, pOut = 0;
+    var targetKid = currentDashboardKarkhanaFilter;
+    var isAll = (targetKid === "all");
+
+    var bIn = 0, bOut = 0, zIn = 0, zOut = 0, pIn = 0, pOut = 0;
     var bStock = safeArray(getStore("bana_stock"));
     var zStock = safeArray(getStore("zari_stock"));
 
-    bStock.forEach(function(b) { if (b && b.date === d) bIn += (Number(b.aaya) || 0); });
-    zStock.forEach(function(z) { if (z && z.date === d) zIn += (Number(z.aaya) || 0); });
+    bStock.forEach(function(b) { 
+        if (b && b.date === d) {
+            var matchK = isAll || (!b.karkhanaId && targetKid === "k_main") || (String(b.karkhanaId) === String(targetKid));
+            if (matchK) bIn += (Number(b.aaya) || 0);
+        }
+    });
+
+    zStock.forEach(function(z) { 
+        if (z && z.date === d) {
+            var matchK = isAll || (!z.karkhanaId && targetKid === "k_main") || (String(z.karkhanaId) === String(targetKid));
+            if (matchK) zIn += (Number(z.aaya) || 0);
+        }
+    });
 
     var karList = typeof sanitizeKarigerList === "function" ? sanitizeKarigerList() : safeArray(getStore("kariger_list"));
     karList.forEach(function(k) {
+        var matchK = isAll || (!k.karkhanaId && targetKid === "k_main") || (String(k.karkhanaId) === String(targetKid));
+        if (!matchK) return;
+
         var sheets = typeof getKarigerSheets === "function" ? getKarigerSheets(k.id) : [];
         sheets.forEach(function(sh) {
             safeArray(sh.rows).forEach(function(r) {
@@ -71,14 +130,42 @@ function renderDashboardDayBook() {
         });
     });
 
-    // 🔒 SAREE FILTER:
-    // 1. Inward (Aayi): Sirf factory kariger bunai saree aayegi (job work se tayyar aayi hui nahi).
-    // 2. Outward (Gayi): Factory se Calender ya Cutting par bheji gayi saree out mein dikhegi.
+    var transfers = safeArray(getStore("material_transfers")).filter(function(t) { return t && t.date === d; });
+    transfers.forEach(function(t) {
+        var qty = Number(t.qty || t.quantity || 0);
+        var isFrom = (!t.fromKarkhanaId && targetKid === "k_main") || (String(t.fromKarkhanaId) === String(targetKid));
+        var isTo = (!t.toKarkhanaId && targetKid === "k_main") || (String(t.toKarkhanaId) === String(targetKid));
+
+        if (t.type === "bana") {
+            if (!isAll && isFrom) bOut += qty;
+            if (!isAll && isTo) bIn += qty;
+        } else if (t.type === "zari") {
+            if (!isAll && isFrom) zOut += qty;
+            if (!isAll && isTo) zIn += qty;
+        }
+    });
+
+    var dbEntries = safeArray(getStore("daybook_entries")).filter(function(x) { return x && x.date === d; });
+    dbEntries.forEach(function(e) {
+        var matchK = isAll || (!e.karkhanaId && targetKid === "k_main") || (String(e.karkhanaId) === String(targetKid));
+        if (!matchK) return;
+
+        var amt = Number(e.amount || 0);
+        if (e.type === "receipt") {
+            pIn += amt;
+        } else if (e.type === "payment" && !e.karigerId) {
+            pOut += amt;
+        }
+    });
+
     var rawSareeHistory = safeArray(getStore("saree_history"));
     var sH = [];
 
     rawSareeHistory.forEach(function(h) {
         if (!h || h.date !== d) return;
+
+        var matchK = isAll || (!h.karkhanaId && targetKid === "k_main") || (String(h.karkhanaId) === String(targetKid));
+        if (!matchK) return;
 
         var ref = String(h.refId || "");
         var isJobWork = (ref.indexOf("jwb_") === 0);
@@ -86,14 +173,11 @@ function renderDashboardDayBook() {
         var inQ = Number(h.aai !== undefined ? h.aai : (h.pcs || 0));
         var outQ = Number(h.gai || 0);
 
-        // Agar Job Work se WAPAS AAYI hui saree hai ya Dukan transfer hai toh Daybook me nahi aayegi
         if (isDukan) return;
-        if (isJobWork && inQ > 0) return; // Wapas aayi hui entry Daybook me block
+        if (isJobWork && inQ > 0) return;
 
-        // Agar Job Work ke liye GAYI (OUT) hui hai:
         if (isJobWork && outQ > 0) {
             var workerLabel = h.note || h.typeLabel || "Job Work";
-            // Check Calender ya Cutting
             var isCal = (String(h.typeLabel || "").toLowerCase().indexOf("calender") !== -1);
             var cleanLabel = isCal ? "Calender me hai (" + workerLabel.replace(" ko bheja", "") + ")" 
                                    : "Cutting me hai (" + workerLabel.replace(" ko bheja", "") + ")";
@@ -108,17 +192,14 @@ function renderDashboardDayBook() {
             return;
         }
 
-        // Factory Normal Fresh Bunai Saree (IN)
-        if (!isJobWork && (h.type === "fresh" || !h.type)) {
-            if (inQ > 0 || outQ > 0) {
-                sH.push({
-                    sareeName: h.sareeName || h.name || "Saree",
-                    karigerName: h.karigerName || h.kariger || "-",
-                    aai: inQ,
-                    gai: outQ,
-                    detail: h.typeLabel || h.note || "Fresh Saree Bunai"
-                });
-            }
+        if (inQ > 0 || outQ > 0) {
+            sH.push({
+                sareeName: h.sareeName || h.name || "Saree",
+                karigerName: h.karigerName || h.kariger || "-",
+                aai: inQ,
+                gai: outQ,
+                detail: h.typeLabel || h.note || "Fresh Saree Movement"
+            });
         }
     });
 
@@ -128,10 +209,11 @@ function renderDashboardDayBook() {
         sOut += Number(h.gai || 0);
     });
 
-    // Sancha (Tani & Chukka) Daybook Calculation
     var sanchaHist = safeArray(getStore("sancha_history")).filter(function(h) {
-        return h && h.date === d;
+        if (!h || h.date !== d) return false;
+        return isAll || (!h.karkhanaId && targetKid === "k_main") || (String(h.karkhanaId) === String(targetKid));
     });
+
     var sanchaIn = 0, sanchaOut = 0;
     sanchaHist.forEach(function(h) {
         sanchaIn += (Number(h.aaya || 0));
@@ -141,19 +223,24 @@ function renderDashboardDayBook() {
     setElementText("sub-day-bana", "In: +" + bIn.toFixed(1) + " | Out: -" + bOut.toFixed(1));
     setElementText("sub-day-zari", "In: +" + zIn.toFixed(1) + " | Out: -" + zOut.toFixed(1));
     setElementText("sub-day-saree", "In: +" + sIn + " | Out: -" + sOut);
-    setElementText("sub-day-payment", "Diya: ₹ " + pOut.toFixed(0));
+    setElementText("sub-day-payment", (pIn > 0 ? ("In: +₹" + pIn.toFixed(0) + " | ") : "") + "Diya: ₹" + pOut.toFixed(0));
     setElementText("sub-day-sancha", "In: +" + sanchaIn.toFixed(1) + " | Out: -" + sanchaOut.toFixed(1));
 
     // TAB 1: BANA
     if (currentDayBookTab === "bana") {
-        thead.innerHTML = "<tr style='background:#059669; color:white;'><th>Bana Ka Naam</th><th>Kariger / Vivran</th><th>📥 Aaya (In)</th><th>📤 Gaya (Out)</th></tr>";
+        thead.innerHTML = "<tr style='background:#059669; color:white;'><th>Bana Ka Naam</th><th>Kariger / Godam Vivran</th><th>📥 Aaya (In)</th><th>📤 Gaya (Out)</th></tr>";
         var bRows = [];
         bStock.forEach(function(b) {
-            if (b && b.date === d && Number(b.aaya) > 0) {
+            var matchK = isAll || (!b.karkhanaId && targetKid === "k_main") || (String(b.karkhanaId) === String(targetKid));
+            if (b && b.date === d && matchK && Number(b.aaya) > 0) {
                 bRows.push({ name: b.name, desc: b.isOpening ? "📦 Opening Stock" : "Godam Purchase", inQty: Number(b.aaya), outQty: 0 });
             }
         });
+
         karList.forEach(function(k) {
+            var matchK = isAll || (!k.karkhanaId && targetKid === "k_main") || (String(k.karkhanaId) === String(targetKid));
+            if (!matchK) return;
+
             (typeof getKarigerSheets === "function" ? getKarigerSheets(k.id) : []).forEach(function(sh) {
                 safeArray(sh.rows).forEach(function(r) {
                     if (r && r.date === d) {
@@ -163,6 +250,23 @@ function renderDashboardDayBook() {
                     }
                 });
             });
+        });
+
+        transfers.filter(function(t) { return t.type === "bana"; }).forEach(function(t) {
+            var q = Number(t.qty || t.quantity || 0);
+            var fName = (typeof getKarkhanaNameById === "function") ? getKarkhanaNameById(t.fromKarkhanaId) : t.fromKarkhanaId;
+            var tName = (typeof getKarkhanaNameById === "function") ? getKarkhanaNameById(t.toKarkhanaId) : t.toKarkhanaId;
+
+            if (isAll) {
+                bRows.push({ name: t.itemName, desc: "Transfer: " + fName + " ➔ " + tName, inQty: q, outQty: q });
+            } else {
+                if (String(t.fromKarkhanaId) === String(targetKid) || (!t.fromKarkhanaId && targetKid === "k_main")) {
+                    bRows.push({ name: t.itemName, desc: "Transfer Out ➔ " + tName, inQty: 0, outQty: q });
+                }
+                if (String(t.toKarkhanaId) === String(targetKid) || (!t.toKarkhanaId && targetKid === "k_main")) {
+                    bRows.push({ name: t.itemName, desc: "Transfer In ⬅ " + fName, inQty: q, outQty: 0 });
+                }
+            }
         });
 
         if (!bRows.length) {
@@ -178,14 +282,19 @@ function renderDashboardDayBook() {
 
     // TAB 2: ZARI
     } else if (currentDayBookTab === "zari") {
-        thead.innerHTML = "<tr style='background:#ea580c; color:white;'><th>Zari Ka Naam</th><th>Kariger / Vivran</th><th>📥 Aayi (In)</th><th>📤 Gayi (Out)</th></tr>";
+        thead.innerHTML = "<tr style='background:#ea580c; color:white;'><th>Zari Ka Naam</th><th>Kariger / Godam Vivran</th><th>📥 Aayi (In)</th><th>📤 Gayi (Out)</th></tr>";
         var zRows = [];
         zStock.forEach(function(z) {
-            if (z && z.date === d && Number(z.aaya) > 0) {
+            var matchK = isAll || (!z.karkhanaId && targetKid === "k_main") || (String(z.karkhanaId) === String(targetKid));
+            if (z && z.date === d && matchK && Number(z.aaya) > 0) {
                 zRows.push({ name: z.name, desc: z.isOpening ? "📦 Opening Stock" : "Godam Purchase", inQty: Number(z.aaya), outQty: 0 });
             }
         });
+
         karList.forEach(function(k) {
+            var matchK = isAll || (!k.karkhanaId && targetKid === "k_main") || (String(k.karkhanaId) === String(targetKid));
+            if (!matchK) return;
+
             (typeof getKarigerSheets === "function" ? getKarigerSheets(k.id) : []).forEach(function(sh) {
                 safeArray(sh.rows).forEach(function(r) {
                     if (r && r.date === d) {
@@ -195,6 +304,23 @@ function renderDashboardDayBook() {
                     }
                 });
             });
+        });
+
+        transfers.filter(function(t) { return t.type === "zari"; }).forEach(function(t) {
+            var q = Number(t.qty || t.quantity || 0);
+            var fName = (typeof getKarkhanaNameById === "function") ? getKarkhanaNameById(t.fromKarkhanaId) : t.fromKarkhanaId;
+            var tName = (typeof getKarkhanaNameById === "function") ? getKarkhanaNameById(t.toKarkhanaId) : t.toKarkhanaId;
+
+            if (isAll) {
+                zRows.push({ name: t.itemName, desc: "Transfer: " + fName + " ➔ " + tName, inQty: q, outQty: q });
+            } else {
+                if (String(t.fromKarkhanaId) === String(targetKid) || (!t.fromKarkhanaId && targetKid === "k_main")) {
+                    zRows.push({ name: t.itemName, desc: "Transfer Out ➔ " + tName, inQty: 0, outQty: q });
+                }
+                if (String(t.toKarkhanaId) === String(targetKid) || (!t.toKarkhanaId && targetKid === "k_main")) {
+                    zRows.push({ name: t.itemName, desc: "Transfer In ⬅ " + fName, inQty: q, outQty: 0 });
+                }
+            }
         });
 
         if (!zRows.length) {
@@ -208,7 +334,7 @@ function renderDashboardDayBook() {
         }
         tfoot.innerHTML = "<tr><td colspan='2'><strong>Total Rozana Zari:</strong></td><td><strong style='color:#059669;'>+" + zIn.toFixed(2) + "</strong></td><td><strong style='color:#dc2626;'>-" + zOut.toFixed(2) + "</strong></td></tr>";
 
-    // TAB 3: SAREE (FACTORY BUNAI + JOB WORK OUT)
+    // TAB 3: SAREE
     } else if (currentDayBookTab === "saree") {
         thead.innerHTML = "<tr style='background:#2563eb; color:white;'><th>Saree Ka Naam</th><th>Kariger / Vivran</th><th>📥 Aayi (In)</th><th>📤 Gayi (Out)</th><th>Detail</th></tr>";
         if (!sH.length) {
@@ -230,30 +356,51 @@ function renderDashboardDayBook() {
         }
         tfoot.innerHTML = "<tr><td colspan='2'><strong>Kul Saree:</strong></td><td><strong style='color:#059669;'>+" + sIn + " Pcs</strong></td><td><strong style='color:#dc2626;'>-" + sOut + " Pcs</strong></td><td>-</td></tr>";
 
-    // TAB 4: PAYMENT
+    // TAB 4: PAYMENT & CASH TRANSFER
     } else if (currentDayBookTab === "payment") {
-        thead.innerHTML = "<tr style='background:#7c3aed; color:white;'><th>Kariger</th><th>Tani / Vivran</th><th>📤 Bhugtan Diya</th></tr>";
+        thead.innerHTML = "<tr style='background:#7c3aed; color:white;'><th>Party / Kariger</th><th>Vivran / Khata</th><th>📥 Aamad (In)</th><th>📤 Diya (Out)</th></tr>";
         var pRows = [];
+
         karList.forEach(function(k) {
+            var matchK = isAll || (!k.karkhanaId && targetKid === "k_main") || (String(k.karkhanaId) === String(targetKid));
+            if (!matchK) return;
+
             (typeof getKarigerSheets === "function" ? getKarigerSheets(k.id) : []).forEach(function(sh) {
                 safeArray(sh.rows).forEach(function(r) {
                     if (r && r.date === d && Number(r.paid) > 0) {
-                        pRows.push({ kariger: k.name, tani: sh.title, amount: Number(r.paid) });
+                        pRows.push({ party: k.name, desc: "Mazdoori (" + sh.title + ")", inAmt: 0, outAmt: Number(r.paid) });
                     }
                 });
             });
         });
 
+        dbEntries.forEach(function(e) {
+            var matchK = isAll || (!e.karkhanaId && targetKid === "k_main") || (String(e.karkhanaId) === String(targetKid));
+            if (!matchK || e.karigerId) return;
+
+            var amt = Number(e.amount || 0);
+            if (e.type === "receipt") {
+                pRows.push({ party: e.party || "Cash Inward", desc: e.remarks || e.category, inAmt: amt, outAmt: 0 });
+            } else {
+                pRows.push({ party: e.party || "Cash Payment", desc: e.remarks || e.category, inAmt: 0, outAmt: amt });
+            }
+        });
+
         if (!pRows.length) {
-            tbody.innerHTML = "<tr><td colspan='3' style='text-align:center; padding:15px; color:#888;'>Is tarikh me koi payment nahi di gayi.</td></tr>";
+            tbody.innerHTML = "<tr><td colspan='4' style='text-align:center; padding:15px; color:#888;'>Is tarikh me koi payment ya cash transfer nahi hua.</td></tr>";
         } else {
             var pBuf = "";
             pRows.forEach(function(dp) {
-                pBuf += "<tr><td><strong>" + dp.kariger + "</strong></td><td>" + dp.tani + "</td><td style='color:#dc2626; font-weight:700;'>- ₹ " + dp.amount.toFixed(2) + "</td></tr>";
+                pBuf += "<tr>" +
+                    "<td><strong>" + dp.party + "</strong></td>" +
+                    "<td>" + dp.desc + "</td>" +
+                    "<td style='color:#059669; font-weight:700;'>" + (dp.inAmt > 0 ? ("+ ₹ " + dp.inAmt.toFixed(2)) : "-") + "</td>" +
+                    "<td style='color:#dc2626; font-weight:700;'>" + (dp.outAmt > 0 ? ("- ₹ " + dp.outAmt.toFixed(2)) : "-") + "</td>" +
+                "</tr>";
             });
             tbody.innerHTML = pBuf;
         }
-        tfoot.innerHTML = "<tr><td colspan='2'><strong>Total Rozana Bhugtan:</strong></td><td><strong style='color:#dc2626;'>- ₹ " + pOut.toFixed(2) + "</strong></td></tr>";
+        tfoot.innerHTML = "<tr><td colspan='2'><strong>Total Rozana Cash Movement:</strong></td><td><strong style='color:#059669;'>+ ₹ " + pIn.toFixed(2) + "</strong></td><td><strong style='color:#dc2626;'>- ₹ " + pOut.toFixed(2) + "</strong></td></tr>";
 
     // TAB 5: SANCHA (TANI & CHUKKA REGISTER)
     } else if (currentDayBookTab === "sancha") {
@@ -279,14 +426,30 @@ function renderDashboardDayBook() {
     }
 }
 
-// 2. DASHBOARD TOTAL BADGES ENGINE
+/**
+ * 2. DASHBOARD TOTAL BADGES ENGINE
+ */
 function updateDashboardBadgeTotals() {
+    var targetKid = currentDashboardKarkhanaFilter;
+    var isAll = (targetKid === "all");
+
     var karList = typeof sanitizeKarigerList === "function" ? sanitizeKarigerList() : safeArray(getStore("kariger_list"));
+    if (!isAll) {
+        karList = karList.filter(function(k) {
+            return String(k.karkhanaId) === String(targetKid) || (!k.karkhanaId && targetKid === "k_main");
+        });
+    }
+
     setElementText("btn-total-kariger", "Total: " + karList.length);
     setElementText("btn-total-info", "Total: " + safeArray(getStore("info_ledger")).length);
 
     var ts = 0;
-    var sH = safeArray(getStore("saree_history")).filter(function(x) { return (x.type || "fresh") === "fresh"; });
+    var sH = safeArray(getStore("saree_history")).filter(function(x) { 
+        var isFresh = (x.type || "fresh") === "fresh";
+        var matchK = isAll || (!x.karkhanaId && targetKid === "k_main") || (String(x.karkhanaId) === String(targetKid));
+        return isFresh && matchK;
+    });
+
     if (sH.length) {
         sH.forEach(function(s) { 
             var inQ = Number(s.aai !== undefined ? s.aai : (s.pcs || 0));
@@ -299,33 +462,38 @@ function updateDashboardBadgeTotals() {
     if (badgeCalculationTimer) clearTimeout(badgeCalculationTimer);
 
     badgeCalculationTimer = setTimeout(function() {
-        // 1. Bana Bacha
         var tb = 0, seenBana = [];
         safeArray(getStore("bana_stock")).forEach(function(b) {
             if (b && b.name) {
                 var nLow = b.name.trim().toLowerCase();
                 if (seenBana.indexOf(nLow) === -1) {
                     seenBana.push(nLow);
-                    try { tb += Number(getBanaItemStats(b.name, "k_main").bacha || 0); } catch(e) { tb += Number(b.bacha || 0); }
+                    try { 
+                        tb += Number(getBanaItemStats(b.name, targetKid).bacha || 0); 
+                    } catch(e) { 
+                        tb += Number(b.bacha || 0); 
+                    }
                 }
             }
         });
         setElementText("btn-total-bana", "Bacha: " + tb.toFixed(2) + " Kg");
 
-        // 2. Zari Bacha
         var tz = 0, seenZari = [];
         safeArray(getStore("zari_stock")).forEach(function(z) {
             if (z && z.name) {
                 var nLow = z.name.trim().toLowerCase();
                 if (seenZari.indexOf(nLow) === -1) {
                     seenZari.push(nLow);
-                    try { tz += Number(getZariItemStats(z.name, "k_main").bacha || 0); } catch(e) { tz += Number(z.bacha || 0); }
+                    try { 
+                        tz += Number(getZariItemStats(z.name, targetKid).bacha || 0); 
+                    } catch(e) { 
+                        tz += Number(z.bacha || 0); 
+                    }
                 }
             }
         });
         setElementText("btn-total-zari", "Bacha: " + tz.toFixed(2) + " Kg");
 
-        // 3. Payment Badge
         var totalBakiAll = 0;
         var totalDiyaAll = 0;
         karList.forEach(function(k) {
@@ -344,10 +512,12 @@ function updateDashboardBadgeTotals() {
         });
         setElementHTML("btn-total-payment", "<span style='color:#059669; font-weight:bold;'>Diya: ₹ " + totalDiyaAll.toFixed(0) + "</span> • <span style='color:#dc2626; font-weight:bold;'>Baki: ₹ " + totalBakiAll.toFixed(0) + "</span>");
 
-        // 4. Sancha Badge
         var totTani = 0, totChukka = 0;
         safeArray(getStore("sancha_items")).forEach(function(s) {
             if (!s) return;
+            var matchK = isAll || (!s.karkhanaId && targetKid === "k_main") || (String(s.karkhanaId) === String(targetKid));
+            if (!matchK) return;
+
             var cat = (s.category || "tani").toLowerCase();
             var bacha = Number(s.bacha !== undefined ? s.bacha : (s.aaya || 0));
             if (cat === "chukka") {
@@ -368,13 +538,22 @@ function hideAllSections() {
         "zari-section", "saree-section", "payment-section", "sancha-section",
         "jobwork-section"
     ].forEach(function(id) {
-        setDisplay(id, "none");
+        if (typeof setDisplay === "function") setDisplay(id, "none");
+        else {
+            var el = document.getElementById(id);
+            if (el) el.style.display = "none";
+        }
     });
 }
 
 function backToDashboard() {
     hideAllSections();
-    setDisplay("dashboard-view", "block");
+    if (typeof setDisplay === "function") setDisplay("dashboard-view", "block");
+    else {
+        var el = document.getElementById("dashboard-view");
+        if (el) el.style.display = "block";
+    }
+    renderDashboardKarkhanaTabs();
     if (typeof populateSessionDropdown === "function") populateSessionDropdown();
     renderDashboardDayBook();
     updateDashboardBadgeTotals();
@@ -383,6 +562,7 @@ function backToDashboard() {
 function triggerActiveSectionRefresh() {
     var cur = getCurrentActiveSection();
     if (cur === "dashboard-view") {
+        renderDashboardKarkhanaTabs();
         renderDashboardDayBook();
         updateDashboardBadgeTotals();
     } else if (cur === "kariger-section" && typeof renderKarigerTable === "function") {
@@ -395,6 +575,8 @@ function triggerActiveSectionRefresh() {
         renderSareeTable();
     } else if (cur === "payment-section" && typeof renderPaymentTable === "function") {
         renderPaymentTable();
+    } else if (cur === "sancha-section" && typeof renderSanchaTable === "function") {
+        renderSanchaTable();
     }
 }
 
@@ -415,35 +597,20 @@ function getCurrentActiveSection() {
 // 4. APP INIT & STARTUP ENGINE
 function initApp() {
     var dEl = document.getElementById("dash-day-date");
-    if (dEl) dEl.value = getTodayDate();
+    if (dEl) dEl.value = (typeof getTodayDate === "function") ? getTodayDate() : new Date().toISOString().split("T")[0];
+    renderDashboardKarkhanaTabs();
     if (typeof populateSessionDropdown === "function") populateSessionDropdown();
     renderDashboardDayBook();
     updateDashboardBadgeTotals();
     if (typeof syncUsersWithFirebase === "function") syncUsersWithFirebase();
 }
 
-// 5. LOGIN & STARTUP LISTENERS
+/**
+ * 🌟 5. REFRESH-PROOF STARTUP LISTENER (Auto-Login Activated)
+ */
 window.onload = function() {
-    if (typeof clearMemoryCache === "function") clearMemoryCache();
-    currentUserId = null;
-    currentUserRole = null;
-    activeKarigerId = null;
-    activeSheetId = null;
-
-    if (typeof setDisplay === "function") {
-        setDisplay("login-wrapper", "flex");
-        setDisplay("desktop-screen", "none");
-    }
-    if (typeof showLogin === "function") showLogin();
-
     var idInp = document.getElementById("login-id");
     var passInp = document.getElementById("login-pass");
-    if (idInp) idInp.value = "";
-    if (passInp) passInp.value = "";
-
-    var errMsg = document.getElementById("login-error");
-    if (errMsg) errMsg.style.display = "none";
-
     if (idInp) {
         idInp.addEventListener("keypress", function(e) {
             if (e.key === "Enter" && typeof handleLogin === "function") handleLogin();
@@ -456,4 +623,11 @@ window.onload = function() {
     }
 
     if (typeof syncUsersWithFirebase === "function") syncUsersWithFirebase();
+
+    // ⭐ AUTO-LOGIN CHECK: Agar pehle se login hain to dashboard par rakho, logout mat karo!
+    if (typeof checkAutoLogin === "function") {
+        checkAutoLogin();
+    } else {
+        if (typeof showLogin === "function") showLogin();
+    }
 };
