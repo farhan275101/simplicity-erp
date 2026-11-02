@@ -1,7 +1,7 @@
 /* ========================================================
    SIMPLICITY ERP - FINANCIAL YEAR SESSION CONTROLLER
    File: session/session.js • Developed by Farhan Jawed
-   (Guidance Checklist + Auto Session Align + Cloud Delete)
+   (2000+ Kariger Safe Wipe • Zero-Freeze Session Delete)
 ======================================================== */
 
 function getEffectiveUserId() {
@@ -74,19 +74,16 @@ function switchAppFinancialSession(targetSession) {
     var cleanTarget = String(targetSession).replace(/['"]+/g, '').trim();
     var uId = getEffectiveUserId();
 
-    // 1. LocalStorage & Memory
     localStorage.setItem(uId + "_app_active_session", cleanTarget);
     if (typeof APP_MEMORY_CACHE !== "undefined") {
         APP_MEMORY_CACHE[uId + "_app_active_session"] = cleanTarget;
     }
     if (typeof idbPut === "function") idbPut(uId + "_app_active_session", cleanTarget);
 
-    // 2. 🚨 FIREBASE AUTO SESSION SYNC (Dono Device Par Same Saal Khulega)
     if (typeof db !== "undefined" && db && uId && uId !== "app") {
         try { db.ref("users/" + uId + "/app_active_session").set(cleanTarget); } catch(e) {}
     }
 
-    // 3. Clear Cache & Refresh
     if (typeof clearMemoryCache === "function") clearMemoryCache();
     if (typeof APP_MEMORY_CACHE !== "undefined") {
         APP_MEMORY_CACHE[uId + "_app_active_session"] = cleanTarget;
@@ -125,7 +122,6 @@ function openSessionClosingModal() {
         }
     }
 
-    // 📋 GUIDANCE CHECKLIST CARD (Karkhana Malik Ke Samne Saaf Badlaav)
     var checklistBox = document.getElementById("session-closing-guidelines-box");
     if (!checklistBox && newInp && newInp.parentNode) {
         checklistBox = document.createElement("div");
@@ -146,7 +142,6 @@ function openSessionClosingModal() {
             "</div>";
     }
 
-    // Populate Delete Session Dropdown
     var delSel = document.getElementById("session-delete-select");
     if (delSel) {
         delSel.innerHTML = "<option value=''>-- Chunein --</option>";
@@ -164,7 +159,9 @@ function closeSessionClosingModal() {
     if (modal) modal.style.display = "none";
 }
 
-// ================= DELETE SESSION WITH AUTHENTICATION & CLOUD WIPE =================
+/**
+ * 🌟 ZERO-CRASH SESSION DELETE ENGINE (2000+ Kariger Safe)
+ */
 function confirmAndDeleteSessionWithAuth() {
     var delSel = document.getElementById("session-delete-select");
     var targetSess = delSel ? delSel.value : "";
@@ -195,11 +192,32 @@ function confirmAndDeleteSessionWithAuth() {
     }
 
     var uId = getEffectiveUserId();
+
+    // 🔒 1. Cloud Listener Mute (Taaki delete ke waqt 2000 events se browser crash na ho)
+    if (typeof db !== "undefined" && db && uId && uId !== "app") {
+        try { db.ref("users/" + uId).off(); } catch(e) {}
+    }
+
+    // 2. Target Session ke Karigers aur Workers ki list nikal lo (Sheets saaf karne ke liye)
+    var karigerListKey = uId + "_" + targetSess + "_kariger_list";
+    var jwListKey = uId + "_" + targetSess + "_jobwork_workers";
+    
+    var oldKarigers = (typeof APP_MEMORY_CACHE !== "undefined" && APP_MEMORY_CACHE[karigerListKey]) || [];
+    if (!oldKarigers.length) {
+        try { oldKarigers = JSON.parse(localStorage.getItem(karigerListKey) || "[]"); } catch(e) {}
+    }
+
+    var oldWorkers = (typeof APP_MEMORY_CACHE !== "undefined" && APP_MEMORY_CACHE[jwListKey]) || [];
+    if (!oldWorkers.length) {
+        try { oldWorkers = JSON.parse(localStorage.getItem(jwListKey) || "[]"); } catch(e) {}
+    }
+
+    // 3. Session list update
     sessions = sessions.filter(function(s) { return s !== targetSess; });
     localStorage.setItem(uId + "_app_sessions_list", JSON.stringify(sessions));
     if (typeof idbPut === "function") idbPut(uId + "_app_sessions_list", sessions);
 
-    // 1. LocalStorage & Memory Se Delete
+    // 4. LocalStorage & Memory Clean
     var prefix = uId + "_" + targetSess + "_";
     var keysToRemove = [];
     for (var i = 0; i < localStorage.length; i++) {
@@ -214,24 +232,64 @@ function confirmAndDeleteSessionWithAuth() {
         }
     }
 
-    // 2. 🚨 FIREBASE CLOUD SE BHI PERMANENT REMOVE
+    // 5. ⭐ IndexedDB Clean (Without loading in RAM - Cursor engine)
+    if (typeof openEnterpriseIndexedDB === "function") {
+        openEnterpriseIndexedDB(function(dbase) {
+            if (!dbase) return;
+            try {
+                var tx = dbase.transaction("app_store", "readwrite");
+                var store = tx.objectStore("app_store");
+                var req = store.openCursor();
+                req.onsuccess = function(e) {
+                    var cursor = e.target.result;
+                    if (cursor) {
+                        if (String(cursor.key).indexOf(prefix) === 0) {
+                            cursor.delete();
+                        }
+                        cursor.continue();
+                    }
+                };
+            } catch(e) {}
+        });
+    }
+
+    // 6. ⭐ SAFE CLOUD WIPE (Standard Keys + 2000 Kariger Sheets Safe Deletion)
     if (typeof db !== "undefined" && db && uId && uId !== "app") {
         try {
             db.ref("users/" + uId + "/app_sessions_list").set(sessions);
-            db.ref("users/" + uId).once("value", function(snap) {
-                var val = snap.val();
-                if (val) {
-                    for (var rk in val) {
-                        if (rk.indexOf(targetSess + "_") === 0) {
-                            db.ref("users/" + uId + "/" + rk).remove();
-                        }
-                    }
-                }
+            
+            // Standard session keys delete
+            var standardKeys = [
+                "kariger_list", "saree_history", "bana_stock", "bana_history",
+                "zari_stock", "zari_history", "sancha_items", "sancha_history",
+                "jobwork_workers", "jw_bills_list", "jw_payments_list", "dukan_transfer_history"
+            ];
+
+            var deleteBatch = {};
+            standardKeys.forEach(function(sk) {
+                deleteBatch[targetSess + "_" + sk] = null;
             });
+
+            // 🧵 2000 Kariger Sheets ko bhi null mark karo (Taaki cloud par kachra na bache)
+            if (Array.isArray(oldKarigers)) {
+                oldKarigers.forEach(function(k) {
+                    if (k && k.id) deleteBatch[targetSess + "_kariger_sheets_" + k.id] = null;
+                });
+            }
+
+            if (Array.isArray(oldWorkers)) {
+                oldWorkers.forEach(function(w) {
+                    if (w && w.id) deleteBatch[targetSess + "_jobwork_sheets_" + w.id] = null;
+                });
+            }
+
+            // Cloud wipe execute
+            db.ref("users/" + uId).update(deleteBatch);
+
         } catch(e) {}
     }
 
-    // 3. Fallback Active Session
+    // 7. Fallback Active Session Align
     var cur = getActiveFinancialSession();
     if (cur === targetSess) {
         var nextActive = sessions[sessions.length - 1];
@@ -246,8 +304,14 @@ function confirmAndDeleteSessionWithAuth() {
 
     closeSessionClosingModal();
     populateSessionDropdown();
+
+    // Re-attach live listener
+    if (typeof initFirebaseLiveListeners === "function") {
+        initFirebaseLiveListeners();
+    }
+
     if (typeof backToDashboard === "function") backToDashboard();
-    alert("✅ Session '" + targetSess + "' safalata-poorvak delete ho gaya!");
+    alert("✅ Session '" + targetSess + "' aur uske sabhi kariger accounts bina kisi crash ke safalata-poorvak delete ho gaye!");
 }
 
 document.addEventListener("DOMContentLoaded", function() {
