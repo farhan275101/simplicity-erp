@@ -1,115 +1,91 @@
 /* ========================================================
-   SIMPLICITY ERP - ENTERPRISE ADMIN CONTROL & APPROVAL ENGINE
+   SIMPLICITY ERP - LIVE ADMIN CONTROL & REALTIME USER APPROVAL
    File: admin/admin.js • Developed by Farhan Jawed
-   (Live Cloud Sync + Top Approval Banner + Master Protection)
 ======================================================== */
 
-var fbUsersListenerAttached = false;
+// Global registry
+window.adminUsersData = [];
 
-// 👑 ADMIN PANEL OPEN (Live Cloud Realtime Listener)
+// 👑 1. ADMIN PANEL OPEN (Direct Realtime Connection)
 function openAdminModule() {
     var uid = (typeof currentUserId !== "undefined" ? String(currentUserId).trim().toLowerCase() : "");
     var role = (typeof currentUserRole !== "undefined" ? String(currentUserRole).trim().toLowerCase() : "");
 
-    // Master Admin 'farhan' ya role 'admin' dono access kar sakte hain
+    // Farhan Master Admin hamesha allowed hai
     if (role !== "admin" && uid !== "farhan") {
-        return alert("⛔ Security Alert: Sirf Master Admin (Farhan) is panel ko access kar sakte hain!");
+        return alert("⛔ Sirf Master Admin (Farhan) is panel ko access kar sakte hain!");
     }
 
     if (typeof hideAllSections === "function") hideAllSections();
     setDisplay("admin-section", "block");
 
-    // 1. Local Cache se turant render karo taaki screen blank na dikhe
+    // Pehle jo local hai wo dikhao
     renderAdminUsersTable();
 
-    // 2. Firebase Cloud Se Live Realtime Connection (.on listener)
-    if (typeof db !== "undefined" && db && !fbUsersListenerAttached) {
-        fbUsersListenerAttached = true;
-        db.ref("app_users").on("value", function(snap) {
-            var v = snap.val();
-            var arr = [];
+    // Firebase Cloud se LIVE sync karo
+    fetchAndListenAdminUsers();
+}
 
-            if (Array.isArray(v)) {
-                arr = v.filter(Boolean);
-            } else if (v && typeof v === "object") {
-                for (var k in v) { 
-                    if (v[k] && typeof v[k] === "object") {
-                        var uItem = v[k];
-                        if (!uItem.id) uItem.id = k;
-                        arr.push(uItem);
-                    }
+// 🌐 2. FIREBASE REALTIME LISTENER (Live Streaming)
+function fetchAndListenAdminUsers() {
+    if (typeof db === "undefined" || !db) return;
+
+    db.ref("app_users").on("value", function(snap) {
+        var v = snap.val();
+        var arr = [];
+
+        if (v && typeof v === "object") {
+            for (var key in v) {
+                if (v[key] && typeof v[key] === "object") {
+                    var userObj = v[key];
+                    if (!userObj.id) userObj.id = key;
+                    arr.push(userObj);
                 }
             }
+        }
 
-            // Master Admin 'farhan' ko hamesha list me barkarar rakho
-            if (!arr.some(function(u) { return String(u.id).toLowerCase() === "farhan"; })) {
-                arr.push({ 
-                    id: "farhan", 
-                    name: "Farhan jawed", 
-                    mobile: "7065572191",
-                    pass: "97438090641154", 
-                    role: "admin", 
-                    status: "active", 
-                    date: "2026-01-01" 
-                });
-            }
+        // Farhan ko hamesha barkarar rakho
+        if (!arr.some(function(u) { return String(u.id).toLowerCase() === "farhan"; })) {
+            arr.push({
+                id: "farhan",
+                name: "Farhan jawed",
+                mobile: "7065572191",
+                pass: "97438090641154",
+                role: "admin",
+                status: "active",
+                date: "2026-01-01"
+            });
+        }
 
-            commitAdminUsersRegistry(arr);
-            renderAdminUsersTable();
-        });
-    }
-}
+        window.adminUsersData = arr;
 
-// 📦 MULTI-TIER SAVE (Har storage me save karega taaki mismatch na ho)
-function commitAdminUsersRegistry(users) {
-    var uid = (typeof currentUserId !== "undefined" ? String(currentUserId).trim().toLowerCase() : "farhan");
-
-    try {
-        localStorage.setItem("app_users", JSON.stringify(users));
-        localStorage.setItem(uid + "_app_users", JSON.stringify(users));
-    } catch (_) {}
-
-    if (typeof APP_MEMORY_CACHE !== "undefined") {
-        APP_MEMORY_CACHE["app_users"] = users;
-        APP_MEMORY_CACHE[uid + "_app_users"] = users;
-    }
-
-    if (typeof idbPut === "function") {
-        idbPut("app_users", users);
-        idbPut(uid + "_app_users", users);
-    }
-
-    if (typeof setStore === "function") {
-        setStore("app_users", users);
-    }
-}
-
-// 👑 ADMIN TABLE RENDER (Full IDs List + Top Approval Banner)
-function renderAdminUsersTable() {
-    var uid = (typeof currentUserId !== "undefined" ? String(currentUserId).trim().toLowerCase() : "farhan");
-    var users = [];
-
-    // Sabhi sources se dhoondo taaki koi bhi user miss na ho
-    if (typeof getUsersList === "function") {
-        var gList = getUsersList();
-        if (Array.isArray(gList) && gList.length > 0) users = gList;
-    }
-
-    if (!users.length && typeof getStore === "function") {
-        var sList = getStore("app_users");
-        if (Array.isArray(sList) && sList.length > 0) users = sList;
-    }
-
-    if (!users.length) {
+        // Local storage me bhi daalo taaki offline bhi chale
         try {
-            users = JSON.parse(localStorage.getItem("app_users")) || 
-                    JSON.parse(localStorage.getItem(uid + "_app_users")) || [];
+            localStorage.setItem("app_users", JSON.stringify(arr));
+            if (typeof APP_MEMORY_CACHE !== "undefined") APP_MEMORY_CACHE["app_users"] = arr;
+            if (typeof idbPut === "function") idbPut("app_users", arr);
+        } catch (_) {}
+
+        // Table ko turant draw karo
+        renderAdminUsersTable();
+    }, function(error) {
+        console.error("Firebase fetch error:", error);
+    });
+}
+
+// 📊 3. TABLE & APPROVAL BANNER RENDERER
+function renderAdminUsersTable() {
+    var users = window.adminUsersData;
+    
+    // Fallback agar memory khali ho
+    if (!users || !users.length) {
+        try {
+            users = JSON.parse(localStorage.getItem("app_users")) || [];
         } catch (_) {
             users = [];
         }
     }
 
-    // Default Master Admin fallback
     if (!users.length) {
         users = [{
             id: "farhan",
@@ -127,48 +103,74 @@ function renderAdminUsersTable() {
 
     var tot = 0, act = 0, blk = 0, pnd = 0;
     var pendingUsersList = [];
-    var tableRowsHtml = "";
+    var rowsHtml = "";
 
     users.forEach(function(u, idx) {
         if (!u || !u.id) return;
         tot++;
-        var isA = (u.role === "admin" || String(u.id).toLowerCase() === "farhan");
-        var isP = (u.status === "pending");
-        var isB = (u.status === "blocked");
-        var isE = (typeof isUserExpired === "function") ? isUserExpired(u) : false;
 
-        if (isP) {
+        var isOwner = (String(u.id).toLowerCase() === "farhan" || u.role === "admin");
+        var isPending = (u.status === "pending");
+        var isBlocked = (u.status === "blocked");
+        var isExpired = false;
+
+        // Expiry check
+        if (u.expiryDate) {
+            var today = new Date().toISOString().split("T")[0];
+            if (u.expiryDate < today) isExpired = true;
+        }
+
+        if (isPending) {
             pnd++;
             pendingUsersList.push(u);
-        } else if (isB || isE) {
+        } else if (isBlocked || isExpired) {
             blk++;
         } else {
             act++;
         }
 
-        var stBadge = isA ? "<span class='badge-green' style='background:#10b981; color:#fff; padding:3px 8px; border-radius:12px; font-weight:700;'>👑 Owner</span>" : 
-                     (isP ? "<span style='background:#fef3c7; color:#b45309; border:1px solid #fde68a; padding:3px 8px; border-radius:12px; font-weight:700; font-size:11px;'>⏳ Approval Pending</span>" : 
-                     (isB ? "<span class='badge-red' style='background:#ef4444; color:#fff; padding:3px 8px; border-radius:12px; font-weight:700;'>⛔ Blocked</span>" : 
-                     (isE ? "<span class='badge-red' style='background:#f97316; color:#fff; padding:3px 8px; border-radius:12px; font-weight:700;'>⌛ Expired</span>" : "<span class='badge-green' style='background:#10b981; color:#fff; padding:3px 8px; border-radius:12px; font-weight:700;'>Active</span>")));
+        // Badges
+        var stBadge = "";
+        if (isOwner) {
+            stBadge = "<span class='badge-green' style='background:#10b981; color:#fff; padding:3px 8px; border-radius:12px; font-weight:700;'>👑 Owner</span>";
+        } else if (isPending) {
+            stBadge = "<span style='background:#fef3c7; color:#b45309; border:1px solid #fde68a; padding:3px 8px; border-radius:12px; font-weight:700; font-size:11px;'>⏳ Approval Pending</span>";
+        } else if (isBlocked) {
+            stBadge = "<span class='badge-red' style='background:#ef4444; color:#fff; padding:3px 8px; border-radius:12px; font-weight:700;'>⛔ Blocked</span>";
+        } else if (isExpired) {
+            stBadge = "<span class='badge-red' style='background:#f97316; color:#fff; padding:3px 8px; border-radius:12px; font-weight:700;'>⌛ Expired</span>";
+        } else {
+            stBadge = "<span class='badge-green' style='background:#10b981; color:#fff; padding:3px 8px; border-radius:12px; font-weight:700;'>Active</span>";
+        }
 
         // Action Buttons
         var actionBtns = "";
-        if (isP) {
-            actionBtns = "<button type='button' class='quick-btn' style='background:#059669; color:white; font-weight:bold; padding:6px 12px; border-radius:6px; cursor:pointer;' onclick='approveUserByAdmin(\"" + u.id + "\")'>✅ Approve</button> " +
-                         "<button type='button' class='delete-btn' style='padding:6px 10px;' onclick='deleteUserByAdmin(\"" + u.id + "\")'>🗑️ Reject</button>";
-        } else if (!isA) {
-            actionBtns = "<button type='button' class='quick-btn " + (isB ? "btn-in" : "btn-out") + "' onclick='toggleUserBlockStatus(\"" + u.id + "\")'>" + (isB ? "Unblock" : "Block") + "</button> " +
-                         "<button type='button' class='edit-btn' onclick='resetUserPasswordByAdmin(\"" + u.id + "\")'>🔑 Pass</button> " +
-                         "<button type='button' class='delete-btn' onclick='deleteUserByAdmin(\"" + u.id + "\")'>🗑️</button>";
+        var safeId = String(u.id).replace(/'/g, "\\'");
+
+        if (isPending) {
+            actionBtns = "<button type='button' class='quick-btn' style='background:#059669; color:white; font-weight:bold; padding:6px 12px; border-radius:6px; cursor:pointer;' onclick='approveUserByAdmin(\"" + safeId + "\")'>✅ Approve</button> " +
+                         "<button type='button' class='delete-btn' style='padding:6px 10px;' onclick='deleteUserByAdmin(\"" + safeId + "\")'>🗑️ Reject</button>";
+        } else if (!isOwner) {
+            actionBtns = "<button type='button' class='quick-btn " + (isBlocked ? "btn-in" : "btn-out") + "' onclick='toggleUserBlockStatus(\"" + safeId + "\")'>" + (isBlocked ? "Unblock" : "Block") + "</button> " +
+                         "<button type='button' class='edit-btn' onclick='resetUserPasswordByAdmin(\"" + safeId + "\")'>🔑 Pass</button> " +
+                         "<button type='button' class='delete-btn' onclick='deleteUserByAdmin(\"" + safeId + "\")'>🗑️</button>";
         } else {
             actionBtns = "<span style='color:#059669; font-weight:bold; font-size:12px;'>👑 Full Control</span>";
         }
 
-        var expiryDisplay = isA ? "<strong style='color:#059669;'>Lifetime</strong>" : 
-                            (isP ? "<span style='color:#b45309; font-weight:bold;'>Approval Ka Intezar</span>" : 
-                            ("<input type='date' value='" + (u.expiryDate || "") + "' onchange='updateUserExpiryDate(\"" + u.id + "\", this.value)' style='padding:2px 4px;font-size:11px;border-radius:4px;border:1px solid #cbd5e1;'> " + (typeof formatDateDisplay === "function" ? formatDateDisplay(u.expiryDate) : (u.expiryDate || "-")) + " <button type='button' onclick='extendValidity(\"" + u.id + "\", 30)' style='padding:2px 6px;font-size:10px;border-radius:4px;border:none;background:#2563eb;color:white;cursor:pointer;'>+30D</button>"));
+        // Validity Field
+        var expiryDisplay = "";
+        if (isOwner) {
+            expiryDisplay = "<strong style='color:#059669;'>Lifetime</strong>";
+        } else if (isPending) {
+            expiryDisplay = "<span style='color:#b45309; font-weight:bold;'>Approval Ka Intezar</span>";
+        } else {
+            expiryDisplay = "<input type='date' value='" + (u.expiryDate || "") + "' onchange='updateUserExpiryDate(\"" + safeId + "\", this.value)' style='padding:2px 4px;font-size:11px;border-radius:4px;border:1px solid #cbd5e1;'> " + 
+                            (typeof formatDateDisplay === "function" ? formatDateDisplay(u.expiryDate) : (u.expiryDate || "-")) + 
+                            " <button type='button' onclick='extendValidity(\"" + safeId + "\", 30)' style='padding:2px 6px;font-size:10px;border-radius:4px;border:none;background:#2563eb;color:white;cursor:pointer;'>+30D</button>";
+        }
 
-        tableRowsHtml += "<tr>" +
+        rowsHtml += "<tr>" +
             "<td>" + (idx + 1) + "</td>" +
             "<td><strong>" + (u.name || "-") + "</strong></td>" +
             "<td>" + (u.mobile || "-") + "</td>" +
@@ -181,9 +183,9 @@ function renderAdminUsersTable() {
         "</tr>";
     });
 
-    tbody.innerHTML = tableRowsHtml;
+    tbody.innerHTML = rowsHtml;
 
-    // 🔔 TOP PENDING CARD: Approval Request Banner
+    // 🔔 TOP PENDING CARD
     var adminSec = document.getElementById("admin-section");
     var pendingBanner = document.getElementById("admin-pending-approval-banner");
     if (!pendingBanner && adminSec) {
@@ -200,14 +202,15 @@ function renderAdminUsersTable() {
                 "<div style='display:flex; flex-direction:column; gap:8px;'>";
 
             pendingUsersList.forEach(function(pu) {
+                var pId = String(pu.id).replace(/'/g, "\\'");
                 pHtml += "<div style='background:white; border:1px solid #fde68a; border-radius:8px; padding:10px 14px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;'>" +
                     "<div>" +
                         "<strong style='color:#1e3a8a; font-size:14px;'>👤 " + pu.name + "</strong> &bull; <code>User ID: " + pu.id + "</code> &bull; 📞 " + (pu.mobile || "-") +
                         "<div style='font-size:11px; color:#64748b;'>Request Date: " + (typeof formatDateDisplay === "function" ? formatDateDisplay(pu.date) : (pu.date || "-")) + "</div>" +
                     "</div>" +
                     "<div style='display:flex; gap:8px;'>" +
-                        "<button type='button' class='quick-btn' style='background:#059669; color:white; font-weight:bold; padding:8px 16px; border-radius:6px; cursor:pointer;' onclick='approveUserByAdmin(\"" + pu.id + "\")'>✅ Approve Karein</button>" +
-                        "<button type='button' class='delete-btn' style='padding:8px 12px;' onclick='deleteUserByAdmin(\"" + pu.id + "\")'>🗑️ Reject</button>" +
+                        "<button type='button' class='quick-btn' style='background:#059669; color:white; font-weight:bold; padding:8px 16px; border-radius:6px; cursor:pointer;' onclick='approveUserByAdmin(\"" + pId + "\")'>✅ Approve Karein</button>" +
+                        "<button type='button' class='delete-btn' style='padding:8px 12px;' onclick='deleteUserByAdmin(\"" + pId + "\")'>🗑️ Reject</button>" +
                     "</div>" +
                 "</div>";
             });
@@ -229,162 +232,87 @@ function renderAdminUsersTable() {
     if (elBlk) elBlk.textContent = blk;
 }
 
-// ✅ ADMIN APPROVE ENGINE (Instant 30 Days Validity)
+// ✅ ACTIONS
 function approveUserByAdmin(uid) {
-    var users = getAdminUsersListCurrent();
-    var u = users.find(function(x) { return String(x.id) === String(uid); });
-    if (!u) return alert("User record nahi mila!");
-
     var exp = new Date();
     exp.setDate(exp.getDate() + 30);
-    var formattedExp = exp.toISOString().split('T')[0];
+    var formattedExp = exp.toISOString().split("T")[0];
 
-    u.status = "active";
-    u.expiryDate = formattedExp;
-
-    commitAdminUsersRegistry(users);
-    
     if (typeof db !== "undefined" && db) {
-        try {
-            db.ref("app_users/" + uid + "/status").set("active");
-            db.ref("app_users/" + uid + "/expiryDate").set(formattedExp);
-        } catch (e) {
-            console.error(e);
-        }
+        db.ref("app_users/" + uid).update({
+            status: "active",
+            expiryDate: formattedExp
+        }).then(function() {
+            alert("🎉 User '" + uid + "' approve ho gaya!");
+        });
     }
-
-    renderAdminUsersTable();
-    alert("🎉 User '" + u.name + "' (" + u.id + ") ko APPROVE kar diya gaya hai!\nAb wo turant login kar sakta hai.");
 }
 
 function updateUserExpiryDate(uid, dateVal) {
-    var users = getAdminUsersListCurrent();
-    var u = users.find(function(x) { return String(x.id) === String(uid); });
-    if (!u) return;
-
-    u.expiryDate = dateVal;
-    commitAdminUsersRegistry(users);
-
     if (typeof db !== "undefined" && db) {
-        try { db.ref("app_users/" + uid + "/expiryDate").set(dateVal); } catch (e) {}
+        db.ref("app_users/" + uid + "/expiryDate").set(dateVal);
     }
-    renderAdminUsersTable();
 }
 
 function extendValidity(uid, days) {
-    var users = getAdminUsersListCurrent();
-    var u = users.find(function(x) { return String(x.id) === String(uid); });
-    if (!u) return;
-
-    var base = (u.expiryDate && new Date(u.expiryDate) > new Date()) ? new Date(u.expiryDate) : new Date();
+    var u = (window.adminUsersData || []).find(function(x) { return String(x.id) === String(uid); });
+    var base = (u && u.expiryDate && new Date(u.expiryDate) > new Date()) ? new Date(u.expiryDate) : new Date();
     base.setDate(base.getDate() + days);
-    var formatted = base.toISOString().split('T')[0];
-
-    u.expiryDate = formatted;
-    if (u.status === "blocked" || u.status === "pending") u.status = "active";
-
-    commitAdminUsersRegistry(users);
+    var formatted = base.toISOString().split("T")[0];
 
     if (typeof db !== "undefined" && db) {
-        try {
-            db.ref("app_users/" + uid + "/expiryDate").set(formatted);
-            db.ref("app_users/" + uid + "/status").set("active");
-        } catch (e) {}
+        db.ref("app_users/" + uid).update({
+            expiryDate: formatted,
+            status: "active"
+        }).then(function() {
+            alert("✅ Validity 30 din badh gayi!");
+        });
     }
-    renderAdminUsersTable();
-    alert("✅ User " + u.name + " ki validity " + (typeof formatDateDisplay === "function" ? formatDateDisplay(formatted) : formatted) + " tak badh gayi!");
 }
 
 function resetUserPasswordByAdmin(uid) {
-    var users = getAdminUsersListCurrent();
-    var u = users.find(function(x) { return String(x.id) === String(uid); });
-    if (!u) return;
-
-    var newPass = prompt("User " + u.name + " ka naya password daalein:", Math.floor(100000 + Math.random() * 900000).toString());
+    var newPass = prompt("Naya password daalein:", Math.floor(100000 + Math.random() * 900000).toString());
     if (!newPass || !newPass.trim()) return;
 
-    u.pass = newPass.trim();
-    commitAdminUsersRegistry(users);
-
     if (typeof db !== "undefined" && db) {
-        try { db.ref("app_users/" + uid + "/pass").set(u.pass); } catch (e) {}
+        db.ref("app_users/" + uid + "/pass").set(newPass.trim()).then(function() {
+            alert("✅ Password update ho gaya!");
+        });
     }
-    renderAdminUsersTable();
-    alert("✅ Password updated: " + u.pass);
 }
 
 function toggleUserBlockStatus(uid) {
-    if (String(uid).toLowerCase() === "farhan") return alert("⛔ Master Admin ko block nahi kiya ja sakta!");
-
-    var users = getAdminUsersListCurrent();
-    var u = users.find(function(x) { return String(x.id) === String(uid); });
-    if (!u) return;
-
-    u.status = (u.status === "blocked" ? "active" : "blocked");
-    commitAdminUsersRegistry(users);
+    if (String(uid).toLowerCase() === "farhan") return alert("⛔ Master Admin block nahi ho sakta!");
+    var u = (window.adminUsersData || []).find(function(x) { return String(x.id) === String(uid); });
+    var nextStatus = (u && u.status === "blocked") ? "active" : "blocked";
 
     if (typeof db !== "undefined" && db) {
-        try { db.ref("app_users/" + uid + "/status").set(u.status); } catch (e) {}
+        db.ref("app_users/" + uid + "/status").set(nextStatus);
     }
-    renderAdminUsersTable();
 }
 
 function deleteUserByAdmin(uid) {
-    if (String(uid).toLowerCase() === "farhan") return alert("⛔ Master Admin ko delete nahi kiya ja sakta!");
-    if (!confirm("Kya aap sach me is User aur iska SARRA DATA delete/reject karna chahte hain?")) return;
-    
-    if (typeof purgeUserDataPermanently === "function") {
-        purgeUserDataPermanently(uid);
-    }
+    if (String(uid).toLowerCase() === "farhan") return alert("⛔ Master Admin delete nahi ho sakta!");
+    if (!confirm("Kya aap sach me is User ko delete karna chahte hain?")) return;
 
-    var users = getAdminUsersListCurrent().filter(function(x) { return String(x.id) !== String(uid); });
-    commitAdminUsersRegistry(users);
-    
     if (typeof db !== "undefined" && db) {
-        try {
-            db.ref("app_users/" + uid).remove();
-        } catch (e) {
-            console.error(e);
-        }
-    }
-    
-    renderAdminUsersTable();
-    alert("🗑️ User delete ho gaya!");
-}
-
-function getAdminUsersListCurrent() {
-    var uid = (typeof currentUserId !== "undefined" ? String(currentUserId).trim().toLowerCase() : "farhan");
-    if (typeof getUsersList === "function") {
-        var l = getUsersList();
-        if (Array.isArray(l) && l.length > 0) return l;
-    }
-    try {
-        return JSON.parse(localStorage.getItem("app_users")) || 
-               JSON.parse(localStorage.getItem(uid + "_app_users")) || [];
-    } catch (_) {
-        return [];
+        db.ref("app_users/" + uid).remove().then(function() {
+            alert("🗑️ User delete ho gaya!");
+        });
     }
 }
 
 function refreshAdminUsersList() {
-    if (typeof db !== "undefined" && db) {
-        db.ref("app_users").once("value", function(snap) {
-            var v = snap.val();
-            if (v) {
-                var arr = [];
-                for (var k in v) { 
-                    if (v[k]) {
-                        var it = v[k];
-                        if (!it.id) it.id = k;
-                        arr.push(it);
-                    }
-                }
-                commitAdminUsersRegistry(arr);
-                renderAdminUsersTable();
-                alert("✅ Admin Users List Refresh ho gayi!");
-            }
-        });
-    } else {
-        renderAdminUsersTable();
-    }
+    fetchAndListenAdminUsers();
 }
+
+// Window bindings taaki kahi se bhi call ho sake
+window.openAdminModule = openAdminModule;
+window.renderAdminUsersTable = renderAdminUsersTable;
+window.approveUserByAdmin = approveUserByAdmin;
+window.updateUserExpiryDate = updateUserExpiryDate;
+window.extendValidity = extendValidity;
+window.resetUserPasswordByAdmin = resetUserPasswordByAdmin;
+window.toggleUserBlockStatus = toggleUserBlockStatus;
+window.deleteUserByAdmin = deleteUserByAdmin;
+window.refreshAdminUsersList = refreshAdminUsersList;
