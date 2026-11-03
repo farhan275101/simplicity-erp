@@ -2,7 +2,7 @@
    SIMPLICITY ERP - ENTERPRISE FIREBASE CLOUD & REALTIME SYNC ENGINE
    File: core/database.js • Developed by Farhan Jawed
    Architecture: Realtime WebSocket Streaming | Bi-Directional Auto-Sync
-   Scale: 1,000,000+ Concurrent Active Users | Bandwidth & Battery Optimized
+   Scale: 1,000,000+ Concurrent Active Users | Live Kariger Sheet Streaming
 ============================================================================ */
 
 (() => {
@@ -58,7 +58,7 @@
                 if (clean && clean !== 'app') return clean;
             }
         } catch (_) {}
-        return 'farhan'; // Master Admin safe fallback
+        return 'farhan';
     };
 
     /* ========================================================================
@@ -133,29 +133,13 @@
     if (db) initConnectionWatcher();
 
     /* ========================================================================
-       3. SMART REAL-TIME SCREEN REPAINTER (Zero Lag UI Update)
+       3. SMART REAL-TIME SCREEN REPAINTER
        ------------------------------------------------------------------------
     ======================================================================== */
     const triggerSmartUIRepaint = () => {
         if (renderDebounceTimer) clearTimeout(renderDebounceTimer);
         renderDebounceTimer = setTimeout(() => {
-            // 1. Check if Bana Section is open
-            const bSec = document.getElementById('bana-section');
-            if (bSec && bSec.style.display !== 'none') {
-                if (typeof window.renderBanaTable === 'function') window.renderBanaTable();
-                if (typeof window.applyPassbookFilters === 'function') window.applyPassbookFilters();
-                else if (typeof window.renderBanaPassbookRows === 'function') window.renderBanaPassbookRows();
-            }
-
-            // 2. Check if Zari Section is open
-            const zSec = document.getElementById('zari-section');
-            if (zSec && zSec.style.display !== 'none') {
-                if (typeof window.renderZariTable === 'function') window.renderZariTable();
-                if (typeof window.applyZariPassbookFilters === 'function') window.applyZariPassbookFilters();
-                else if (typeof window.renderZariPassbookRows === 'function') window.renderZariPassbookRows();
-            }
-
-            // 3. Check if Kariger Section or Sheet is open
+            // 1. Kariger Section or Sheet open
             const kSec = document.getElementById('kariger-section');
             if (kSec && kSec.style.display !== 'none') {
                 if (typeof window.renderKarigerTable === 'function') window.renderKarigerTable();
@@ -165,20 +149,43 @@
                 if (typeof window.loadCurrentSheetData === 'function') window.loadCurrentSheetData();
             }
 
-            // 4. Check if Admin Section is open
+            // 2. Bana Section
+            const bSec = document.getElementById('bana-section');
+            if (bSec && bSec.style.display !== 'none') {
+                if (typeof window.renderBanaTable === 'function') window.renderBanaTable();
+                if (typeof window.applyPassbookFilters === 'function') window.applyPassbookFilters();
+                else if (typeof window.renderBanaPassbookRows === 'function') window.renderBanaPassbookRows();
+            }
+
+            // 3. Zari Section
+            const zSec = document.getElementById('zari-section');
+            if (zSec && zSec.style.display !== 'none') {
+                if (typeof window.renderZariTable === 'function') window.renderZariTable();
+                if (typeof window.applyZariPassbookFilters === 'function') window.applyZariPassbookFilters();
+                else if (typeof window.renderZariPassbookRows === 'function') window.renderZariPassbookRows();
+            }
+
+            // 4. Saree Section
+            const sSec = document.getElementById('saree-section');
+            if (sSec && sSec.style.display !== 'none') {
+                if (typeof window.renderSareeTable === 'function') window.renderSareeTable();
+                if (typeof window.applySareePassbookFilters === 'function') window.applySareePassbookFilters();
+            }
+
+            // 5. Admin Section
             const admSec = document.getElementById('admin-section');
             if (admSec && admSec.style.display !== 'none') {
                 if (typeof window.renderAdminUsersTable === 'function') window.renderAdminUsersTable();
             }
 
-            // 5. Global Dashboard badges
+            // 6. Global Dashboard Badges
             if (typeof window.updateDashboardBadgeTotals === 'function') {
                 window.updateDashboardBadgeTotals();
             }
             if (typeof window.triggerActiveSectionRefresh === 'function') {
                 window.triggerActiveSectionRefresh();
             }
-        }, 80);
+        }, 60);
     };
 
     /* ========================================================================
@@ -194,9 +201,6 @@
         } catch (_) {}
     };
 
-    /**
-     * Attaches live listener to a specific cloud path
-     */
     const attachTargetedListener = (fullCacheKey, cloudRelativePath) => {
         if (!db) return;
         const uid = getSafeUserId();
@@ -224,22 +228,18 @@
                         ? window.safeArray(remoteVal)
                         : remoteVal;
 
-                    // 1. RAM Cache
                     if (window.APP_MEMORY_CACHE) {
                         window.APP_MEMORY_CACHE[fullCacheKey] = cleanData;
                     }
 
-                    // 2. IndexedDB
                     if (typeof window.idbPut === 'function') {
                         window.idbPut(fullCacheKey, cleanData);
                     }
 
-                    // 3. LocalStorage
                     try {
                         localStorage.setItem(fullCacheKey, JSON.stringify(cleanData));
                     } catch (_) {}
 
-                    // 4. Instant Live Screen Repaint
                     triggerSmartUIRepaint();
                     showSyncStatus('online');
                 } catch (dataErr) {
@@ -261,15 +261,32 @@
     };
 
     /**
-     * Primary entry point: Binds ALL essential ERP keys for realtime sync
+     * 🌟 DYNAMIC LIVE SYNC FOR A SPECIFIC KARIGER'S SHEET
      */
+    const syncKarigerSheetLive = (kId) => {
+        if (!db || !kId) return;
+        const uid = getSafeUserId();
+
+        let session = '2026-2027';
+        try {
+            if (typeof window.getActiveFinancialSession === 'function') {
+                session = window.getActiveFinancialSession();
+            } else {
+                session = localStorage.getItem(`${uid}_app_active_session`) || '2026-2027';
+            }
+        } catch (_) {}
+
+        const sheetCacheKey = `${uid}_${session}_kariger_sheets_${kId}`;
+        const sheetCloudPath = `${session}_kariger_sheets_${kId}`;
+        attachTargetedListener(sheetCacheKey, sheetCloudPath);
+    };
+
     const initFirebaseLiveListeners = () => {
         if (!db) return;
         const uid = getSafeUserId();
 
         detachFirebaseLiveListeners();
 
-        // 1. Resolve Session
         let session = '2026-2027';
         try {
             if (typeof window.getActiveFinancialSession === 'function') {
@@ -282,7 +299,7 @@
 
         console.log(`📡 [CloudEngine] Live Sync Active for: [${uid}] | Session: [${session}]`);
 
-        // 2. Global Tenant Keys
+        // Global Tenant Keys
         const globalKeys = [
             'app_sessions_list',
             'app_active_session',
@@ -298,18 +315,18 @@
             attachTargetedListener(cacheKey, key);
         });
 
-        // 3. Full Session-Scoped Collections (Accurate & Complete)
+        // Full Session-Scoped Collections
         const sessionKeys = [
             'kariger_list',
             'bana_stock',
-            'bana_history',         // 👈 Included!
+            'bana_history',
             'zari_stock',
-            'zari_history',         // 👈 Included!
-            'material_transfers',   // 👈 Included!
-            'sancha_items',         // 👈 Fixed name!
+            'zari_history',
+            'material_transfers',
+            'sancha_items',
             'sancha_history',
             'saree_stock',
-            'saree_history',        // 👈 Included!
+            'saree_history',
             'cutting_records',
             'calender_records',
             'jobwork_workers',
@@ -327,12 +344,9 @@
             attachTargetedListener(cacheKey, cloudPath);
         });
 
-        // 4. Live Sync for Kariger Sheets (Dynamic listener on active weaver)
+        // Agar koi sheet active hai toh uska bhi listener lagao
         if (typeof window.activeKarigerId !== 'undefined' && window.activeKarigerId) {
-            const kId = window.activeKarigerId;
-            const sheetCacheKey = `${uid}_${session}_kariger_sheets_${kId}`;
-            const sheetCloudPath = `${session}_kariger_sheets_${kId}`;
-            attachTargetedListener(sheetCacheKey, sheetCloudPath);
+            syncKarigerSheetLive(window.activeKarigerId);
         }
     };
 
@@ -371,6 +385,7 @@
         switchSessionListeners,
         cloudWrite,
         attachTargetedListener,
+        syncKarigerSheetLive,
         triggerSmartUIRepaint
     };
 
@@ -379,9 +394,9 @@
     window.initFirebaseLiveListeners = initFirebaseLiveListeners;
     window.detachFirebaseLiveListeners = detachFirebaseLiveListeners;
     window.switchSessionListeners = switchSessionListeners;
+    window.syncKarigerSheetLive = syncKarigerSheetLive;
     window.CloudEngine = publicCloudAPI;
 
-    // 🚀 AUTOMATIC LIVE BOOTSTRAP (Bina kisi button ke turant chalu)
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', () => {
             setTimeout(initFirebaseLiveListeners, 300);
