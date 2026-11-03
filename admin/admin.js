@@ -1,10 +1,11 @@
 /* ========================================================
    SIMPLICITY ERP - LIVE ADMIN CONTROL & REALTIME USER APPROVAL
    File: admin/admin.js • Developed by Farhan Jawed
+   (Auto-Inject Approval Banner + Case-Insensitive Pending Detection)
 ======================================================== */
 
-// Global registry
 window.adminUsersData = [];
+var fbUsersListenerAttached = false;
 
 // 👑 1. ADMIN PANEL OPEN (Direct Realtime Connection)
 function openAdminModule() {
@@ -38,7 +39,8 @@ function fetchAndListenAdminUsers() {
             for (var key in v) {
                 if (v[key] && typeof v[key] === "object") {
                     var userObj = v[key];
-                    if (!userObj.id) userObj.id = key;
+                    userObj.id = userObj.id || key;
+                    userObj.name = userObj.name || key;
                     arr.push(userObj);
                 }
             }
@@ -59,31 +61,38 @@ function fetchAndListenAdminUsers() {
 
         window.adminUsersData = arr;
 
-        // Local storage me bhi daalo taaki offline bhi chale
         try {
             localStorage.setItem("app_users", JSON.stringify(arr));
-            if (typeof APP_MEMORY_CACHE !== "undefined") APP_MEMORY_CACHE["app_users"] = arr;
-            if (typeof idbPut === "function") idbPut("app_users", arr);
+            localStorage.setItem("farhan_app_users", JSON.stringify(arr));
+            if (typeof APP_MEMORY_CACHE !== "undefined") {
+                APP_MEMORY_CACHE["app_users"] = arr;
+                APP_MEMORY_CACHE["farhan_app_users"] = arr;
+            }
+            if (typeof setStore === "function") setStore("app_users", arr);
         } catch (_) {}
 
-        // Table ko turant draw karo
         renderAdminUsersTable();
     }, function(error) {
         console.error("Firebase fetch error:", error);
     });
 }
 
-// 📊 3. TABLE & APPROVAL BANNER RENDERER
+// 📊 3. TABLE & APPROVAL BANNER RENDERER (Auto-Inject Banner)
 function renderAdminUsersTable() {
     var users = window.adminUsersData;
     
-    // Fallback agar memory khali ho
     if (!users || !users.length) {
         try {
-            users = JSON.parse(localStorage.getItem("app_users")) || [];
+            users = JSON.parse(localStorage.getItem("app_users")) || 
+                    JSON.parse(localStorage.getItem("farhan_app_users")) || [];
         } catch (_) {
             users = [];
         }
+    }
+
+    if (!users.length && typeof getUsersList === "function") {
+        var gList = getUsersList();
+        if (Array.isArray(gList) && gList.length > 0) users = gList;
     }
 
     if (!users.length) {
@@ -106,15 +115,18 @@ function renderAdminUsersTable() {
     var rowsHtml = "";
 
     users.forEach(function(u, idx) {
-        if (!u || !u.id) return;
+        if (!u) return;
         tot++;
 
-        var isOwner = (String(u.id).toLowerCase() === "farhan" || u.role === "admin");
-        var isPending = (u.status === "pending");
-        var isBlocked = (u.status === "blocked");
+        var uIdStr = String(u.id || "").trim();
+        var isOwner = (uIdStr.toLowerCase() === "farhan" || u.role === "admin");
+        
+        // ⭐ Case-Insensitive Pending Detection
+        var st = String(u.status || "").toLowerCase().trim();
+        var isPending = !isOwner && (st === "pending" || st === "pending_approval" || st === "waiting");
+        var isBlocked = (st === "blocked");
         var isExpired = false;
 
-        // Expiry check
         if (u.expiryDate) {
             var today = new Date().toISOString().split("T")[0];
             if (u.expiryDate < today) isExpired = true;
@@ -145,7 +157,7 @@ function renderAdminUsersTable() {
 
         // Action Buttons
         var actionBtns = "";
-        var safeId = String(u.id).replace(/'/g, "\\'");
+        var safeId = uIdStr.replace(/'/g, "\\'");
 
         if (isPending) {
             actionBtns = "<button type='button' class='quick-btn' style='background:#059669; color:white; font-weight:bold; padding:6px 12px; border-radius:6px; cursor:pointer;' onclick='approveUserByAdmin(\"" + safeId + "\")'>✅ Approve</button> " +
@@ -158,7 +170,6 @@ function renderAdminUsersTable() {
             actionBtns = "<span style='color:#059669; font-weight:bold; font-size:12px;'>👑 Full Control</span>";
         }
 
-        // Validity Field
         var expiryDisplay = "";
         if (isOwner) {
             expiryDisplay = "<strong style='color:#059669;'>Lifetime</strong>";
@@ -174,7 +185,7 @@ function renderAdminUsersTable() {
             "<td>" + (idx + 1) + "</td>" +
             "<td><strong>" + (u.name || "-") + "</strong></td>" +
             "<td>" + (u.mobile || "-") + "</td>" +
-            "<td><code>" + u.id + "</code></td>" +
+            "<td><code>" + uIdStr + "</code></td>" +
             "<td><strong style='color:#1e3a8a;'>" + (u.pass || "-") + "</strong></td>" +
             "<td>" + (typeof formatDateDisplay === "function" ? formatDateDisplay(u.date) : (u.date || "-")) + "</td>" +
             "<td>" + expiryDisplay + "</td>" +
@@ -185,27 +196,29 @@ function renderAdminUsersTable() {
 
     tbody.innerHTML = rowsHtml;
 
-    // 🔔 TOP PENDING CARD
+    // 🔔 TOP PENDING CARD (Auto-Creates itself right above the table if missing)
     var adminSec = document.getElementById("admin-section");
     var pendingBanner = document.getElementById("admin-pending-approval-banner");
+    
     if (!pendingBanner && adminSec) {
         pendingBanner = document.createElement("div");
         pendingBanner.id = "admin-pending-approval-banner";
         var tableWrap = adminSec.querySelector(".table-responsive");
         if (tableWrap) adminSec.insertBefore(pendingBanner, tableWrap);
+        else adminSec.appendChild(pendingBanner);
     }
 
     if (pendingBanner) {
         if (pendingUsersList.length > 0) {
-            var pHtml = "<div style='background:#fffbeb; border:2px solid #f59e0b; border-radius:12px; padding:14px; margin-bottom:16px;'>" +
-                "<div style='color:#b45309; font-size:14px; font-weight:800; margin-bottom:10px;'>🔔 Naye Account Approval Requests (" + pendingUsersList.length + "):</div>" +
+            var pHtml = "<div style='background:#fffbeb; border:2px solid #f59e0b; border-radius:12px; padding:14px; margin-bottom:16px; box-shadow:0 4px 6px -1px rgba(0,0,0,0.1);'>" +
+                "<div style='color:#b45309; font-size:15px; font-weight:800; margin-bottom:10px;'>🔔 Naye Account Approval Requests (" + pendingUsersList.length + "):</div>" +
                 "<div style='display:flex; flex-direction:column; gap:8px;'>";
 
             pendingUsersList.forEach(function(pu) {
                 var pId = String(pu.id).replace(/'/g, "\\'");
                 pHtml += "<div style='background:white; border:1px solid #fde68a; border-radius:8px; padding:10px 14px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;'>" +
                     "<div>" +
-                        "<strong style='color:#1e3a8a; font-size:14px;'>👤 " + pu.name + "</strong> &bull; <code>User ID: " + pu.id + "</code> &bull; 📞 " + (pu.mobile || "-") +
+                        "<strong style='color:#1e3a8a; font-size:14px;'>👤 " + (pu.name || "-") + "</strong> &bull; <code>ID: " + pu.id + "</code> &bull; 📞 " + (pu.mobile || "-") +
                         "<div style='font-size:11px; color:#64748b;'>Request Date: " + (typeof formatDateDisplay === "function" ? formatDateDisplay(pu.date) : (pu.date || "-")) + "</div>" +
                     "</div>" +
                     "<div style='display:flex; gap:8px;'>" +
@@ -222,14 +235,6 @@ function renderAdminUsersTable() {
             pendingBanner.style.display = "none";
         }
     }
-
-    // Counters Update
-    var elTot = document.getElementById("admin-total-users");
-    var elAct = document.getElementById("admin-active-users");
-    var elBlk = document.getElementById("admin-blocked-users");
-    if (elTot) elTot.textContent = tot;
-    if (elAct) elAct.textContent = act;
-    if (elBlk) elBlk.textContent = blk;
 }
 
 // ✅ ACTIONS
@@ -243,7 +248,7 @@ function approveUserByAdmin(uid) {
             status: "active",
             expiryDate: formattedExp
         }).then(function() {
-            alert("🎉 User '" + uid + "' approve ho gaya!");
+            alert("🎉 User '" + uid + "' approve ho gaya!\nAb wo turant login kar sakta hai.");
         });
     }
 }
@@ -306,7 +311,6 @@ function refreshAdminUsersList() {
     fetchAndListenAdminUsers();
 }
 
-// Window bindings taaki kahi se bhi call ho sake
 window.openAdminModule = openAdminModule;
 window.renderAdminUsersTable = renderAdminUsersTable;
 window.approveUserByAdmin = approveUserByAdmin;
