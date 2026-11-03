@@ -129,7 +129,7 @@
            ==================================================================== */
         .hero-stage {
             padding-top: 120px;
-            padding-bottom: 70px;
+            padding-bottom: 50px;
             text-align: center;
             background: radial-gradient(circle at 50% 15%, rgba(212, 175, 55, 0.08) 0%, rgba(0,0,0,0) 65%);
         }
@@ -225,89 +225,194 @@
         .stat-item p { font-size: 12px; color: var(--text-secondary); text-transform: uppercase; font-weight: 600; }
 
         /* ====================================================================
-           4. 5-SAREE ULTRA HD SHOWCASE GALLERY (CLICK TO ZOOM LIGHTBOX)
+           4. ULTRA HD PORTAL PREVIEW (REPLACED THE 5 SAREE PHOTOS)
            ==================================================================== */
-        .gallery-section {
-            padding: 40px max(20px, calc((100vw - 1180px) / 2)) 80px;
+        .portal-preview-section {
+            padding: 20px max(20px, calc((100vw - 1180px) / 2)) 70px;
         }
 
-        .gallery-header {
-            text-align: center;
-            margin-bottom: 30px;
-        }
-
-        .gallery-header h3 {
-            font-size: clamp(1.8rem, 3.5vw, 2.8rem);
-            font-weight: 800;
-            letter-spacing: -0.025em;
-            margin-bottom: 10px;
-        }
-
-        .gallery-header p {
-            color: var(--text-secondary);
-            font-size: 14px;
-        }
-
-        .saree-grid-5 {
-            display: grid;
-            grid-template-columns: repeat(12, 1fr);
-            gap: 16px;
-        }
-
-        .saree-card {
-            background: var(--bg-surface);
-            border-radius: var(--radius-inner);
+        .portal-window {
+            background: #ffffff;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 30px 100px rgba(0, 0, 0, 0.9), 0 0 60px rgba(41, 151, 255, 0.15);
             overflow: hidden;
             position: relative;
-            border: 1px solid var(--border-subtle);
             cursor: zoom-in;
-            box-shadow: 0 15px 35px rgba(0,0,0,0.5);
-            transition: all 0.3s var(--ease-apple);
+            transition: transform 0.4s var(--ease-apple), box-shadow 0.4s var(--ease-apple);
         }
 
-        .saree-card:hover {
-            transform: translateY(-4px);
-            border-color: var(--border-highlight);
+        .portal-window:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 40px 120px rgba(0, 0, 0, 0.95), 0 0 80px rgba(41, 151, 255, 0.25);
         }
 
-        .saree-card img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            transition: transform 0.8s var(--ease-apple);
+        /* macOS Window Header Bar */
+        .window-bar {
+            background: #f1f5f9;
+            padding: 12px 18px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid #e2e8f0;
         }
 
-        .saree-card:hover img {
-            transform: scale(1.05);
+        .window-dots {
+            display: flex;
+            gap: 8px;
         }
 
-        /* 5 Photos Grid Layout */
-        .saree-item-1 { grid-column: span 7; height: 380px; }
-        .saree-item-2 { grid-column: span 5; height: 380px; }
-        .saree-item-3 { grid-column: span 4; height: 300px; }
-        .saree-item-4 { grid-column: span 4; height: 300px; }
-        .saree-item-5 { grid-column: span 4; height: 300px; }
-
-        @media (max-width: 850px) {
-            .saree-item-1, .saree-item-2, .saree-item-3, .saree-item-4, .saree-item-5 {
-                grid-column: span 12;
-                height: 280px;
-            }
+        .window-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
         }
 
-        .saree-badge-tag {
-            position: absolute;
-            bottom: 14px;
-            left: 14px;
-            background: rgba(8, 8, 10, 0.75);
-            backdrop-filter: blur(14px);
-            -webkit-backdrop-filter: blur(14px);
-            padding: 6px 14px;
-            border-radius: 20px;
+        .window-title {
+            font-size: 13px;
+            font-weight: 700;
+            color: #334155;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .portal-body {
+            padding: 24px;
+            background: #f8fafc;
+            color: #1e293b;
+        }
+
+        /* 8 Dashboard Action Buttons Grid */
+        .erp-tiles-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        @media (max-width: 900px) {
+            .erp-tiles-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+        @media (max-width: 480px) {
+            .erp-tiles-grid { grid-template-columns: 1fr; }
+        }
+
+        .erp-tile {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 14px;
+            padding: 18px 14px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.03);
+            position: relative;
+            border-top: 3.5px solid #0284c7;
+        }
+
+        .erp-tile .icon-box {
+            font-size: 26px;
+            line-height: 1;
+            margin-bottom: 4px;
+        }
+
+        .erp-tile .tile-title {
+            font-size: 13.5px;
+            font-weight: 700;
+            color: #0f172a;
+        }
+
+        .erp-tile .tile-badge {
             font-size: 11px;
             font-weight: 700;
+            padding: 3px 12px;
+            border-radius: 20px;
+            background: #f0fdf4;
+            color: #16a34a;
+            border: 1px solid #bbf7d0;
+            margin-top: 2px;
+        }
+
+        /* Rozana Day Book Section Preview */
+        .daybook-preview {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 14px;
+            padding: 20px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+        }
+
+        .daybook-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .daybook-tabs {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+
+        @media (max-width: 768px) {
+            .daybook-tabs { grid-template-columns: repeat(2, 1fr); }
+        }
+
+        .d-tab {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            padding: 10px 12px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .d-tab.active {
+            border-color: #2563eb;
+            background: #eff6ff;
+            color: #1d4ed8;
+            box-shadow: 0 0 0 1px #2563eb;
+        }
+
+        .daybook-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12.5px;
+            text-align: left;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .daybook-table th {
+            background: #1e3a8a;
             color: #ffffff;
-            border: 1px solid rgba(255, 255, 255, 0.12);
+            padding: 10px 14px;
+            font-weight: 700;
+            font-size: 12px;
+        }
+
+        .daybook-table td {
+            padding: 12px 14px;
+            border-bottom: 1px solid #f1f5f9;
+            color: #334155;
+            font-weight: 500;
+        }
+
+        .daybook-table tr:last-child td {
+            font-weight: 700;
+            background: #f8fafc;
+            border-bottom: none;
         }
 
         /* ====================================================================
@@ -364,7 +469,7 @@
         .problem-card p { font-size: 13px; color: var(--text-secondary); line-height: 1.6; }
 
         /* ====================================================================
-           6. FULL STEP-BY-STEP KARKHANA WORKFLOW (9 MODULES)
+           6. FULL STEP-BY-STEP KARKHANA WORKFLOW (WITH INTERACTIVE APP BUTTONS)
            ==================================================================== */
         .workflow-grid {
             display: grid;
@@ -380,6 +485,9 @@
             border: 1px solid var(--border-subtle);
             border-radius: var(--radius-inner);
             padding: 28px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
             position: relative;
             transition: all 0.25s ease;
         }
@@ -390,6 +498,13 @@
             background: var(--bg-elevated);
         }
 
+        .card-top-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 14px;
+        }
+
         .step-num {
             font-size: 11px;
             font-weight: 800;
@@ -397,9 +512,32 @@
             border-radius: 20px;
             background: rgba(255, 255, 255, 0.08);
             color: var(--accent-gold);
-            display: inline-block;
-            margin-bottom: 14px;
             letter-spacing: 0.05em;
+        }
+
+        /* 🚀 NEW: App Quick Action Button placed directly in card */
+        .btn-card-app {
+            background: linear-gradient(135deg, #1e293b, #0f172a);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: #f8fafc;
+            padding: 6px 14px;
+            border-radius: 24px;
+            font-size: 11px;
+            font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            text-decoration: none;
+            transition: all 0.25s;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+        }
+
+        .btn-card-app:hover {
+            background: #ffffff;
+            color: #000000;
+            border-color: #ffffff;
+            transform: scale(1.05);
+            box-shadow: 0 6px 20px rgba(255, 255, 255, 0.25);
         }
 
         .step-module-card h4 {
@@ -528,7 +666,8 @@
 
         .lightbox-wrap {
             position: relative;
-            max-width: 1000px;
+            max-width: 1100px;
+            width: 95%;
             max-height: 85vh;
             display: flex;
             flex-direction: column;
@@ -626,39 +765,166 @@
         </div>
     </section>
 
-    <!-- 3. 5-SAREE ULTRA HD LUXURY SHOWCASE -->
-    <section class="gallery-section">
-        <div class="gallery-header reveal">
-            <span style="color:var(--accent-gold); font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.1em;">Showroom Gallery</span>
-            <h3>Virasat Saree Ki, Hisab Digital</h3>
-            <p>Banarasi, Katan, Zari aur Brocade ka har taan digital suraksha me. Kisi bhi photo par click karke zoom karein.</p>
+    <!-- 3. ULTRA HD APP DASHBOARD SHOWCASE (REPLACED 5 SAREE PHOTOS) -->
+    <section class="portal-preview-section">
+        <div class="reveal" style="text-align: center; margin-bottom: 24px;">
+            <span style="color:var(--accent-gold); font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.1em;">Live Karkhana Interface</span>
+            <h3 style="font-size: clamp(1.8rem, 3.5vw, 2.8rem); font-weight:800; letter-spacing:-0.025em; margin-top:6px;">Seedha Aapke Screen Par Kaam</h3>
+            <p style="color:var(--text-secondary); font-size:14px; margin-top:4px;">Asli karkhana software ka live Ultra-HD snapshot. Kisi bhi feature par click karke portal dekhein.</p>
         </div>
 
-        <div class="saree-grid-5 reveal">
-            <!-- Saree 1 -->
-            <div class="saree-card saree-item-1" onclick="openLightbox(this)">
-                <img src="https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=1400&q=85" alt="Royal Banarasi Bridal Crimson Drape with Heavy Gold Zari Weave">
-                <div class="saree-badge-tag">👑 Royal Banarasi • Gold Zari Weave</div>
+        <!-- MAC-STYLE WINDOW MOCKUP -->
+        <div class="portal-window reveal" onclick="openAppZoom()">
+            <div class="window-bar">
+                <div class="window-dots">
+                    <span class="window-dot" style="background:#ef4444;"></span>
+                    <span class="window-dot" style="background:#f59e0b;"></span>
+                    <span class="window-dot" style="background:#10b981;"></span>
+                </div>
+                <div class="window-title">
+                    <span>⚡ simplicity-erp.app • Main Factory Portal</span>
+                </div>
+                <div style="font-size: 11px; color:#64748b; font-weight: 600;">🔍 Click To Enlarge Ultra-HD</div>
             </div>
-            <!-- Saree 2 -->
-            <div class="saree-card saree-item-2" onclick="openLightbox(this)">
-                <img src="https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?auto=format&fit=crop&w=1200&q=85" alt="Pure Katan Silk Intricate Pallu Detail">
-                <div class="saree-badge-tag">✨ Pure Katan Silk • Fine Brocade</div>
-            </div>
-            <!-- Saree 3 -->
-            <div class="saree-card saree-item-3" onclick="openLightbox(this)">
-                <img src="https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?auto=format&fit=crop&w=1000&q=85" alt="Festive Rani Pink with Silver Antique Zari Booti">
-                <div class="saree-badge-tag">🌸 Rani Pink • Silver Zari Booti</div>
-            </div>
-            <!-- Saree 4 -->
-            <div class="saree-card saree-item-4" onclick="openLightbox(this)">
-                <img src="https://images.unsplash.com/photo-1610030469668-93510cb67655?auto=format&fit=crop&w=1000&q=85" alt="Emerald Green Heritage Meenakari Border Saree">
-                <div class="saree-badge-tag">🌿 Emerald Green • Meenakari Border</div>
-            </div>
-            <!-- Saree 5 -->
-            <div class="saree-card saree-item-5" onclick="openLightbox(this)">
-                <img src="https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&w=1000&q=85" alt="Macro Texture of Shimmering Real Metallic Gold Threads">
-                <div class="saree-badge-tag">🧵 Zari Shimmer • 0.00g Waste Tracking</div>
+
+            <div class="portal-body" id="erpScreenContent">
+                <!-- 8 DASHBOARD TILES -->
+                <div class="erp-tiles-grid">
+                    <!-- 1. Kariger Master -->
+                    <div class="erp-tile" style="border-top-color:#0284c7;">
+                        <span class="icon-box">🧵</span>
+                        <span class="tile-title">1. Kariger Master</span>
+                        <span class="tile-badge">Total: 2</span>
+                    </div>
+
+                    <!-- 2. Info Ledger -->
+                    <div class="erp-tile" style="border-top-color:#6366f1;">
+                        <span class="icon-box">📋</span>
+                        <span class="tile-title">2. Info Ledger</span>
+                        <span class="tile-badge" style="background:#eef2ff; color:#4f46e5; border-color:#c7d2fe;">Total: 0</span>
+                    </div>
+
+                    <!-- 3. Bana Stock -->
+                    <div class="erp-tile" style="border-top-color:#10b981;">
+                        <span class="icon-box">🧶</span>
+                        <span class="tile-title">3. Bana Stock</span>
+                        <span class="tile-badge">Bacha: 89.00 Kg</span>
+                    </div>
+
+                    <!-- 4. Zari Stock -->
+                    <div class="erp-tile" style="border-top-color:#f59e0b;">
+                        <span class="icon-box">✨</span>
+                        <span class="tile-title">4. Zari Stock</span>
+                        <span class="tile-badge" style="background:#fef3c7; color:#d97706; border-color:#fde68a;">Bacha: 99.00 Kg</span>
+                    </div>
+
+                    <!-- 5. Saree Stock -->
+                    <div class="erp-tile" style="border-top-color:#3b82f6;">
+                        <span class="icon-box">🥻</span>
+                        <span class="tile-title">5. Saree Stock</span>
+                        <span class="tile-badge" style="background:#eff6ff; color:#2563eb; border-color:#bfdbfe;">Stock: 10 Pcs</span>
+                    </div>
+
+                    <!-- 6. Payments -->
+                    <div class="erp-tile" style="border-top-color:#8b5cf6;">
+                        <span class="icon-box">💳</span>
+                        <span class="tile-title">6. Payments</span>
+                        <span class="tile-badge" style="background:#fdf2f8; color:#db2777; border-color:#fbcfe8;">Diya: ₹ 0 • Baki: ₹ 0</span>
+                    </div>
+
+                    <!-- 7. Sancha (Tani) -->
+                    <div class="erp-tile" style="border-top-color:#06b6d4;">
+                        <span class="icon-box">⚙️</span>
+                        <span class="tile-title">7. Sancha (Tani)</span>
+                        <span class="tile-badge" style="background:#ecfeff; color:#0891b2; border-color:#a5f3fc;">🏺 Tani: 82.0 Kg • ⚙️ Chukka: 93.0 Kg</span>
+                    </div>
+
+                    <!-- 8. Job Work -->
+                    <div class="erp-tile" style="border-top-color:#f97316;">
+                        <span class="icon-box">🧵</span>
+                        <span class="tile-title">8. Job Work</span>
+                        <span class="tile-badge">Workers: 0</span>
+                    </div>
+                </div>
+
+                <!-- ROZANA DAY-BOOK INTERACTION PREVIEW -->
+                <div class="daybook-preview">
+                    <div class="daybook-header">
+                        <div>
+                            <h4 style="font-size:16px; font-weight:800; color:#1e3a8a; display:flex; align-items:center; gap:6px;">
+                                📖 Rozana Day-Book
+                            </h4>
+                            <small style="color:#64748b; font-size:11px;">Factory In/Out Register</small>
+                        </div>
+                        <div style="display:flex; gap:8px;">
+                            <input type="text" value="dd-mm-yyyy 📅" readonly style="border:1px solid #cbd5e1; border-radius:6px; padding:4px 10px; font-size:11px; background:#fff; color:#64748b; width:120px;">
+                            <button style="background:#1e3a8a; color:#fff; border:none; padding:4px 12px; border-radius:6px; font-size:11px; font-weight:700;">📅 Aaj</button>
+                        </div>
+                    </div>
+
+                    <div class="daybook-tabs">
+                        <div class="d-tab active">
+                            <span>🧶</span>
+                            <div>
+                                <div>Bana</div>
+                                <small style="font-size:10px; color:#2563eb;">In: +0.0 | Out: -1.0</small>
+                            </div>
+                        </div>
+                        <div class="d-tab">
+                            <span>✨</span>
+                            <div>
+                                <div>Zari</div>
+                                <small style="font-size:10px; color:#64748b;">In: +100.0 | Out: -1.0</small>
+                            </div>
+                        </div>
+                        <div class="d-tab">
+                            <span>🥻</span>
+                            <div>
+                                <div>Saree</div>
+                                <small style="font-size:10px; color:#64748b;">In: +0 | Out: -0</small>
+                            </div>
+                        </div>
+                        <div class="d-tab">
+                            <span>💳</span>
+                            <div>
+                                <div>Payment</div>
+                                <small style="font-size:10px; color:#64748b;">Diya: ₹ 0</small>
+                            </div>
+                        </div>
+                        <div class="d-tab">
+                            <span>⚙️</span>
+                            <div>
+                                <div>Sancha</div>
+                                <small style="font-size:10px; color:#64748b;">In: +0.0 | Out: -3.0</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <table class="daybook-table">
+                        <thead>
+                            <tr>
+                                <th>Bana Ka Naam</th>
+                                <th>Kariger / Godam Vivran</th>
+                                <th>📥 Aaya (In)</th>
+                                <th>📤 Gaya (Out)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>Katan</strong></td>
+                                <td>JAWED (Tani 1)</td>
+                                <td style="color:#64748b;">-</td>
+                                <td style="color:#ef4444; font-weight:700;">-1.00</td>
+                            </tr>
+                            <tr>
+                                <td>Total Rozana Bana:</td>
+                                <td></td>
+                                <td style="color:#16a34a;">+0.00</td>
+                                <td style="color:#ef4444;">-1.00</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </section>
@@ -687,20 +953,28 @@
         </div>
     </section>
 
-    <!-- 5. COMPLETE WORKFLOW SHOWCASE (ALL 9 MODULES) -->
+    <!-- 5. COMPLETE WORKFLOW SHOWCASE (WITH MATCHING ACTION BUTTONS ON EACH MODULE) -->
     <section class="section-container">
         <div class="section-title-box reveal">
             <span>Complete Karkhana Workflow</span>
             <h3>Loom Se Lekar Dukan Tak Har Kadam Digital</h3>
-            <p>Simplicity ERP me aapke karkhane ka har ek hisab mathematical accuracy ke sath chalta hai.</p>
+            <p>Simplicity ERP me aapke karkhane ka har ek hisab mathematical accuracy ke sath chalta hai. Kisi bhi module ka direct button samne dekhein.</p>
         </div>
 
         <div class="workflow-grid reveal">
             <!-- 1. KARIGER & TANI KHATA -->
             <div class="step-module-card">
-                <span class="step-num">STEP 01</span>
-                <h4>🧵 Kariger Master & Tani Khata</h4>
-                <p>Har kariger ki Tani 1, 2, 3 sheets ka exact hisab. Mazdoori (Bani rate), Saree aur Lott ka automatic calculation.</p>
+                <div>
+                    <div class="card-top-row">
+                        <span class="step-num">STEP 01</span>
+                        <!-- 🎯 Kariger Master Button -->
+                        <a href="index.html" class="btn-card-app">
+                            <span>🧵</span> Open Kariger Master
+                        </a>
+                    </div>
+                    <h4>🧵 Kariger Master & Tani Khata</h4>
+                    <p>Har kariger ki Tani 1, 2, 3 sheets ka exact hisab. Mazdoori (Bani rate), Saree aur Lott ka automatic calculation.</p>
+                </div>
                 <ul class="bullet-list">
                     <li>✔️ Net Mazdoori = Net Saree × Rate</li>
                     <li>✔️ Pichli mazdoori naye khate me auto-carry</li>
@@ -710,9 +984,17 @@
 
             <!-- 2. TANA, BANA & ZARI -->
             <div class="step-module-card">
-                <span class="step-num">STEP 02</span>
-                <h4>🧶 Tana, Bana & Zari Issue</h4>
-                <p>Kariger ko diye gaye daage ka pakka hisab. Less TP aur Topi ka wazan minus karke exact net issue nikalein.</p>
+                <div>
+                    <div class="card-top-row">
+                        <span class="step-num">STEP 02</span>
+                        <!-- 🎯 Bana & Zari Button -->
+                        <a href="index.html" class="btn-card-app">
+                            <span>🧶</span> Open Bana / Zari Stock
+                        </a>
+                    </div>
+                    <h4>🧶 Tana, Bana & Zari Issue</h4>
+                    <p>Kariger ko diye gaye daage ka pakka hisab. Less TP aur Topi ka wazan minus karke exact net issue nikalein.</p>
+                </div>
                 <ul class="bullet-list">
                     <li>✔️ Net Bana = Cone - Less TP</li>
                     <li>✔️ Net Zari = Qty - Topi (Wastage cut)</li>
@@ -722,9 +1004,17 @@
 
             <!-- 3. SANCHA (TANI & CHUKKA) -->
             <div class="step-module-card">
-                <span class="step-num">STEP 03</span>
-                <h4>⚙️ Sancha (Tani & Chukka) System</h4>
-                <p>Tani beam aur Chukka ka karkhana-wise alag-alag Kg hisab. Kis kariger ke paas kaun sa sancha hai, live tracking.</p>
+                <div>
+                    <div class="card-top-row">
+                        <span class="step-num">STEP 03</span>
+                        <!-- 🎯 Sancha Button -->
+                        <a href="index.html" class="btn-card-app">
+                            <span>⚙️</span> Open Sancha (Tani)
+                        </a>
+                    </div>
+                    <h4>⚙️ Sancha (Tani & Chukka) System</h4>
+                    <p>Tani beam aur Chukka ka karkhana-wise alag-alag Kg hisab. Kis kariger ke paas kaun sa sancha hai, live tracking.</p>
+                </div>
                 <ul class="bullet-list">
                     <li>✔️ Tani aur Chukka ke 2 alag-alag tabs</li>
                     <li>✔️ Person-wise wazan ka hisab</li>
@@ -734,9 +1024,17 @@
 
             <!-- 4. FRESH SAREE INWARD -->
             <div class="step-module-card">
-                <span class="step-num">STEP 04</span>
-                <h4>🥻 Fresh Saree Inward & Godam</h4>
-                <p>Loom se utari gayi kachhi saree seedha Fresh Register me aati hai. Main Godam, Bahadurganj aur Mubarakpur ka alag hisab.</p>
+                <div>
+                    <div class="card-top-row">
+                        <span class="step-num">STEP 04</span>
+                        <!-- 🎯 Saree Stock Button -->
+                        <a href="index.html" class="btn-card-app">
+                            <span>🥻</span> Open Saree Stock
+                        </a>
+                    </div>
+                    <h4>🥻 Fresh Saree Inward & Godam</h4>
+                    <p>Loom se utari gayi kachhi saree seedha Fresh Register me aati hai. Main Godam, Bahadurganj aur Mubarakpur ka alag hisab.</p>
+                </div>
                 <ul class="bullet-list">
                     <li>✔️ Kariger sheet se nikal kar stock me aana</li>
                     <li>✔️ Fresh, Cutting, Finished & Lott 4 registers</li>
@@ -746,9 +1044,17 @@
 
             <!-- 5. BOOTI CUTTING -->
             <div class="step-module-card">
-                <span class="step-num">STEP 05</span>
-                <h4>✂️ Booti Cutting (Job Work)</h4>
-                <p>Fresh stock se saree cutting ke liye bhejna. Single-line batch entry me sabhi kariger ka maal ek sath chadhayein.</p>
+                <div>
+                    <div class="card-top-row">
+                        <span class="step-num">STEP 05</span>
+                        <!-- 🎯 Cutting Button -->
+                        <a href="index.html" class="btn-card-app">
+                            <span>✂️</span> Open Booti Cutting
+                        </a>
+                    </div>
+                    <h4>✂️ Booti Cutting (Job Work)</h4>
+                    <p>Fresh stock se saree cutting ke liye bhejna. Single-line batch entry me sabhi kariger ka maal ek sath chadhayein.</p>
+                </div>
                 <ul class="bullet-list">
                     <li>✔️ Kisko kitni saree di aur kab wapas aayi</li>
                     <li>✔️ Damage saree aur cutting fine / kaat darj karein</li>
@@ -758,9 +1064,17 @@
 
             <!-- 6. CALENDER FINISH -->
             <div class="step-module-card">
-                <span class="step-num">STEP 06</span>
-                <h4>🎛️ Calender Machine Finish (Ironing)</h4>
-                <p>Badi-badi steam roller press machine me saree bhejna taaki unki uncreased fall aur silky chamak tayyar ho sake.</p>
+                <div>
+                    <div class="card-top-row">
+                        <span class="step-num">STEP 06</span>
+                        <!-- 🎯 Calender Button -->
+                        <a href="index.html" class="btn-card-app">
+                            <span>🎛️</span> Open Calender Finish
+                        </a>
+                    </div>
+                    <h4>🎛️ Calender Machine Finish (Ironing)</h4>
+                    <p>Badi-badi steam roller press machine me saree bhejna taaki unki uncreased fall aur silky chamak tayyar ho sake.</p>
+                </div>
                 <ul class="bullet-list">
                     <li>✔️ Cutting se ya Fresh se Calender bhejna</li>
                     <li>✔️ Calender Finished hote hi final stock ready</li>
@@ -770,9 +1084,17 @@
 
             <!-- 7. DUKAN BHEJA (FINAL OUT) -->
             <div class="step-module-card">
-                <span class="step-num">STEP 07</span>
-                <h4>🏪 Dukan Bheja (Final Out Register)</h4>
-                <p>Karkhane se tayyar saree dukan ya wholesale gaddi par bhejna. Karkhane me kitni bachi aur dukan kitni gayi, live status.</p>
+                <div>
+                    <div class="card-top-row">
+                        <span class="step-num">STEP 07</span>
+                        <!-- 🎯 Dukan Bheja Button -->
+                        <a href="index.html" class="btn-card-app">
+                            <span>🏪</span> Open Dukan Challan
+                        </a>
+                    </div>
+                    <h4>🏪 Dukan Bheja (Final Out Register)</h4>
+                    <p>Karkhane se tayyar saree dukan ya wholesale gaddi par bhejna. Karkhane me kitni bachi aur dukan kitni gayi, live status.</p>
+                </div>
                 <ul class="bullet-list">
                     <li>✔️ Date-wise parcel challan & driver note</li>
                     <li>✔️ Karkhane se final minus hokar out hona</li>
@@ -782,9 +1104,17 @@
 
             <!-- 8. PAYMENTS & BAKAYA -->
             <div class="step-module-card">
-                <span class="step-num">STEP 08</span>
-                <h4>💳 Payment & Bakaya System</h4>
-                <p>Kariger ko diya gaya advance ya payment turant uske khate me darj karein. Kul Dena Baki aur Diya gaya payment saaf dikhega.</p>
+                <div>
+                    <div class="card-top-row">
+                        <span class="step-num">STEP 08</span>
+                        <!-- 🎯 Payment Button -->
+                        <a href="index.html" class="btn-card-app">
+                            <span>💳</span> Open Payments Khata
+                        </a>
+                    </div>
+                    <h4>💳 Payment & Bakaya System</h4>
+                    <p>Kariger ko diya gaya advance ya payment turant uske khate me darj karein. Kul Dena Baki aur Diya gaya payment saaf dikhega.</p>
+                </div>
                 <ul class="bullet-list">
                     <li>✔️ Cash, Online UPI ya Bank payment modes</li>
                     <li>✔️ 1-Click WhatsApp par Digital Parchi bhejein</li>
@@ -794,9 +1124,17 @@
 
             <!-- 9. 1 APRIL NAYA SAAL -->
             <div class="step-module-card">
-                <span class="step-num">STEP 09</span>
-                <h4>📅 1 April Naya Saal (Year Closing)</h4>
-                <p>2000 Kariger ka pichla bacha hisab naye saal me minton me transfer, naye sire se diary likhne ki koi zaroorat nahi.</p>
+                <div>
+                    <div class="card-top-row">
+                        <span class="step-num">STEP 09</span>
+                        <!-- 🎯 Rozana Day-Book & Closing Button -->
+                        <a href="index.html" class="btn-card-app">
+                            <span>📅</span> Open Rozana Day-Book
+                        </a>
+                    </div>
+                    <h4>📅 1 April Naya Saal (Year Closing)</h4>
+                    <p>2000 Kariger ka pichla bacha hisab naye saal me minton me transfer, naye sire se diary likhne ki koi zaroorat nahi.</p>
+                </div>
                 <ul class="bullet-list">
                     <li>✔️ Har godam ka bacha maal ➔ Naya Opening Stock</li>
                     <li>✔️ Kariger baki mazdoori ➔ Tani 1 me carry-forward</li>
@@ -854,12 +1192,12 @@
         <p>© 2026 <strong>Simplicity ERP</strong> • Software: <span style="color:#ffffff;">Farhan Jawed</span> • Manager: <span style="color:#ffffff;">Mohammad Rehan</span> • All Rights Reserved.</p>
     </footer>
 
-    <!-- INTERACTIVE LIGHTBOX MODAL -->
+    <!-- INTERACTIVE LIGHTBOX MODAL (ULTRA-HD EXPANSION) -->
     <div id="imageLightbox" class="lightbox-overlay" onclick="closeLightbox(event)">
         <div class="lightbox-wrap">
             <button type="button" class="lightbox-close" onclick="closeLightbox(event)">&times;</button>
-            <img id="lightboxImg" class="lightbox-img" src="" alt="Fullscreen View">
-            <p id="lightboxCaption" class="lightbox-caption"></p>
+            <div id="lightboxInnerContainer" style="width:100%; max-height:80vh; overflow-y:auto; border-radius:16px;"></div>
+            <p id="lightboxCaption" class="lightbox-caption">✨ Simplicity ERP - Main Factory Live Portal</p>
         </div>
     </div>
 
@@ -879,17 +1217,21 @@
             reveals.forEach((el) => observer.observe(el));
         });
 
-        function openLightbox(card) {
-            const img = card.querySelector('img');
-            const badge = card.querySelector('.saree-badge-tag');
-            if (!img) return;
-
+        // Open Ultra-HD Modal for Dashboard Preview
+        function openAppZoom() {
             const modal = document.getElementById('imageLightbox');
-            const modalImg = document.getElementById('lightboxImg');
-            const modalCap = document.getElementById('lightboxCaption');
+            const innerBox = document.getElementById('lightboxInnerContainer');
+            const sourceCard = document.getElementById('erpScreenContent');
 
-            modalImg.src = img.src;
-            modalCap.textContent = badge ? badge.textContent : img.alt;
+            if (!modal || !innerBox || !sourceCard) return;
+
+            // Clone the clean HD dashboard
+            innerBox.innerHTML = '';
+            const clone = sourceCard.cloneNode(true);
+            clone.style.boxShadow = '0 25px 60px rgba(0,0,0,0.8)';
+            clone.style.border = '2px solid rgba(255,255,255,0.2)';
+            clone.style.borderRadius = '16px';
+            innerBox.appendChild(clone);
 
             modal.style.display = 'flex';
             void modal.offsetWidth;
@@ -911,7 +1253,7 @@
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
                 const modal = document.getElementById('imageLightbox');
-                if (modal.classList.contains('active')) {
+                if (modal && modal.classList.contains('active')) {
                     modal.classList.remove('active');
                     setTimeout(() => {
                         modal.style.display = 'none';
