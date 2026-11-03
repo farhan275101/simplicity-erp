@@ -1,162 +1,234 @@
-/* ========================================================
-   SIMPLICITY ERP - KARIGER CALCULATION ENGINE
-   File: karigar/kariger-calc.js • Developed by Farhan Jawed
-   (Tani Khata, Mazdoori Bani, Bana & Zari Reconcile)
-======================================================== */
+/* ============================================================================
+   SIMPLICITY ERP - HIGH-PERFORMANCE WEAVER (KARIGER) CALCULATION ENGINE
+   File: kariger/kariger-calc.js • Developed by Farhan Jawed
+   (Purana Accurate Calculation + Epsilon Precision + Zero Stale Cache)
+============================================================================ */
 
-/**
- * 1. Kariger ki Tani Sheets safe get karna
- */
-function getKarigerSheets(karigerId) {
-    if (!karigerId) return [];
-    var sheets = safeArray(getStore("kariger_sheets_" + karigerId));
-    sheets.forEach(function(sh) { 
-        if (sh) sh.rows = safeArray(sh.rows); 
-    });
-    return sheets;
-}
+(() => {
+    'use strict';
 
-/**
- * 2. Kariger ki Tani Sheets save karna
- */
-function saveKarigerSheets(karigerId, sheets) {
-    if (!karigerId) return;
-    var clean = safeArray(sheets);
-    clean.forEach(function(sh) { 
-        if (sh) sh.rows = safeArray(sh.rows); 
-    });
-    setStore("kariger_sheets_" + karigerId, clean);
-}
-
-/**
- * 3. Tani Sheet ke Grand Totals (Mazdoori + Bana + Zari Hisab)
- */
-function calculateSheetTotals(sh) {
-    var def = { 
-        totSaree: 0, totLott: 0, netSaree: 0, grossBani: 0, totPaid: 0, remainingAmt: 0, 
-        totTaniWazan: 0, totBana: 0, retBana: 0, banaConsumption: 0, banaWaste: 0, remainingBana: 0, 
-        totZari: 0, retZari: 0, zariConsumption: 0, zariWaste: 0, remainingZari: 0 
-    };
-    if (!sh || typeof sh !== "object") return def;
-
-    var saree = 0, lott = 0, paid = 0, netB = 0, retB = 0, netZ = 0, retZ = 0, taniW = 0;
-    
-    safeArray(sh.rows).forEach(function(r) {
-        if (!r) return;
-        saree += (Number(r.saree) || 0);
-        lott += (Number(r.lott) || 0);
-        paid += (Number(r.paid) || 0);
-        netB += (Number(r.netBana) || 0);
-        retB += (Number(r.retBana) || 0);
-        netZ += (Number(r.netZari) || 0);
-        retZ += (Number(r.retZari) || 0);
-        taniW += (Number(r.taniWazan) || 0);
+    // Default rate standards (Varanasi / Mau handloom & powerloom standard)
+    const DEFAULT_RATES = Object.freeze({
+        BANI: 240,       // Rs per saree wage
+        BANA: 0.311,     // Kg per saree weft consumption
+        ZARI: 0.110      // Kg per saree zari consumption
     });
 
-    // 1. Mazdoori (Bani) Hisab
-    var netSaree = Math.max(0, saree - lott);
-    var rateBani = (sh.rateBani !== undefined) ? Number(sh.rateBani) : 240;
-    var grossBani = netSaree * rateBani;
-    var pichlaBani = Number(sh.pichlaBani) || 0;
-    var remAmt = (grossBani + pichlaBani) - paid;
-
-    // 2. Bana Hisab
-    var rateB = (sh.rateBana !== undefined) ? Number(sh.rateBana) : 0.311;
-    var banaCons = saree * rateB;
-    var pichlaB = Number(sh.pichlaBana) || 0;
-    var bWaste = Number(sh.banaWaste) || 0;
-    var remBana = (pichlaB + netB) - (retB + banaCons + bWaste);
-
-    // 3. Zari Hisab
-    var rateZ = (sh.rateZari !== undefined) ? Number(sh.rateZari) : 0.110;
-    var zariCons = saree * rateZ;
-    var pichlaZ = Number(sh.pichlaZari) || 0;
-    var zWaste = Number(sh.zariWaste) || 0;
-    var remZari = (pichlaZ + netZ) - (retZ + zariCons + zWaste);
-
-    return {
-        totSaree: saree,
-        totLott: lott,
-        netSaree: netSaree,
-        grossBani: Number(grossBani.toFixed(2)),
-        totPaid: Number(paid.toFixed(2)),
-        remainingAmt: Number(remAmt.toFixed(2)),
-        totTaniWazan: Number(taniW.toFixed(2)),
-        totBana: Number(netB.toFixed(2)),
-        retBana: Number(retB.toFixed(2)),
-        banaConsumption: Number(banaCons.toFixed(2)),
-        banaWaste: bWaste,
-        remainingBana: Number(remBana.toFixed(2)),
-        totZari: Number(netZ.toFixed(2)),
-        retZari: Number(retZ.toFixed(2)),
-        zariConsumption: Number(zariCons.toFixed(2)),
-        zariWaste: zWaste,
-        remainingZari: Number(remZari.toFixed(2))
-    };
-}
-
-/**
- * 4. Kisi Kariger ka Total Lifetime Summary (Sabhi Tani Sheets milakar)
- */
-function getKarigerLifetimeSummary(karigerId) {
-    var sheets = getKarigerSheets(karigerId);
-    var summary = {
-        totalSarees: 0,
-        totalLott: 0,
-        totalBaniEarned: 0,
-        totalPaid: 0,
-        currentBalanceAmt: 0,
-        currentBanaBalance: 0,
-        currentZariBalance: 0
+    const roundCurrency = (val) => {
+        const num = parseFloat(val);
+        return isNaN(num) || !isFinite(num) ? 0 : Math.round((num + Number.EPSILON) * 100) / 100;
     };
 
-    if (!sheets.length) return summary;
-
-    sheets.forEach(function(sh) {
-        var c = calculateSheetTotals(sh);
-        summary.totalSarees += c.totSaree;
-        summary.totalLott += c.totLott;
-        summary.totalBaniEarned += c.grossBani;
-        summary.totalPaid += c.totPaid;
-    });
-
-    // Aakhri active sheet ka remaining balance hi current balance hota hai
-    var lastSheet = sheets[sheets.length - 1];
-    var lastCalc = calculateSheetTotals(lastSheet);
-    summary.currentBalanceAmt = lastCalc.remainingAmt;
-    summary.currentBanaBalance = lastCalc.remainingBana;
-    summary.currentZariBalance = lastCalc.remainingZari;
-
-    return summary;
-}
-
-/**
- * 5. Karkhana-Wise Production Aggregator (Dashboard ya Summary ke liye)
- */
-function getKarkhanaProductionStats(targetKarkhanaId) {
-    var allKarigers = safeArray(getStore("kariger_list"));
-    var kId = targetKarkhanaId || "all";
-
-    var filtered = allKarigers.filter(function(k) {
-        if (!k) return false;
-        if (kId === "all") return true;
-        var kid = k.karkhanaId || "k_main";
-        return String(kid) === String(kId);
-    });
-
-    var stats = {
-        totalKarigers: filtered.length,
-        totalSarees: 0,
-        totalLott: 0,
-        totalPendingBani: 0
+    const roundWeight = (val) => {
+        const num = parseFloat(val);
+        return isNaN(num) || !isFinite(num) ? 0 : Math.round((num + Number.EPSILON) * 1000) / 1000;
     };
 
-    filtered.forEach(function(k) {
-        var s = getKarigerLifetimeSummary(k.id);
-        stats.totalSarees += s.totalSarees;
-        stats.totalLott += s.totalLott;
-        stats.totalPendingBani += s.currentBalanceAmt;
-    });
+    const safeNum = (val, fallback = 0) => {
+        const n = parseFloat(val);
+        return isNaN(n) || !isFinite(n) ? fallback : n;
+    };
 
-    return stats;
-}
+    /**
+     * 1. Kariger ki Tani Sheets safe get karna
+     */
+    const getKarigerSheets = (karigerId) => {
+        if (!karigerId) return [];
+        try {
+            const storeKey = `kariger_sheets_${String(karigerId).trim()}`;
+            const raw = (typeof window.getStore === 'function') 
+                ? window.getStore(storeKey) 
+                : localStorage.getItem(storeKey);
+
+            const sheets = window.safeArray ? window.safeArray(raw) : (Array.isArray(raw) ? raw : []);
+            sheets.forEach((sh) => {
+                if (sh) sh.rows = window.safeArray ? window.safeArray(sh.rows) : (Array.isArray(sh.rows) ? sh.rows : []);
+            });
+            return sheets;
+        } catch (err) {
+            console.error(`[KarigerCalc] Error getting sheets:`, err);
+            return [];
+        }
+    };
+
+    /**
+     * 2. Kariger ki Tani Sheets save karna
+     */
+    const saveKarigerSheets = (karigerId, sheets) => {
+        if (!karigerId) return;
+        try {
+            const cleanId = String(karigerId).trim();
+            const clean = window.safeArray ? window.safeArray(sheets) : (Array.isArray(sheets) ? sheets : []);
+            clean.forEach((sh) => {
+                if (sh) sh.rows = window.safeArray ? window.safeArray(sh.rows) : (Array.isArray(sh.rows) ? sh.rows : []);
+            });
+
+            const storeKey = `kariger_sheets_${cleanId}`;
+            if (typeof window.setStore === 'function') {
+                window.setStore(storeKey, clean);
+            } else {
+                localStorage.setItem(storeKey, JSON.stringify(clean));
+            }
+        } catch (err) {
+            console.error(`[KarigerCalc] Error saving sheets:`, err);
+        }
+    };
+
+    /**
+     * 3. Tani Sheet ke Grand Totals (Mazdoori + Bana + Zari Hisab)
+     * Real-time calculation bina stale cache ke taaki koi fark na aaye
+     */
+    const calculateSheetTotals = (sh) => {
+        const def = {
+            totSaree: 0, totLott: 0, netSaree: 0, grossBani: 0, totPaid: 0, remainingAmt: 0,
+            totTaniWazan: 0, totBana: 0, retBana: 0, banaConsumption: 0, banaWaste: 0, remainingBana: 0,
+            totZari: 0, retZari: 0, zariConsumption: 0, zariWaste: 0, remainingZari: 0
+        };
+
+        if (!sh || typeof sh !== 'object') return def;
+
+        const rows = window.safeArray ? window.safeArray(sh.rows) : (Array.isArray(sh.rows) ? sh.rows : []);
+        let saree = 0, lott = 0, paid = 0, netB = 0, retB = 0, netZ = 0, retZ = 0, taniW = 0;
+
+        rows.forEach((r) => {
+            if (!r) return;
+            saree += safeNum(r.saree);
+            lott  += safeNum(r.lott);
+            paid  += safeNum(r.paid);
+            netB  += safeNum(r.netBana);
+            retB  += safeNum(r.retBana);
+            netZ  += safeNum(r.netZari);
+            retZ  += safeNum(r.retZari);
+            taniW += safeNum(r.taniWazan);
+        });
+
+        // 1. Mazdoori (Bani Wage) Hisab
+        const netSaree = Math.max(0, saree - lott);
+        const rateBani = (sh.rateBani !== undefined && sh.rateBani !== null) ? safeNum(sh.rateBani, DEFAULT_RATES.BANI) : DEFAULT_RATES.BANI;
+        const grossBani = netSaree * rateBani;
+        const pichlaBani = safeNum(sh.pichlaBani);
+        const remAmt = (grossBani + pichlaBani) - paid;
+
+        // 2. Weft (Bana) Hisab
+        const rateBana = (sh.rateBana !== undefined && sh.rateBana !== null) ? safeNum(sh.rateBana, DEFAULT_RATES.BANA) : DEFAULT_RATES.BANA;
+        const banaCons = saree * rateBana;
+        const pichlaBana = safeNum(sh.pichlaBana);
+        const banaWaste = safeNum(sh.banaWaste);
+        const remBana = (pichlaBana + netB) - (retB + banaCons + banaWaste);
+
+        // 3. Metallic Thread (Zari) Hisab
+        const rateZari = (sh.rateZari !== undefined && sh.rateZari !== null) ? safeNum(sh.rateZari, DEFAULT_RATES.ZARI) : DEFAULT_RATES.ZARI;
+        const zariCons = saree * rateZari;
+        const pichlaZari = safeNum(sh.pichlaZari);
+        const zariWaste = safeNum(sh.zariWaste);
+        const remZari = (pichlaZari + netZ) - (retZ + zariCons + zariWaste);
+
+        return {
+            totSaree: saree,
+            totLott: lott,
+            netSaree: netSaree,
+            grossBani: roundCurrency(grossBani),
+            totPaid: roundCurrency(paid),
+            remainingAmt: roundCurrency(remAmt),
+            totTaniWazan: roundWeight(taniW),
+            totBana: roundWeight(netB),
+            retBana: roundWeight(retB),
+            banaConsumption: roundWeight(banaCons),
+            banaWaste: roundWeight(banaWaste),
+            remainingBana: roundWeight(remBana),
+            totZari: roundWeight(netZ),
+            retZari: roundWeight(retZ),
+            zariConsumption: roundWeight(zariCons),
+            zariWaste: roundWeight(zariWaste),
+            remainingZari: roundWeight(remZari)
+        };
+    };
+
+    /**
+     * 4. Kisi Kariger ka Total Lifetime Summary (Sabhi Tani Sheets milakar)
+     */
+    const getKarigerLifetimeSummary = (karigerId) => {
+        const summary = {
+            totalSarees: 0,
+            totalLott: 0,
+            totalBaniEarned: 0,
+            totalPaid: 0,
+            currentBalanceAmt: 0,
+            currentBanaBalance: 0,
+            currentZariBalance: 0
+        };
+
+        if (!karigerId) return summary;
+
+        const sheets = getKarigerSheets(karigerId);
+        if (!sheets.length) return summary;
+
+        sheets.forEach((sh) => {
+            const c = calculateSheetTotals(sh);
+            summary.totalSarees += c.totSaree;
+            summary.totalLott += c.totLott;
+            summary.totalBaniEarned += c.grossBani;
+            summary.totalPaid += c.totPaid;
+        });
+
+        summary.totalBaniEarned = roundCurrency(summary.totalBaniEarned);
+        summary.totalPaid = roundCurrency(summary.totalPaid);
+
+        // Aakhri active sheet ka balance hi current balance hota hai
+        const lastSheet = sheets[sheets.length - 1];
+        const lastCalc = calculateSheetTotals(lastSheet);
+        summary.currentBalanceAmt = lastCalc.remainingAmt;
+        summary.currentBanaBalance = lastCalc.remainingBana;
+        summary.currentZariBalance = lastCalc.remainingZari;
+
+        return summary;
+    };
+
+    /**
+     * 5. Karkhana-Wise Production Aggregator
+     */
+    const getKarkhanaProductionStats = (targetKarkhanaId = 'all') => {
+        const allKarigers = window.safeArray 
+            ? window.safeArray(window.getStore('kariger_list')) 
+            : (window.getStore ? window.getStore('kariger_list') : []);
+
+        const kId = String(targetKarkhanaId || 'all').trim();
+        const filtered = allKarigers.filter((k) => {
+            if (!k) return false;
+            if (kId === 'all') return true;
+            const kid = k.karkhanaId || 'k_main';
+            return String(kid) === String(kId);
+        });
+
+        const stats = {
+            totalKarigers: filtered.length,
+            totalSarees: 0,
+            totalLott: 0,
+            totalPendingBani: 0
+        };
+
+        filtered.forEach((k) => {
+            const s = getKarigerLifetimeSummary(k.id);
+            stats.totalSarees += s.totalSarees;
+            stats.totalLott += s.totalLott;
+            stats.totalPendingBani += s.currentBalanceAmt;
+        });
+
+        stats.totalPendingBani = roundCurrency(stats.totalPendingBani);
+        return stats;
+    };
+
+    const karigerCalcAPI = {
+        DEFAULT_RATES,
+        getKarigerSheets,
+        saveKarigerSheets,
+        calculateSheetTotals,
+        getKarigerLifetimeSummary,
+        getKarkhanaProductionStats,
+        roundCurrency,
+        roundWeight
+    };
+
+    Object.keys(karigerCalcAPI).forEach((fn) => { window[fn] = karigerCalcAPI[fn]; });
+    window.KarigerCalcEngine = karigerCalcAPI;
+})();
