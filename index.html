@@ -2,7 +2,6 @@
 <html lang="hi">
 <head>
     <meta charset="UTF-8">
-    <!-- Viewport Lock for Native Mobile App Feel (No Accidental Pinch Zoom) -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Welcome to Simplicity - ERP by Farhan Jawed</title>
 
@@ -15,10 +14,9 @@
     <meta name="apple-mobile-web-app-title" content="Simplicity ERP">
     <link rel="apple-touch-icon" href="icon-192.png">
 
-    <!-- Stylesheets with Cache-Busting Versioning -->
-    <link rel="stylesheet" href="style.css?v=2.5">
+    <!-- Stylesheets with Cache-Busting Version 3.0 -->
+    <link rel="stylesheet" href="style.css?v=3.0">
 
-    <!-- Preconnect to Google & Firebase Servers for Fast Cold Starts -->
     <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
     <link rel="preconnect" href="https://simplicity-erp-default-rtdb.firebaseio.com" crossorigin>
 
@@ -27,7 +25,6 @@
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
     <style>
-        /* High-Performance Layout Containment for 60fps SPA transitions */
         .module-section {
             contain: paint;
             will-change: opacity;
@@ -59,17 +56,15 @@
 </head>
 <body oncontextmenu="return false;">
 
-    <!-- TOP PREVIEW BANNER (READ-ONLY VIEWER MODE) -->
+    <!-- TOP PREVIEW BANNER -->
     <aside id="backup-preview-banner" style="display:none; background:#fef08a; color:#854d0e; padding:10px 20px; font-weight:800; border-bottom:2px solid #eab308; position:sticky; top:0; z-index:999999; justify-content:space-between; align-items:center;" role="alert">
         <div>👁️ BACKUP PREVIEW MODE • <span id="preview-banner-date">Live Data Safe Hai!</span></div>
         <button type="button" onclick="exitBackupPreviewMode()" style="background:#dc2626; color:white; border:none; padding:6px 14px; border-radius:6px; cursor:pointer; font-weight:bold;">✕ Exit Preview</button>
     </aside>
 
-    <!-- ==================================================================== -->
-    <!-- 1. AUTHENTICATION SCREENS (LOGIN, SIGNUP, FORGOT PASSWORD)           -->
-    <!-- ==================================================================== -->
+    <!-- 1. AUTHENTICATION SCREENS -->
     <main id="login-wrapper">
-        <!-- A. LOGIN CARD -->
+        <!-- LOGIN CARD -->
         <div class="card" id="login-box">
             <h2>Welcome to Simplicity</h2>
             <div><span class="creator-tag">by Farhan Jawed</span></div>
@@ -92,7 +87,7 @@
             <p id="login-error" class="message error" style="display:none;"></p>
         </div>
 
-        <!-- B. REGISTRATION CARD -->
+        <!-- REGISTRATION CARD -->
         <div class="card" id="signup-box" style="display:none;">
             <h2>Naya Account</h2>
             <div class="input-group"><label for="reg-name">Naam</label><input type="text" id="reg-name" placeholder="Aapka Pura Naam"></div>
@@ -107,7 +102,7 @@
             </div>
         </div>
 
-        <!-- C. FORGOT PASSWORD CARD -->
+        <!-- FORGOT PASSWORD CARD -->
         <div class="card" id="forgot-box" style="display:none;">
             <h2>Password Reset</h2>
             <div id="forgot-step-1">
@@ -127,11 +122,8 @@
         </div>
     </main>
 
-    <!-- ==================================================================== -->
-    <!-- 2. MAIN ERP DESKTOP WORKSPACE                                        -->
-    <!-- ==================================================================== -->
+    <!-- 2. MAIN ERP DESKTOP WORKSPACE -->
     <div id="desktop-screen" style="display:none;">
-        <!-- TOP NAVIGATION BAR -->
         <header class="navbar">
             <div class="navbar-brand">
                 <span style="font-size:24px;">✨</span>
@@ -141,7 +133,6 @@
                 </div>
             </div>
             <div class="navbar-user-area">
-                <!-- MULTI-KARKHANA SWITCHER -->
                 <div style="display:inline-flex; align-items:center; gap:6px; background:#1e293b; padding:4px 8px; border-radius:6px;">
                     <span style="font-size:12px; color:#38bdf8; font-weight:700;">🏭 Karkhana:</span>
                     <select id="app-karkhana-select" onchange="handleNavbarKarkhanaChange(this.value)" style="background:#0f172a; color:#38bdf8; border:1px solid #334155; padding:4px 8px; border-radius:4px; font-weight:bold; font-size:12px; cursor:pointer;">
@@ -149,7 +140,6 @@
                     <button type="button" class="add-btn" style="padding:4px 8px; font-size:11px; background:#0284c7; cursor:pointer;" onclick="openKarkhanaManageModal()">➕ Karkhana</button>
                 </div>
 
-                <!-- FINANCIAL YEAR SESSION SELECTOR -->
                 <div style="display:inline-flex; align-items:center; gap:6px; background:#1e293b; padding:4px 8px; border-radius:6px;">
                     <span style="font-size:12px; color:#94a3b8; font-weight:700;">📅 Session:</span>
                     <select id="app-session-select" onchange="switchAppFinancialSession(this.value)" style="background:#0f172a; color:#38bdf8; border:1px solid #334155; padding:4px 8px; border-radius:4px; font-weight:bold; font-size:12px; cursor:pointer;">
@@ -164,7 +154,6 @@
         </header>
 
         <div class="main-container">
-            <!-- STATUS BANNER & QUICK BACKUP CONTROLS -->
             <div class="welcome-banner">
                 <div>
                     <h3 id="welcome-text">Swagat hai!</h3>
@@ -597,7 +586,7 @@
                     <div></div>
                 </div>
 
-                <!-- 1. HUB 5 CARDS MENU VIEW -->
+                <!-- HUB 5 CARDS MENU VIEW -->
                 <div id="jw-hub-view">
                     <div class="menu-grid" style="grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap:16px;">
                         <div class="menu-btn" style="border-top:4px solid #ef4444;" onclick="openJobWorkSubSection('cutting')">
@@ -628,7 +617,7 @@
                     </div>
                 </div>
 
-                <!-- 2. WORKERS LIST VIEW -->
+                <!-- WORKERS LIST VIEW -->
                 <div id="jw-workers-view" style="display:none;">
                     <div style="display:flex; justify-content:space-between; margin-bottom:12px; align-items:center;">
                         <button type="button" class="back-btn" onclick="showJobWorkHub()">← Hub Menu</button>
@@ -683,7 +672,7 @@
                     </div>
                 </div>
 
-                <!-- 3. WORKER MONTHLY KHATA SHEET VIEW -->
+                <!-- WORKER MONTHLY KHATA SHEET VIEW -->
                 <div id="jw-sheet-view" style="display:none;">
                     <div style="display:flex; justify-content:space-between; margin-bottom:12px; align-items:center; flex-wrap:wrap; gap:8px;">
                         <button type="button" class="back-btn" onclick="closeJobWorkerSheet()">← Workers List</button>
@@ -726,9 +715,8 @@
                     </div>
 
                     <div style="background:#f8fafc; border:1px solid #cbd5e1; padding:14px; border-radius:10px; margin-bottom:14px;">
-                        <div style="font-weight:800; color:#1e293b; margin-bottom:10px;">➕ Rozana Batch Entry (Gayi / Aayi Saree):</div>
+                        <div style="font-weight:800; color:#1e293b; margin-bottom:10px;">➕ Rozana Batch Entry:</div>
 
-                        <!-- Saree Gayi Section -->
                         <div style="background:#fff1f2; border:1px solid #fecaca; padding:10px; border-radius:8px; margin-bottom:10px;">
                             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
                                 <strong style="color:#dc2626;">📤 1. Saree Gayi (Kisko Diya):</strong>
@@ -751,7 +739,6 @@
                             <div id="jw-diya-batch-chips" style="display:flex; flex-wrap:wrap; gap:6px; margin-top:6px;"></div>
                         </div>
 
-                        <!-- Saree Aayi Section -->
                         <div style="background:#f0fdf4; border:1px solid #bbf7d0; padding:10px; border-radius:8px; margin-bottom:10px;">
                             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
                                 <strong style="color:#059669;">📥 2. Saree Wapas Aayi (Tayyar Hoke):</strong>
@@ -768,7 +755,6 @@
                             <div id="jw-aayi-batch-chips" style="display:flex; flex-wrap:wrap; gap:6px; margin-top:6px;"></div>
                         </div>
 
-                        <!-- Damage & Submit -->
                         <div class="form-row-3" style="align-items:flex-end;">
                             <div class="input-group"><label style="color:#ea580c;">⚠️ Damage Saree (Pcs)</label><input type="number" id="jw-form-damage-pcs" placeholder="0"></div>
                             <div class="input-group"><label style="color:#dc2626;">Damage Fine / Kaat (₹)</label><input type="number" id="jw-form-damage-amt" placeholder="0.00"></div>
@@ -788,7 +774,7 @@
                     </div>
                 </div>
 
-                <!-- 4. DUKAN BHEJA VIEW (FINAL OUT) -->
+                <!-- DUKAN BHEJA VIEW -->
                 <div id="jw-dukan-view" style="display:none;">
                     <div style="display:flex; justify-content:space-between; margin-bottom:12px; align-items:center;">
                         <button type="button" class="back-btn" onclick="showJobWorkHub()">← Hub Menu</button>
@@ -835,7 +821,7 @@
                     </div>
                 </div>
 
-                <!-- 5. JOB WORK BILLING & HISAB VIEW -->
+                <!-- JOB WORK BILLING & HISAB VIEW -->
                 <div id="jw-billing-view" style="display:none;">
                     <div style="display:flex; justify-content:space-between; margin-bottom:12px; align-items:center;">
                         <button type="button" class="back-btn" onclick="showJobWorkHub()">← Hub Menu</button>
@@ -895,7 +881,7 @@
                     </div>
                 </div>
 
-                <!-- 6. JOB WORK DAY-BOOK & TRACKING VIEW -->
+                <!-- JOB WORK DAY-BOOK & TRACKING VIEW -->
                 <div id="jw-movement-view" style="display:none;">
                     <div style="display:flex; justify-content:space-between; margin-bottom:12px; align-items:center;">
                         <button type="button" class="back-btn" onclick="showJobWorkHub()">← Hub Menu</button>
@@ -934,15 +920,46 @@
 
             <!-- MODULE 8: ADMIN CONTROL -->
             <section id="admin-section" class="module-section" style="display:none;">
-                <div class="module-header"><button type="button" class="back-btn" onclick="backToDashboard()">← Dashboard</button><h2 style="color:#d97706;">👑 Admin Panel</h2><button type="button" id="admin-refresh-users-btn" class="add-btn" onclick="refreshAdminUsersList()">🔄 Refresh List</button></div>
-                <div class="table-responsive"><table><thead><tr style="background:#d97706; color:white;"><th>S.No.</th><th>Naam</th><th>Mobile</th><th>User ID</th><th>Password</th><th>Join Date</th><th>Validity</th><th>Status</th><th style="text-align:center;">Action</th></tr></thead><tbody id="admin-users-table-body"></tbody></table></div>
+                <div class="module-header">
+                    <button type="button" class="back-btn" onclick="backToDashboard()">← Dashboard</button>
+                    <h2 style="color:#d97706;">👑 Admin Panel</h2>
+                    <button type="button" id="admin-refresh-users-btn" class="add-btn" onclick="refreshAdminUsersList()">🔄 Refresh List</button>
+                </div>
+
+                <!-- ADMIN SUMMARY COUNTERS -->
+                <div style="display:flex; gap:10px; margin-bottom:14px; flex-wrap:wrap;">
+                    <div style="flex:1; background:white; padding:10px; border-radius:8px; border:1px solid #cbd5e1; text-align:center;">
+                        <small style="color:#64748b; font-weight:700;">Kul IDs</small>
+                        <h4 id="admin-total-users" style="color:#1e293b; margin-top:2px;">0</h4>
+                    </div>
+                    <div style="flex:1; background:white; padding:10px; border-radius:8px; border:1px solid #cbd5e1; text-align:center;">
+                        <small style="color:#059669; font-weight:700;">Active</small>
+                        <h4 id="admin-active-users" style="color:#059669; margin-top:2px;">0</h4>
+                    </div>
+                    <div style="flex:1; background:#fef2f2; padding:10px; border-radius:8px; border:1px solid #f87171; text-align:center;">
+                        <small style="color:#b91c1c; font-weight:800;">Blocked / Expired</small>
+                        <h4 id="admin-blocked-users" style="color:#dc2626; margin-top:2px;">0</h4>
+                    </div>
+                </div>
+
+                <!-- TOP PENDING APPROVAL BANNER CONTAINER -->
+                <div id="admin-pending-approval-banner" style="display:none;"></div>
+
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr style="background:#d97706; color:white;">
+                                <th>S.No.</th><th>Naam</th><th>Mobile</th><th>User ID</th><th>Password</th><th>Join Date</th><th>Validity</th><th>Status</th><th style="text-align:center;">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="admin-users-table-body"></tbody>
+                    </table>
+                </div>
             </section>
         </div>
     </div>
 
-    <!-- ==================================================================== -->
-    <!-- 3. ACCESSIBLE MODAL OVERLAYS                                         -->
-    <!-- ==================================================================== -->
+    <!-- 3. ACCESSIBLE MODAL OVERLAYS -->
     <div id="item-modal" class="modal-overlay" style="display:none;" role="dialog" aria-modal="true">
         <div class="modal-card">
             <div class="modal-header"><h3 id="modal-item-title">Passbook</h3><button type="button" class="close-modal-btn" onclick="setDisplay('item-modal', 'none')">✕</button></div>
@@ -950,7 +967,6 @@
         </div>
     </div>
 
-    <!-- Job Work Batch Breakdown Modal -->
     <div id="jw-batch-modal" class="modal-overlay" style="display:none;" role="dialog" aria-modal="true">
         <div class="modal-card" style="max-width:540px;">
             <div class="modal-header">
@@ -976,7 +992,6 @@
         </div>
     </div>
 
-    <!-- Job Work Bill Pay Modal -->
     <div id="jw-pay-modal" class="modal-overlay" style="display:none;" role="dialog" aria-modal="true">
         <div class="modal-card" style="max-width:440px;">
             <div class="modal-header">
@@ -1051,59 +1066,47 @@
         </div>
     </div>
 
-    <!-- SHARED GLOBAL DATALISTS -->
     <datalist id="dl-karigers-list"></datalist>
 
     <!-- ==================================================================== -->
-    <!-- 4. MODULAR SCRIPTS (STRICT ENTERPRISE DEPENDENCY ORDER v2.5)         -->
+    <!-- 4. MODULAR SCRIPTS (BUMPED TO VERSION v3.0 FOR FORCED CACHE CLEAR)   -->
     <!-- ==================================================================== -->
-    <!-- Step 1: Core Foundation & Safe Array Engines -->
-    <script src="core/utils.js?v=2.5"></script>
-    <script src="core/storage.js?v=2.5"></script>
-    <script src="core/database.js?v=2.5"></script>
-    <script src="core/karkhana.js?v=2.5"></script>
+    <script src="core/utils.js?v=3.0"></script>
+    <script src="core/storage.js?v=3.0"></script>
+    <script src="core/database.js?v=3.0"></script>
+    <script src="core/karkhana.js?v=3.0"></script>
 
-    <!-- Step 2: Access & Identity Management -->
-    <script src="auth/auth.js?v=2.5"></script>
-    <script src="auth/profile.js?v=2.5"></script>
+    <script src="auth/auth.js?v=3.0"></script>
+    <script src="auth/profile.js?v=3.0"></script>
 
-    <!-- Step 3: Session Lifecycle & Year Closing -->
-    <script src="session/session.js?v=2.5"></script>
-    <script src="session/session-closing.js?v=2.5"></script>
+    <script src="session/session.js?v=3.0"></script>
+    <script src="session/session-closing.js?v=3.0"></script>
 
-    <!-- Step 4: All Calculation Engines (MUST load BEFORE UI modules) -->
-    <script src="kariger/kariger-calc.js?v=2.5"></script>
-    <script src="bana/bana-calc.js?v=2.5"></script>
-    <script src="zari/zari-calc.js?v=2.5"></script>
-    <script src="sancha/sancha-calc.js?v=2.5"></script>
-    <script src="saree/saree-calc.js?v=2.5"></script>
-    <script src="cutting/cutting-calc.js?v=2.5"></script>
-    <script src="calender/calender-calc.js?v=2.5"></script>
+    <script src="kariger/kariger-calc.js?v=3.0"></script>
+    <script src="bana/bana-calc.js?v=3.0"></script>
+    <script src="zari/zari-calc.js?v=3.0"></script>
+    <script src="sancha/sancha-calc.js?v=3.0"></script>
+    <script src="saree/saree-calc.js?v=3.0"></script>
+    <script src="cutting/cutting-calc.js?v=3.0"></script>
+    <script src="calender/calender-calc.js?v=3.0"></script>
 
-    <!-- Step 5: All UI Controllers & DOM Synchronizers -->
-    <script src="kariger/kariger-ui.js?v=2.5"></script>
-    <script src="bana/bana-ui.js?v=2.5"></script>
-    <script src="zari/zari-ui.js?v=2.5"></script>
-    <script src="sancha/sancha-ui.js?v=2.5"></script>
-    <script src="saree/saree-ui.js?v=2.5"></script>
-    <script src="cutting/cutting-ui.js?v=2.5"></script>
-    <script src="calender/calender-ui.js?v=2.5"></script>
-    <script src="dukan/dukan.js?v=2.5"></script>
-    <script src="payment/payment.js?v=2.5"></script>
-    <script src="jobwork.js?v=2.5"></script>
-    <script src="daybook/daybook.js?v=2.5"></script>
+    <script src="kariger/kariger-ui.js?v=3.0"></script>
+    <script src="bana/bana-ui.js?v=3.0"></script>
+    <script src="zari/zari-ui.js?v=3.0"></script>
+    <script src="sancha/sancha-ui.js?v=3.0"></script>
+    <script src="saree/saree-ui.js?v=3.0"></script>
+    <script src="cutting/cutting-ui.js?v=3.0"></script>
+    <script src="calender/calender-ui.js?v=3.0"></script>
+    <script src="dukan/dukan.js?v=3.0"></script>
+    <script src="payment/payment.js?v=3.0"></script>
+    <script src="jobwork.js?v=3.0"></script>
+    <script src="daybook/daybook.js?v=3.0"></script>
 
-    <!-- Step 6: Administration & Data Portability -->
-    <script src="admin/admin.js?v=2.5"></script>
-    <script src="backup/backup.js?v=2.5"></script>
+    <script src="admin/admin.js?v=3.0"></script>
+    <script src="backup/backup.js?v=3.0"></script>
 
-    <!-- ==================================================================== -->
-    <!-- 5. APPLICATION INITIALIZER & NAVBAR CONTROLLER                       -->
-    <!-- ==================================================================== -->
+    <!-- 5. APPLICATION INITIALIZER -->
     <script>
-        /**
-         * Populates Karkhana selection dropdown in top navigation bar
-         */
         function populateNavbarKarkhanaDropdown() {
             const sel = document.getElementById("app-karkhana-select");
             if (!sel) return;
@@ -1127,9 +1130,6 @@
             });
         }
 
-        /**
-         * Dispatches navbar branch changes to all active modules
-         */
         function handleNavbarKarkhanaChange(val) {
             if (typeof window.setActiveKarkhanaId === "function") {
                 window.setActiveKarkhanaId(val, () => {
@@ -1143,16 +1143,14 @@
             }
         }
 
-        // PWA Service Worker Registration
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('sw.js?v=2.5')
+                navigator.serviceWorker.register('sw.js?v=3.0')
                     .then(() => console.log('✅ [PWA] Service Worker Active.'))
                     .catch((err) => console.warn('⚠️ [PWA] SW Registration failed:', err));
             });
         }
 
-        // Auto-bootstrap app on DOM Ready
         document.addEventListener('DOMContentLoaded', () => {
             populateNavbarKarkhanaDropdown();
             if (typeof window.checkAutoLogin === 'function') {
@@ -1162,3 +1160,324 @@
     </script>
 </body>
 </html>
+
+File 2: admin/admin.js
+
+/* ========================================================
+   SIMPLICITY ERP - LIVE ADMIN CONTROL & REALTIME USER APPROVAL
+   File: admin/admin.js • Developed by Farhan Jawed
+======================================================== */
+
+window.adminUsersData = [];
+
+// 👑 1. ADMIN PANEL OPEN (Direct Realtime Connection)
+function openAdminModule() {
+    var uid = (typeof currentUserId !== "undefined" ? String(currentUserId).trim().toLowerCase() : "");
+    var role = (typeof currentUserRole !== "undefined" ? String(currentUserRole).trim().toLowerCase() : "");
+
+    // Farhan Master Admin hamesha allowed hai
+    if (role !== "admin" && uid !== "farhan") {
+        return alert("⛔ Sirf Master Admin (Farhan) is panel ko access kar sakte hain!");
+    }
+
+    if (typeof hideAllSections === "function") hideAllSections();
+    setDisplay("admin-section", "block");
+
+    // Pehle jo local hai wo dikhao
+    renderAdminUsersTable();
+
+    // Firebase Cloud se LIVE sync karo
+    fetchAndListenAdminUsers();
+}
+
+// 🌐 2. FIREBASE REALTIME LISTENER (Live Streaming)
+function fetchAndListenAdminUsers() {
+    if (typeof db === "undefined" || !db) return;
+
+    db.ref("app_users").on("value", function(snap) {
+        var v = snap.val();
+        var arr = [];
+
+        if (v && typeof v === "object") {
+            for (var key in v) {
+                if (v[key] && typeof v[key] === "object") {
+                    var userObj = v[key];
+                    // Agar object ke andar id na ho toh Firebase ki key ko id banao
+                    userObj.id = userObj.id || key;
+                    userObj.name = userObj.name || key;
+                    userObj.status = userObj.status || "active";
+                    arr.push(userObj);
+                }
+            }
+        }
+
+        // Farhan ko hamesha barkarar rakho
+        if (!arr.some(function(u) { return String(u.id).toLowerCase() === "farhan"; })) {
+            arr.push({
+                id: "farhan",
+                name: "Farhan jawed",
+                mobile: "7065572191",
+                pass: "97438090641154",
+                role: "admin",
+                status: "active",
+                date: "2026-01-01"
+            });
+        }
+
+        window.adminUsersData = arr;
+
+        try {
+            localStorage.setItem("app_users", JSON.stringify(arr));
+            localStorage.setItem("farhan_app_users", JSON.stringify(arr));
+            if (typeof APP_MEMORY_CACHE !== "undefined") {
+                APP_MEMORY_CACHE["app_users"] = arr;
+                APP_MEMORY_CACHE["farhan_app_users"] = arr;
+            }
+            if (typeof setStore === "function") setStore("app_users", arr);
+        } catch (_) {}
+
+        renderAdminUsersTable();
+    }, function(error) {
+        console.error("Firebase fetch error:", error);
+    });
+}
+
+// 📊 3. TABLE & APPROVAL BANNER RENDERER
+function renderAdminUsersTable() {
+    var users = window.adminUsersData;
+    
+    if (!users || !users.length) {
+        try {
+            users = JSON.parse(localStorage.getItem("app_users")) || 
+                    JSON.parse(localStorage.getItem("farhan_app_users")) || [];
+        } catch (_) {
+            users = [];
+        }
+    }
+
+    if (!users.length && typeof getUsersList === "function") {
+        var gList = getUsersList();
+        if (Array.isArray(gList) && gList.length > 0) users = gList;
+    }
+
+    if (!users.length) {
+        users = [{
+            id: "farhan",
+            name: "Farhan jawed",
+            mobile: "7065572191",
+            pass: "97438090641154",
+            role: "admin",
+            status: "active",
+            date: "2026-01-01"
+        }];
+    }
+
+    var tbody = document.getElementById("admin-users-table-body");
+    if (!tbody) return;
+
+    var tot = 0, act = 0, blk = 0, pnd = 0;
+    var pendingUsersList = [];
+    var rowsHtml = "";
+
+    users.forEach(function(u, idx) {
+        if (!u) return;
+        tot++;
+
+        var uIdStr = String(u.id || "").trim();
+        var isOwner = (uIdStr.toLowerCase() === "farhan" || u.role === "admin");
+        var isPending = (u.status === "pending");
+        var isBlocked = (u.status === "blocked");
+        var isExpired = false;
+
+        if (u.expiryDate) {
+            var today = new Date().toISOString().split("T")[0];
+            if (u.expiryDate < today) isExpired = true;
+        }
+
+        if (isPending) {
+            pnd++;
+            pendingUsersList.push(u);
+        } else if (isBlocked || isExpired) {
+            blk++;
+        } else {
+            act++;
+        }
+
+        // Badges
+        var stBadge = "";
+        if (isOwner) {
+            stBadge = "<span class='badge-green' style='background:#10b981; color:#fff; padding:3px 8px; border-radius:12px; font-weight:700;'>👑 Owner</span>";
+        } else if (isPending) {
+            stBadge = "<span style='background:#fef3c7; color:#b45309; border:1px solid #fde68a; padding:3px 8px; border-radius:12px; font-weight:700; font-size:11px;'>⏳ Approval Pending</span>";
+        } else if (isBlocked) {
+            stBadge = "<span class='badge-red' style='background:#ef4444; color:#fff; padding:3px 8px; border-radius:12px; font-weight:700;'>⛔ Blocked</span>";
+        } else if (isExpired) {
+            stBadge = "<span class='badge-red' style='background:#f97316; color:#fff; padding:3px 8px; border-radius:12px; font-weight:700;'>⌛ Expired</span>";
+        } else {
+            stBadge = "<span class='badge-green' style='background:#10b981; color:#fff; padding:3px 8px; border-radius:12px; font-weight:700;'>Active</span>";
+        }
+
+        // Action Buttons
+        var actionBtns = "";
+        var safeId = uIdStr.replace(/'/g, "\\'");
+
+        if (isPending) {
+            actionBtns = "<button type='button' class='quick-btn' style='background:#059669; color:white; font-weight:bold; padding:6px 12px; border-radius:6px; cursor:pointer;' onclick='approveUserByAdmin(\"" + safeId + "\")'>✅ Approve</button> " +
+                         "<button type='button' class='delete-btn' style='padding:6px 10px;' onclick='deleteUserByAdmin(\"" + safeId + "\")'>🗑️ Reject</button>";
+        } else if (!isOwner) {
+            actionBtns = "<button type='button' class='quick-btn " + (isBlocked ? "btn-in" : "btn-out") + "' onclick='toggleUserBlockStatus(\"" + safeId + "\")'>" + (isBlocked ? "Unblock" : "Block") + "</button> " +
+                         "<button type='button' class='edit-btn' onclick='resetUserPasswordByAdmin(\"" + safeId + "\")'>🔑 Pass</button> " +
+                         "<button type='button' class='delete-btn' onclick='deleteUserByAdmin(\"" + safeId + "\")'>🗑️</button>";
+        } else {
+            actionBtns = "<span style='color:#059669; font-weight:bold; font-size:12px;'>👑 Full Control</span>";
+        }
+
+        // Validity Field
+        var expiryDisplay = "";
+        if (isOwner) {
+            expiryDisplay = "<strong style='color:#059669;'>Lifetime</strong>";
+        } else if (isPending) {
+            expiryDisplay = "<span style='color:#b45309; font-weight:bold;'>Approval Ka Intezar</span>";
+        } else {
+            expiryDisplay = "<input type='date' value='" + (u.expiryDate || "") + "' onchange='updateUserExpiryDate(\"" + safeId + "\", this.value)' style='padding:2px 4px;font-size:11px;border-radius:4px;border:1px solid #cbd5e1;'> " + 
+                            (typeof formatDateDisplay === "function" ? formatDateDisplay(u.expiryDate) : (u.expiryDate || "-")) + 
+                            " <button type='button' onclick='extendValidity(\"" + safeId + "\", 30)' style='padding:2px 6px;font-size:10px;border-radius:4px;border:none;background:#2563eb;color:white;cursor:pointer;'>+30D</button>";
+        }
+
+        rowsHtml += "<tr>" +
+            "<td>" + (idx + 1) + "</td>" +
+            "<td><strong>" + (u.name || "-") + "</strong></td>" +
+            "<td>" + (u.mobile || "-") + "</td>" +
+            "<td><code>" + uIdStr + "</code></td>" +
+            "<td><strong style='color:#1e3a8a;'>" + (u.pass || "-") + "</strong></td>" +
+            "<td>" + (typeof formatDateDisplay === "function" ? formatDateDisplay(u.date) : (u.date || "-")) + "</td>" +
+            "<td>" + expiryDisplay + "</td>" +
+            "<td>" + stBadge + "</td>" +
+            "<td style='text-align:center; white-space:nowrap;'>" + actionBtns + "</td>" +
+        "</tr>";
+    });
+
+    tbody.innerHTML = rowsHtml;
+
+    // 🔔 TOP PENDING CARD
+    var pendingBanner = document.getElementById("admin-pending-approval-banner");
+    if (pendingBanner) {
+        if (pendingUsersList.length > 0) {
+            var pHtml = "<div style='background:#fffbeb; border:2px solid #f59e0b; border-radius:12px; padding:14px; margin-bottom:16px;'>" +
+                "<div style='color:#b45309; font-size:14px; font-weight:800; margin-bottom:10px;'>🔔 Naye Account Approval Requests (" + pendingUsersList.length + "):</div>" +
+                "<div style='display:flex; flex-direction:column; gap:8px;'>";
+
+            pendingUsersList.forEach(function(pu) {
+                var pId = String(pu.id).replace(/'/g, "\\'");
+                pHtml += "<div style='background:white; border:1px solid #fde68a; border-radius:8px; padding:10px 14px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;'>" +
+                    "<div>" +
+                        "<strong style='color:#1e3a8a; font-size:14px;'>👤 " + pu.name + "</strong> &bull; <code>User ID: " + pu.id + "</code> &bull; 📞 " + (pu.mobile || "-") +
+                        "<div style='font-size:11px; color:#64748b;'>Request Date: " + (typeof formatDateDisplay === "function" ? formatDateDisplay(pu.date) : (pu.date || "-")) + "</div>" +
+                    "</div>" +
+                    "<div style='display:flex; gap:8px;'>" +
+                        "<button type='button' class='quick-btn' style='background:#059669; color:white; font-weight:bold; padding:8px 16px; border-radius:6px; cursor:pointer;' onclick='approveUserByAdmin(\"" + pId + "\")'>✅ Approve Karein</button>" +
+                        "<button type='button' class='delete-btn' style='padding:8px 12px;' onclick='deleteUserByAdmin(\"" + pId + "\")'>🗑️ Reject</button>" +
+                    "</div>" +
+                "</div>";
+            });
+
+            pHtml += "</div></div>";
+            pendingBanner.innerHTML = pHtml;
+            pendingBanner.style.display = "block";
+        } else {
+            pendingBanner.style.display = "none";
+        }
+    }
+
+    // Update Counters
+    var elTot = document.getElementById("admin-total-users");
+    var elAct = document.getElementById("admin-active-users");
+    var elBlk = document.getElementById("admin-blocked-users");
+    if (elTot) elTot.textContent = tot;
+    if (elAct) elAct.textContent = act;
+    if (elBlk) elBlk.textContent = blk;
+}
+
+// ✅ ACTIONS
+function approveUserByAdmin(uid) {
+    var exp = new Date();
+    exp.setDate(exp.getDate() + 30);
+    var formattedExp = exp.toISOString().split("T")[0];
+
+    if (typeof db !== "undefined" && db) {
+        db.ref("app_users/" + uid).update({
+            status: "active",
+            expiryDate: formattedExp
+        }).then(function() {
+            alert("🎉 User '" + uid + "' approve ho gaya!");
+        });
+    }
+}
+
+function updateUserExpiryDate(uid, dateVal) {
+    if (typeof db !== "undefined" && db) {
+        db.ref("app_users/" + uid + "/expiryDate").set(dateVal);
+    }
+}
+
+function extendValidity(uid, days) {
+    var u = (window.adminUsersData || []).find(function(x) { return String(x.id) === String(uid); });
+    var base = (u && u.expiryDate && new Date(u.expiryDate) > new Date()) ? new Date(u.expiryDate) : new Date();
+    base.setDate(base.getDate() + days);
+    var formatted = base.toISOString().split("T")[0];
+
+    if (typeof db !== "undefined" && db) {
+        db.ref("app_users/" + uid).update({
+            expiryDate: formatted,
+            status: "active"
+        }).then(function() {
+            alert("✅ Validity 30 din badh gayi!");
+        });
+    }
+}
+
+function resetUserPasswordByAdmin(uid) {
+    var newPass = prompt("Naya password daalein:", Math.floor(100000 + Math.random() * 900000).toString());
+    if (!newPass || !newPass.trim()) return;
+
+    if (typeof db !== "undefined" && db) {
+        db.ref("app_users/" + uid + "/pass").set(newPass.trim()).then(function() {
+            alert("✅ Password update ho gaya!");
+        });
+    }
+}
+
+function toggleUserBlockStatus(uid) {
+    if (String(uid).toLowerCase() === "farhan") return alert("⛔ Master Admin block nahi ho sakta!");
+    var u = (window.adminUsersData || []).find(function(x) { return String(x.id) === String(uid); });
+    var nextStatus = (u && u.status === "blocked") ? "active" : "blocked";
+
+    if (typeof db !== "undefined" && db) {
+        db.ref("app_users/" + uid + "/status").set(nextStatus);
+    }
+}
+
+function deleteUserByAdmin(uid) {
+    if (String(uid).toLowerCase() === "farhan") return alert("⛔ Master Admin delete nahi ho sakta!");
+    if (!confirm("Kya aap sach me is User ko delete karna chahte hain?")) return;
+
+    if (typeof db !== "undefined" && db) {
+        db.ref("app_users/" + uid).remove().then(function() {
+            alert("🗑️ User delete ho gaya!");
+        });
+    }
+}
+
+function refreshAdminUsersList() {
+    fetchAndListenAdminUsers();
+}
+
+window.openAdminModule = openAdminModule;
+window.renderAdminUsersTable = renderAdminUsersTable;
+window.approveUserByAdmin = approveUserByAdmin;
+window.updateUserExpiryDate = updateUserExpiryDate;
+window.extendValidity = extendValidity;
+window.resetUserPasswordByAdmin = resetUserPasswordByAdmin;
+window.toggleUserBlockStatus = toggleUserBlockStatus;
+window.deleteUserByAdmin = deleteUserByAdmin;
+window.refreshAdminUsersList = refreshAdminUsersList;
