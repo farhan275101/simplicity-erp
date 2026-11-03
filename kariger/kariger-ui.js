@@ -1,7 +1,7 @@
 /* ============================================================================
    SIMPLICITY ERP - WEAVER (KARIGER) UI & SHEET CONTROLLER
    File: kariger/kariger-ui.js • Developed by Farhan Jawed
-   (Accurate Row Edit/Delete, Accurate Absent Days & Realtime Stock Adjust)
+   (Live Realtime Sheet Sync + Auto-Godam Stock + Zero Overwrite)
 ============================================================================ */
 
 (() => {
@@ -40,15 +40,11 @@
         return list.filter((k) => k && k.name && String(k.name).trim() !== '');
     };
 
-    /**
-     * 0. ABSENT DAYS CALCULATION ENGINE (Accurate across all sheets)
-     */
     const getKarigerAbsentDays = (kId, joinDate) => {
         if (!kId) return 0;
         const sheets = (typeof window.getKarigerSheets === 'function') ? window.getKarigerSheets(kId) : [];
         let lastDate = joinDate || ((typeof window.getTodayDate === 'function') ? window.getTodayDate() : new Date().toISOString().split('T')[0]);
 
-        // Saari sheets scan karke sabse latest kaam ki tareekh nikalo
         sheets.forEach((sh) => {
             const rows = window.safeArray ? window.safeArray(sh.rows) : [];
             rows.forEach((r) => {
@@ -66,7 +62,7 @@
     };
 
     /* ========================================================================
-       1. NAVIGATION & TABS
+       1. NAVIGATION & DIRECTORY
        ------------------------------------------------------------------------
     ======================================================================== */
     const openKarigerModule = () => {
@@ -431,7 +427,7 @@
     };
 
     /* ========================================================================
-       3. TANI KHATA CONTROLLER
+       3. TANI KHATA CONTROLLER (With Live Cloud Streaming)
        ------------------------------------------------------------------------
     ======================================================================== */
     const openKarigerSheet = (id) => {
@@ -441,6 +437,13 @@
         window.activeKarigerId = k.id;
         window.activeSheetIndex = 0;
         window.editingRowIndex = null;
+
+        // 🌟 LIVE CLOUD HOOK: Is Kariger ki sheet ko turant Firebase se live connect karo
+        if (typeof window.syncKarigerSheetLive === 'function') {
+            window.syncKarigerSheetLive(k.id);
+        } else if (window.CloudEngine && typeof window.CloudEngine.syncKarigerSheetLive === 'function') {
+            window.CloudEngine.syncKarigerSheetLive(k.id);
+        }
 
         const kSec = document.getElementById('kariger-section');
         const shSec = document.getElementById('kariger-sheet-section');
@@ -624,7 +627,6 @@
         sh.chukkaSancha = String(document.getElementById('sheet-chukka-sancha')?.value || '').trim();
         sh.chukkaWazan = newChukkaWazan;
 
-        // Tani Stock Adjust
         if (sh.taniItem && (newTaniWazan !== oldTaniWazan || sh.taniItem !== oldTaniItem)) {
             const sList = window.safeArray ? window.safeArray(window.getStore('sancha_items')) : [];
             if (oldTaniItem && oldTaniItem !== sh.taniItem && oldTaniWazan > 0) {
@@ -663,7 +665,6 @@
             if (typeof window.setStore === 'function') window.setStore('sancha_history', sHist);
         }
 
-        // Chukka Stock Adjust
         if (sh.chukkaItem && (newChukkaWazan !== oldChukkaWazan || sh.chukkaItem !== oldChukkaItem)) {
             const sList2 = window.safeArray ? window.safeArray(window.getStore('sancha_items')) : [];
             if (oldChukkaItem && oldChukkaItem !== sh.chukkaItem && oldChukkaWazan > 0) {
@@ -708,7 +709,7 @@
     };
 
     /* ========================================================================
-       4. LINE ROW SAVE / EDIT / DELETE (ZERO DUPLICATE STOCK)
+       4. LINE ROW SAVE / EDIT / DELETE (With Cloud Live Trigger)
        ------------------------------------------------------------------------
     ======================================================================== */
     const saveTaniRow = () => {
@@ -747,7 +748,6 @@
         const isEditing = (window.editingRowIndex !== null && sh.rows[window.editingRowIndex]);
         const rowId = isEditing ? sh.rows[window.editingRowIndex].id : `row_${Date.now()}`;
 
-        // Agar purani row edit ho rahi hai, toh pehle purane history records clear karo taaki double minus na ho!
         if (isEditing) {
             let sHistOld = window.safeArray ? window.safeArray(window.getStore('saree_history')) : [];
             sHistOld = sHistOld.filter((h) => !h || String(h.refId) !== String(rowId));
@@ -795,7 +795,6 @@
             window.saveKarigerSheets(window.activeKarigerId, sheets);
         }
 
-        // 1. Saree & Lott Stock Sync
         if (typeof window.recordSareeFromKariger === 'function') {
             window.recordSareeFromKariger(d, sDesign, kName, kGodown, saree, lott, rowId);
         } else {
@@ -834,7 +833,6 @@
             if (typeof window.setStore === 'function') window.setStore('saree_history', sHist);
         }
 
-        // 2. Bana History Entry
         if (banaItemName && (nBana > 0 || retB > 0)) {
             const bHist = window.safeArray ? window.safeArray(window.getStore('bana_history')) : [];
             bHist.push({
@@ -852,7 +850,6 @@
             if (typeof window.setStore === 'function') window.setStore('bana_history', bHist);
         }
 
-        // 3. Zari History Entry
         if (zariItemName && (nZari > 0 || retZ > 0)) {
             const zHist = window.safeArray ? window.safeArray(window.getStore('zari_history')) : [];
             zHist.push({
@@ -870,7 +867,6 @@
             if (typeof window.setStore === 'function') window.setStore('zari_history', zHist);
         }
 
-        // Reset Inputs
         setVal('row-saree', '');
         setVal('row-lott', '');
         setVal('row-cone', '');
@@ -883,7 +879,7 @@
 
         renderSheetRows(sh);
         updateLiveStockDisplay();
-        alert('✅ Line jud gayi! Hisab aur Stock accurate update ho gaya!');
+        alert('✅ Line jud gayi! Cloud aur Stock dono update ho gaye!');
     };
 
     const editTaniRow = (idx) => {
@@ -917,17 +913,14 @@
 
         const r = sh.rows[idx];
 
-        // 1. Remove Saree History
         let sHist = window.safeArray ? window.safeArray(window.getStore('saree_history')) : [];
         sHist = sHist.filter((h) => !h || String(h.refId) !== String(r.id));
         if (typeof window.setStore === 'function') window.setStore('saree_history', sHist);
 
-        // 2. Remove Bana History
         let bHist = window.safeArray ? window.safeArray(window.getStore('bana_history')) : [];
         bHist = bHist.filter((h) => !h || String(h.refId) !== String(r.id));
         if (typeof window.setStore === 'function') window.setStore('bana_history', bHist);
 
-        // 3. Remove Zari History
         let zHist = window.safeArray ? window.safeArray(window.getStore('zari_history')) : [];
         zHist = zHist.filter((h) => !h || String(h.refId) !== String(r.id));
         if (typeof window.setStore === 'function') window.setStore('zari_history', zHist);
@@ -941,7 +934,7 @@
     };
 
     /* ========================================================================
-       5. 9-COLUMN SHEET ROWS & FINANCIAL SUMMARY RENDERER
+       5. 9-COLUMN SHEET ROWS RENDERER
        ------------------------------------------------------------------------
     ======================================================================== */
     const renderSheetRows = (sh) => {
@@ -1000,7 +993,6 @@
                 totZari: 0, retZari: 0, zariConsumption: 0, zariWaste: 0, remainingZari: 0
             };
 
-        // Mazdoori breakdown
         setText('calc-tot-saree', c.totSaree);
         setText('calc-tot-lott', `- ${c.totLott}`);
         setText('calc-net-saree', c.netSaree);
@@ -1010,7 +1002,6 @@
         setText('calc-tot-paid', `- ₹ ${c.totPaid.toFixed(2)}`);
         setText('calc-remaining-amt', `₹ ${c.remainingAmt.toFixed(2)}`);
 
-        // Weft (Bana) breakdown
         setText('calc-last-tani-bana', safeNum(sh.pichlaBana).toFixed(2));
         setText('calc-tot-bana', c.totBana.toFixed(2));
         setText('calc-ret-bana', `- ${c.retBana.toFixed(2)}`);
@@ -1018,7 +1009,6 @@
         setText('calc-bana-wastage', `- ${safeNum(sh.banaWaste).toFixed(2)}`);
         setText('calc-remaining-bana', c.remainingBana.toFixed(2));
 
-        // Zari breakdown
         setText('calc-last-tani-zari', safeNum(sh.pichlaZari).toFixed(2));
         setText('calc-tot-zari', c.totZari.toFixed(2));
         setText('calc-ret-zari', `- ${c.retZari.toFixed(2)}`);
@@ -1091,6 +1081,9 @@
         sanitizeKarigerList
     };
 
-    Object.keys(karigerUIAPI).forEach((fn) => { window[fn] = karigerUIAPI[fn]; });
+    Object.keys(karigerUIAPI).forEach((fnName) => {
+        window[fnName] = karigerUIAPI[fnName];
+    });
+
     window.KarigerUIEngine = karigerUIAPI;
 })();
