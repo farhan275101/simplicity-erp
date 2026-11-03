@@ -11,7 +11,6 @@
     /* ========================================================================
        1. GLOBAL STATE & SESSION CONTEXT
        ------------------------------------------------------------------------
-       Ye state variables poore ERP me globally use hote hain.
     ======================================================================== */
     window.currentUserId = null;
     window.currentUserRole = null;
@@ -22,16 +21,15 @@
     window.currentPassbookContext = null;
     window.activeSanchaItemId = null;
 
-    // In-memory hot cache for active user credentials (5-point validation)
     let _activeSessionAuthCache = null;
 
     // Default Fallback Admin (Bootstrap & Offline Safety)
     const DEFAULT_BOOTSTRAP_ADMIN = Object.freeze({
         id: 'farhan',
-        name: 'Farhan Bhai (Admin)',
-        pass: '1234',
-        mobile: '9876543210',
-        pin: '1234',
+        name: 'Farhan jawed',
+        pass: '97438090641154',
+        mobile: '7065572191',
+        pin: '9743',
         role: 'admin',
         status: 'active',
         date: '2026-01-01',
@@ -41,8 +39,6 @@
     /* ========================================================================
        2. DEFENSIVE UTILITY FALLBACKS
        ------------------------------------------------------------------------
-       Agar utils.js kisi slow network connection par baad me load ho,
-       toh script crash nahi hogi.
     ======================================================================== */
     const _setDisplay = (id, val) => {
         if (typeof window.setDisplay === 'function') {
@@ -66,11 +62,6 @@
         return (p.length === 3 && p[0].length === 4) ? `${p[2]}-${p[1]}-${p[0]}` : d;
     };
 
-    const _safeArray = (data) => {
-        if (typeof window.safeArray === 'function') return window.safeArray(data);
-        return Array.isArray(data) ? data : [];
-    };
-
     /* ========================================================================
        3. INPUT SANITIZATION & SECURITY HELPERS
        ------------------------------------------------------------------------
@@ -79,9 +70,6 @@
     const sanitizeMobile = (mob) => String(mob || '').trim().replace(/[^0-9]/g, '');
     const sanitizePin = (pin) => String(pin || '').trim().replace(/[^0-9]/g, '').slice(0, 4);
 
-    /**
-     * Checks whether a user account has expired
-     */
     const isUserExpired = (user) => {
         if (!user || user.role === 'admin' || user.id === 'farhan' || !user.expiryDate) {
             return false;
@@ -91,40 +79,30 @@
     };
 
     /* ========================================================================
-       4. TARGETED USER RETRIEVAL (10-20 Lakh Users Scalability)
+       4. TARGETED USER RETRIEVAL
        ------------------------------------------------------------------------
-       Puraane code me `db.ref("app_users").once("value")` se 10-20 lakh users
-       ka data (GBs) ek saath browser me load ho raha tha jisse phone freeze
-       ho jata tha. Ab targeted query se sirf single user O(1) fetch hota hai.
     ======================================================================== */
-
-    /**
-     * Resolves single user by ID or Mobile directly from Cloud or Local Cache
-     * @param {string} identifier - User ID or 10-digit mobile
-     * @returns {Promise<Object|null>}
-     */
     const fetchUserByIdentifier = async (identifier) => {
         const cleanQuery = String(identifier || '').trim().toLowerCase();
         if (!cleanQuery) return null;
 
-        // 1. Check local session cache first (Instant O(1))
         const cachedUser = getCachedUserLocal(cleanQuery);
         if (cachedUser && (cachedUser.id === cleanQuery || cachedUser.mobile === cleanQuery)) {
             return cachedUser;
         }
 
-        // 2. Targeted Cloud Query
         if (typeof window.db !== 'undefined' && window.db) {
             try {
-                // Agar input alphanumeric ID hai -> Direct key lookup: `app_users/{id}`
                 const isOnlyDigits = /^\d+$/.test(cleanQuery);
                 if (!isOnlyDigits || cleanQuery.length !== 10) {
                     const snap = await window.db.ref(`app_users/${cleanQuery}`).once('value');
                     const val = snap.val();
-                    if (val) return val;
+                    if (val) {
+                        val.id = val.id || cleanQuery;
+                        return val;
+                    }
                 }
 
-                // Agar input 10-digit Mobile number hai -> Indexed query: orderByChild("mobile")
                 const mobSnap = await window.db.ref('app_users')
                     .orderByChild('mobile')
                     .equalTo(cleanQuery)
@@ -134,29 +112,25 @@
                 const mobVal = mobSnap.val();
                 if (mobVal) {
                     const matchedKey = Object.keys(mobVal)[0];
-                    return mobVal[matchedKey];
+                    const u = mobVal[matchedKey];
+                    u.id = u.id || matchedKey;
+                    return u;
                 }
             } catch (netErr) {
-                console.warn('[Auth] Remote fetch failed, relying on local state:', netErr);
+                console.warn('[Auth] Remote fetch failed:', netErr);
             }
         }
 
-        // 3. Fallback to local offline cache
         return cachedUser;
     };
 
-    /**
-     * Retrieves locally cached active user
-     */
     const getCachedUserLocal = (identifier) => {
         try {
-            // Check in-memory session cache
             if (_activeSessionAuthCache) {
                 const s = _activeSessionAuthCache;
                 if (s.id === identifier || s.mobile === identifier) return s;
             }
 
-            // Check localStorage
             const localRaw = localStorage.getItem('app_active_session_auth');
             if (localRaw) {
                 const parsed = JSON.parse(localRaw);
@@ -166,16 +140,23 @@
                 }
             }
 
-            // Bootstrap Admin Check
             if (identifier === 'farhan') return DEFAULT_BOOTSTRAP_ADMIN;
         } catch (_) {}
         return null;
     };
 
     /**
-     * Backward-compatible getUsersList() (Optimized for current tenant)
+     * 👥 FIXED: Returns full users list so Admin Panel shows ALL users
      */
     const getUsersList = () => {
+        try {
+            const stored = localStorage.getItem('app_users');
+            if (stored) {
+                const parsed = JSON.parse(stored);
+                if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+            }
+        } catch (_) {}
+        
         const active = getCachedUserLocal(window.currentUserId || 'farhan');
         return active ? [active] : [DEFAULT_BOOTSTRAP_ADMIN];
     };
@@ -183,7 +164,6 @@
     /* ========================================================================
        5. 5-POINT BACKGROUND SECURITY CHECK
        ------------------------------------------------------------------------
-       Paancho parameters (ID, Name, Mobile, Password, PIN) match hona lazmi hai.
     ======================================================================== */
     const validate5PointSecurity = (userRecord) => {
         if (!userRecord) return false;
@@ -198,7 +178,6 @@
             }
         }
 
-        // Pehla fresh login pass hone dein
         if (!savedSession) return true;
 
         const matchId = String(userRecord.id || '').trim().toLowerCase() === String(savedSession.id || '').trim().toLowerCase();
@@ -211,10 +190,8 @@
     };
 
     /* ========================================================================
-       6. CONCURRENT-SAFE REGISTRATION ENGINE (Atomic Transactions)
+       6. FIXED REGISTRATION ENGINE (Zero Self-Destruct Bug)
        ------------------------------------------------------------------------
-       Ek sath hazaron users signup karein toh duplicate ID ya phone number
-       register na ho sake.
     ======================================================================== */
     const handleRegister = async () => {
         const nameEl = document.getElementById('reg-name');
@@ -232,7 +209,6 @@
 
         if (!msg) return;
 
-        // Validation Checks
         if (!name || !id || !pass || !mobile || pin.length !== 4) {
             msg.textContent = 'Sabhi 5 details bharein (4-digit PIN zaroori hai)!';
             msg.className = 'message error';
@@ -247,7 +223,7 @@
             return;
         }
 
-        msg.textContent = 'Account create kiya ja raha hai...';
+        msg.textContent = 'Account request process ho rahi hai...';
         msg.className = 'message';
         msg.style.display = 'block';
 
@@ -256,47 +232,38 @@
         exp.setDate(exp.getDate() + 30);
 
         const newUserRecord = {
-            id,
-            name,
-            pass,
-            mobile,
-            pin,
+            id: id,
+            name: name,
+            pass: pass,
+            mobile: mobile,
+            pin: pin,
             role: isOwner ? 'admin' : 'user',
-            status: isOwner ? 'active' : 'pending',
+            status: isOwner ? 'active' : 'pending', // 👈 PENDING APPROVAL
             date: _getTodayDate(),
-            expiryDate: exp.toISOString().split('T')[0]
+            expiryDate: isOwner ? '' : exp.toISOString().split('T')[0]
         };
 
         try {
-            // Atomic check & reserve on Firebase
             if (typeof window.db !== 'undefined' && window.db) {
-                // 1. Check if ID exists atomically
-                const idRef = window.db.ref(`app_users/${id}`);
-                const txResult = await idRef.transaction((current) => {
-                    if (current === null) {
-                        return newUserRecord; // Key available, reserve it
-                    }
-                    return; // Abort transaction if user exists
-                });
-
-                if (!txResult.committed) {
+                // 1. Check if user already exists
+                const snap = await window.db.ref(`app_users/${id}`).once('value');
+                if (snap.exists() && snap.val()) {
                     msg.textContent = 'Yeh User ID pehle se kisi aur ke paas hai! Alag ID banayein.';
                     msg.className = 'message error';
                     msg.style.display = 'block';
                     return;
                 }
 
-                // 2. Clean previous orphaned records
-                purgeUserDataPermanently(id);
+                // 2. Direct Safe Cloud Save (NO self-destruct delete!)
+                await window.db.ref(`app_users/${id}`).set(newUserRecord);
             } else {
-                // Offline Local Registration
                 localStorage.setItem(`app_user_${id}`, JSON.stringify(newUserRecord));
             }
 
             if (isOwner) {
                 msg.textContent = '✅ Admin Account Ban Gaya!';
             } else {
-                msg.innerHTML = `⏳ <strong>Account Request Bheji Gayi!</strong><br>Approval ke liye Manager se sampark karein:<br>📞 <a href='tel:+917985402962' style='color:#2563eb; font-weight:bold;'>+91 79854 02962</a>`;
+                msg.innerHTML = `⏳ <strong>Account Request Admin ke paas bhej di gayi hai!</strong><br>Admin ke Approve karte hi aap login kar sakenge.<br>📞 Admin: <a href='tel:+917065572191' style='color:#2563eb; font-weight:bold;'>+91 70655 72191</a>`;
             }
             msg.className = 'message success';
             msg.style.display = 'block';
@@ -309,18 +276,18 @@
                 if (passEl) passEl.value = '';
                 if (pinEl) pinEl.value = '';
                 msg.style.display = 'none';
-            }, 3000);
+            }, 3500);
 
         } catch (err) {
             console.error('[Auth:Register] Error:', err);
-            msg.textContent = 'Registration me khata aayi! Kripya dobara koshish karein.';
+            msg.textContent = 'Registration me takleef aayi! Kripya dobara try karein.';
             msg.className = 'message error';
             msg.style.display = 'block';
         }
     };
 
     /* ========================================================================
-       7. ULTRA-FAST LOGIN ENGINE
+       7. LOGIN ENGINE
        ------------------------------------------------------------------------
     ======================================================================== */
     const handleLogin = async () => {
@@ -340,13 +307,12 @@
         }
 
         if (err) {
-            err.textContent = 'Kripya prateeksha karein...';
+            err.textContent = 'Logging in...';
             err.style.display = 'block';
             err.style.color = '#2563eb';
         }
 
         try {
-            // Targeted fetch (Zero-Bandwidth-Waste)
             const user = await fetchUserByIdentifier(inputVal);
 
             if (!user || String(user.pass).trim() !== String(pass).trim()) {
@@ -358,19 +324,20 @@
                 return;
             }
 
-            // Status checks
-            if (user.status === 'pending') {
+            const userStatus = String(user.status || '').toLowerCase().trim();
+
+            if (userStatus === 'pending') {
                 if (err) {
-                    err.innerHTML = `⏳ <strong>Account Approval Pending Hai!</strong><br>Manager se sampark karein:<br>📞 <a href='tel:+917985402962' style='color:#2563eb; font-weight:800;'>+91 79854 02962</a>`;
+                    err.innerHTML = `⏳ <strong>Account Approval Pending Hai!</strong><br>Admin (Farhan) se approve karwayein:<br>📞 <a href='tel:+917065572191' style='color:#2563eb; font-weight:800;'>+91 70655 72191</a>`;
                     err.style.color = '#dc2626';
                     err.style.display = 'block';
                 }
                 return;
             }
 
-            if (user.status === 'blocked') {
+            if (userStatus === 'blocked') {
                 if (err) {
-                    err.innerHTML = '⛔ Account Block hai! Manager se contact karein.';
+                    err.innerHTML = '⛔ Account Block hai! Admin se contact karein.';
                     err.style.color = '#dc2626';
                     err.style.display = 'block';
                 }
@@ -386,7 +353,6 @@
                 return;
             }
 
-            // 🔒 Persistent Session Authentication
             const authPayload = {
                 id: user.id,
                 name: user.name,
@@ -400,7 +366,6 @@
             localStorage.setItem('app_current_user_id', user.id);
             localStorage.setItem('app_active_session_auth', JSON.stringify(authPayload));
 
-            // Wipe login input elements for memory security
             if (passInput) passInput.value = '';
 
             executeSuccessfulLogin(user);
@@ -443,7 +408,6 @@
         _setDisplay('nav-admin-btn', window.currentUserRole === 'admin' ? 'inline-block' : 'none');
 
         const finishLoginInit = () => {
-            // Targeted listeners bind karo
             if (typeof window.initFirebaseLiveListeners === 'function') {
                 window.initFirebaseLiveListeners();
             }
@@ -461,14 +425,12 @@
             }
         };
 
-        // 5-Point Security Validation before syncing data
         if (!validate5PointSecurity(user)) {
             alert('⚠️ Security Alert: Account credentials mismatch! Data sync rok diya gaya hai.');
             logout();
             return;
         }
 
-        // Preload user's IndexedDB data to RAM
         if (typeof window.initIndexedDBPreload === 'function') {
             window.initIndexedDBPreload(finishLoginInit);
         } else {
@@ -493,11 +455,9 @@
             const savedSession = JSON.parse(savedSessionRaw);
             _activeSessionAuthCache = savedSession;
 
-            // Direct instant login without waiting for network (Offline PWA feature)
             if (savedSession && savedSession.id && !isUserExpired(savedSession)) {
                 executeSuccessfulLogin(savedSession);
 
-                // Background cloud security validation (Silent check)
                 if (typeof window.db !== 'undefined' && window.db) {
                     window.db.ref(`app_users/${savedSession.id}`).once('value')
                         .then((snap) => {
@@ -524,7 +484,6 @@
        ------------------------------------------------------------------------
     ======================================================================== */
     const logout = () => {
-        // Detach live listeners
         if (typeof window.detachFirebaseLiveListeners === 'function') {
             window.detachFirebaseLiveListeners();
         } else if (typeof window.db !== 'undefined' && window.db && window.currentUserId) {
@@ -556,14 +515,10 @@
         showLogin();
     };
 
-    /**
-     * Permanent user data purge across LocalStorage, IndexedDB & Cloud
-     */
     const purgeUserDataPermanently = (uid) => {
-        if (!uid) return;
+        if (!uid || uid === 'farhan') return;
         const cleanUid = sanitizeId(uid);
 
-        // 1. Clear LocalStorage keys
         const keysToRemove = [];
         for (let i = 0; i < localStorage.length; i++) {
             const k = localStorage.key(i);
@@ -573,14 +528,12 @@
         }
         keysToRemove.forEach((k) => localStorage.removeItem(k));
 
-        // 2. Clear RAM cache
         if (typeof window.APP_MEMORY_CACHE !== 'undefined') {
             Object.keys(window.APP_MEMORY_CACHE).forEach((mk) => {
                 if (mk.startsWith(`${cleanUid}_`)) delete window.APP_MEMORY_CACHE[mk];
             });
         }
 
-        // 3. Clear IndexedDB
         if (typeof window.openEnterpriseIndexedDB === 'function') {
             window.openEnterpriseIndexedDB((dbase) => {
                 if (!dbase) return;
@@ -601,7 +554,6 @@
             });
         }
 
-        // 4. Cloud purge
         if (typeof window.db !== 'undefined' && window.db) {
             try {
                 window.db.ref(`users/${cleanUid}`).remove();
@@ -762,11 +714,9 @@
         };
 
         try {
-            // 1. Update In-Memory & LocalStorage
             _activeSessionAuthCache = updatedRecord;
             localStorage.setItem('app_active_session_auth', JSON.stringify(updatedRecord));
 
-            // 2. Direct Cloud Push
             if (typeof window.db !== 'undefined' && window.db) {
                 await window.db.ref(`app_users/${uid}`).update({
                     name: n,
@@ -788,8 +738,6 @@
     };
 
     const syncUsersWithFirebase = () => {
-        // Targeted architecture me global sync ki zaroorat nahi hoti.
-        // Yeh function admin interface compatibility ke liye safe dummy rakha gaya hai.
         if (window.currentUserRole === 'admin' && typeof window.renderAdminUsersTable === 'function') {
             window.renderAdminUsersTable();
         }
@@ -820,15 +768,12 @@
         fetchUserByIdentifier
     };
 
-    // Attach all functions directly to window for legacy callers
     Object.keys(authAPI).forEach((fnName) => {
         window[fnName] = authAPI[fnName];
     });
 
-    // Namespace wrapper
     window.AuthEngine = authAPI;
 
-    // Unit test export
     if (typeof module !== 'undefined' && module.exports) {
         module.exports = authAPI;
     }
