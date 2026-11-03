@@ -1,21 +1,38 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="hi">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <!-- Viewport Lock for Native Mobile App Feel (No Accidental Pinch Zoom) -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Welcome to Simplicity - ERP by Farhan Jawed</title>
-    
-    <!-- 🚀 PWA MANIFEST & MOBILE ICONS -->
-    <link rel="manifest" href="./manifest.json">
-    <link rel="apple-touch-icon" href="./icon-192.png">
+
+    <!-- PWA & Mobile Meta Tags -->
+    <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#0f172a">
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Simplicity ERP">
+    <link rel="apple-touch-icon" href="icon-192.png">
 
-    <link rel="stylesheet" href="style.css?v=2.0">
+    <!-- Stylesheets with Cache-Busting Versioning -->
+    <link rel="stylesheet" href="style.css?v=2.5">
+
+    <!-- Preconnect to Google & Firebase Servers for Fast Cold Starts -->
+    <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://simplicity-erp-default-rtdb.firebaseio.com" crossorigin>
+
+    <!-- Firebase Compatibility SDKs -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
     <style>
+        /* High-Performance Layout Containment for 60fps SPA transitions */
+        .module-section {
+            contain: paint;
+            will-change: opacity;
+        }
+
         .karkhana-tab-btn {
             padding: 6px 14px;
             font-size: 13px;
@@ -42,68 +59,80 @@
 </head>
 <body oncontextmenu="return false;">
 
-    <div id="backup-preview-banner" style="display:none; background:#fef08a; color:#854d0e; padding:10px 20px; font-weight:800; border-bottom:2px solid #eab308; position:sticky; top:0; z-index:999999; justify-content:space-between; align-items:center;">
-        <div>👁️ BACKUP PREVIEW MODE • Live Data Safe Hai!</div>
-        <button onclick="exitBackupPreviewMode()" style="background:#dc2626; color:white; border:none; padding:6px 14px; border-radius:6px; cursor:pointer; font-weight:bold;">✕ Exit</button>
-    </div>
+    <!-- TOP PREVIEW BANNER (READ-ONLY VIEWER MODE) -->
+    <aside id="backup-preview-banner" style="display:none; background:#fef08a; color:#854d0e; padding:10px 20px; font-weight:800; border-bottom:2px solid #eab308; position:sticky; top:0; z-index:999999; justify-content:space-between; align-items:center;" role="alert">
+        <div>👁️ BACKUP PREVIEW MODE • <span id="preview-banner-date">Live Data Safe Hai!</span></div>
+        <button type="button" onclick="exitBackupPreviewMode()" style="background:#dc2626; color:white; border:none; padding:6px 14px; border-radius:6px; cursor:pointer; font-weight:bold;">✕ Exit Preview</button>
+    </aside>
 
-    <!-- 1. AUTH SCREEN (SIMPLE 2-FIELD LOGIN) -->
-    <div id="login-wrapper">
+    <!-- ==================================================================== -->
+    <!-- 1. AUTHENTICATION SCREENS (LOGIN, SIGNUP, FORGOT PASSWORD)           -->
+    <!-- ==================================================================== -->
+    <main id="login-wrapper">
+        <!-- A. LOGIN CARD -->
         <div class="card" id="login-box">
             <h2>Welcome to Simplicity</h2>
             <div><span class="creator-tag">by Farhan Jawed</span></div>
             <p class="card-subtitle">Karkhana Business Management Portal</p>
             
-            <!-- SIRF 2 NORMAL INPUTS -->
             <div class="input-group">
-                <label>User ID ya Mobile No.</label>
-                <input type="text" id="login-id" placeholder="User ID ya Mobile Number">
+                <label for="login-id">User ID ya Mobile No.</label>
+                <input type="text" id="login-id" placeholder="User ID ya Mobile Number" autocomplete="username">
             </div>
             <div class="input-group">
-                <label>Password</label>
-                <input type="password" id="login-pass" placeholder="Password">
+                <label for="login-pass">Password</label>
+                <input type="password" id="login-pass" placeholder="Password" autocomplete="current-password">
             </div>
 
-            <button class="btn" onclick="handleLogin()">Login Karein</button>
+            <button type="button" class="btn" onclick="handleLogin()">Login Karein</button>
             <div class="auth-links-row">
-                <a onclick="showForgotPassword()">Password Bhool Gaye?</a>
-                <a onclick="showSignup()">Naya Account</a>
+                <a href="javascript:void(0)" onclick="showForgotPassword()">Password Bhool Gaye?</a>
+                <a href="javascript:void(0)" onclick="showSignup()">Naya Account</a>
             </div>
-            <p id="login-error" class="message error"></p>
+            <p id="login-error" class="message error" style="display:none;"></p>
         </div>
 
+        <!-- B. REGISTRATION CARD -->
         <div class="card" id="signup-box" style="display:none;">
             <h2>Naya Account</h2>
-            <div class="input-group"><label>Naam</label><input type="text" id="reg-name" placeholder="Aapka Pura Naam"></div>
-            <div class="input-group"><label>Mobile</label><input type="tel" id="reg-mobile" placeholder="Mobile Number"></div>
-            <div class="input-group"><label>User ID</label><input type="text" id="reg-id" placeholder="Unique User ID"></div>
-            <div class="input-group"><label>Password</label><input type="password" id="reg-pass" placeholder="Password"></div>
-            <div class="input-group"><label style="color:#b91c1c;">4-Digit PIN</label><input type="password" maxlength="4" id="reg-pin" placeholder="Security PIN"></div>
-            <button class="btn" onclick="handleRegister()">Account Banayein</button>
-            <p id="signup-msg" class="message"></p>
-            <div class="auth-links-row" style="justify-content:center; margin-top:10px;"><a onclick="showLogin()">Login Karein</a></div>
+            <div class="input-group"><label for="reg-name">Naam</label><input type="text" id="reg-name" placeholder="Aapka Pura Naam"></div>
+            <div class="input-group"><label for="reg-mobile">Mobile</label><input type="tel" id="reg-mobile" placeholder="10-digit Mobile Number"></div>
+            <div class="input-group"><label for="reg-id">User ID</label><input type="text" id="reg-id" placeholder="Unique User ID"></div>
+            <div class="input-group"><label for="reg-pass">Password</label><input type="password" id="reg-pass" placeholder="Password"></div>
+            <div class="input-group"><label for="reg-pin" style="color:#b91c1c;">4-Digit PIN</label><input type="password" maxlength="4" id="reg-pin" placeholder="Security PIN"></div>
+            <button type="button" class="btn" onclick="handleRegister()">Account Banayein</button>
+            <p id="signup-msg" class="message" style="display:none;"></p>
+            <div class="auth-links-row" style="justify-content:center; margin-top:10px;">
+                <a href="javascript:void(0)" onclick="showLogin()">Login Karein</a>
+            </div>
         </div>
 
+        <!-- C. FORGOT PASSWORD CARD -->
         <div class="card" id="forgot-box" style="display:none;">
             <h2>Password Reset</h2>
             <div id="forgot-step-1">
-                <div class="input-group"><label>User ID / Mobile</label><input type="text" id="forgot-query"></div>
-                <div class="input-group"><label>4-Digit PIN</label><input type="password" maxlength="4" id="forgot-pin"></div>
-                <button class="btn" onclick="verifyForgotPin()">Verify PIN</button>
+                <div class="input-group"><label for="forgot-query">User ID / Mobile</label><input type="text" id="forgot-query"></div>
+                <div class="input-group"><label for="forgot-pin">4-Digit PIN</label><input type="password" maxlength="4" id="forgot-pin"></div>
+                <button type="button" class="btn" onclick="verifyForgotPin()">Verify PIN</button>
             </div>
             <div id="forgot-step-2" style="display:none;">
-                <div class="input-group"><label>Naya Password</label><input type="password" id="forgot-new-pass"></div>
-                <div class="input-group"><label>Confirm Password</label><input type="password" id="forgot-confirm-pass"></div>
-                <button class="btn" onclick="saveNewPassword()">Update Password</button>
+                <div class="input-group"><label for="forgot-new-pass">Naya Password</label><input type="password" id="forgot-new-pass"></div>
+                <div class="input-group"><label for="forgot-confirm-pass">Confirm Password</label><input type="password" id="forgot-confirm-pass"></div>
+                <button type="button" class="btn" onclick="saveNewPassword()">Update Password</button>
             </div>
-            <p id="forgot-msg" class="message"></p>
-            <div class="auth-links-row" style="justify-content:center; margin-top:10px;"><a onclick="showLogin()">Wapas Login</a></div>
+            <p id="forgot-msg" class="message" style="display:none;"></p>
+            <div class="auth-links-row" style="justify-content:center; margin-top:10px;">
+                <a href="javascript:void(0)" onclick="showLogin()">Wapas Login</a>
+            </div>
         </div>
-    </div>
+    </main>
 
-    <!-- 2. DESKTOP WORKSPACE -->
+    <!-- ==================================================================== -->
+    <!-- 2. MAIN ERP DESKTOP WORKSPACE                                        -->
+    <!-- ==================================================================== -->
     <div id="desktop-screen" style="display:none;">
-        <div class="navbar">
+        <!-- TOP NAVIGATION BAR -->
+        <header class="navbar">
             <div class="navbar-brand">
                 <span style="font-size:24px;">✨</span>
                 <div>
@@ -112,10 +141,7 @@
                 </div>
             </div>
             <div class="navbar-user-area">
-                <!-- 📲 ONE-CLICK PWA INSTALL BUTTON FOR COMPUTER -->
-                <button id="pwa-install-nav-btn" style="display:none; background:#10b981; color:white; border:none; padding:5px 12px; border-radius:6px; font-weight:bold; font-size:12px; cursor:pointer;" onclick="triggerPwaInstall()">📲 Install App</button>
-
-                <!-- MULTI-KARKHANA NAVBAR SWITCHER -->
+                <!-- MULTI-KARKHANA SWITCHER -->
                 <div style="display:inline-flex; align-items:center; gap:6px; background:#1e293b; padding:4px 8px; border-radius:6px;">
                     <span style="font-size:12px; color:#38bdf8; font-weight:700;">🏭 Karkhana:</span>
                     <select id="app-karkhana-select" onchange="handleNavbarKarkhanaChange(this.value)" style="background:#0f172a; color:#38bdf8; border:1px solid #334155; padding:4px 8px; border-radius:4px; font-weight:bold; font-size:12px; cursor:pointer;">
@@ -123,7 +149,7 @@
                     <button type="button" class="add-btn" style="padding:4px 8px; font-size:11px; background:#0284c7; cursor:pointer;" onclick="openKarkhanaManageModal()">➕ Karkhana</button>
                 </div>
 
-                <!-- FINANCIAL SESSION SELECTOR -->
+                <!-- FINANCIAL YEAR SESSION SELECTOR -->
                 <div style="display:inline-flex; align-items:center; gap:6px; background:#1e293b; padding:4px 8px; border-radius:6px;">
                     <span style="font-size:12px; color:#94a3b8; font-weight:700;">📅 Session:</span>
                     <select id="app-session-select" onchange="switchAppFinancialSession(this.value)" style="background:#0f172a; color:#38bdf8; border:1px solid #334155; padding:4px 8px; border-radius:4px; font-weight:bold; font-size:12px; cursor:pointer;">
@@ -131,27 +157,31 @@
                     <button type="button" class="add-btn" style="padding:4px 8px; font-size:11px; background:#7c3aed; cursor:pointer;" onclick="openSessionClosingModal()">➕ Naya Saal</button>
                 </div>
                 
-                <button id="nav-admin-btn" class="admin-nav-btn" onclick="openAdminModule()">👑 Admin</button>
-                <button class="profile-btn" onclick="openProfileModal()">👤 Profile</button>
-                <button class="logout-btn" onclick="logout()">Logout</button>
+                <button type="button" id="nav-admin-btn" class="admin-nav-btn" onclick="openAdminModule()" style="display:none;">👑 Admin</button>
+                <button type="button" class="profile-btn" onclick="openProfileModal()">👤 Profile</button>
+                <button type="button" class="logout-btn" onclick="logout()">Logout</button>
             </div>
-        </div>
+        </header>
 
         <div class="main-container">
+            <!-- STATUS BANNER & QUICK BACKUP CONTROLS -->
             <div class="welcome-banner">
-                <div><h3 id="welcome-text">Swagat hai!</h3><p id="welcome-sub-text">Multi-Unit Karkhana Management</p></div>
+                <div>
+                    <h3 id="welcome-text">Swagat hai!</h3>
+                    <p id="welcome-sub-text">Multi-Unit Karkhana Management</p>
+                </div>
                 <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
                     <span id="cloud-status-badge" class="sync-badge">🟢 Cloud Synced</span>
-                    <button class="add-btn" style="padding:7px 14px; font-size:12px; background:linear-gradient(135deg, #0284c7, #2563eb);" onclick="syncToGoogleDrive()">☁️ Backup</button>
-                    <button class="add-btn" style="padding:7px 14px; font-size:12px; background:#0891b2;" onclick="document.getElementById('banner-view-backup-input').click()">👁️ Dekhein</button>
+                    <button type="button" class="add-btn" style="padding:7px 14px; font-size:12px; background:linear-gradient(135deg, #0284c7, #2563eb);" onclick="syncToGoogleDrive()">☁️ Backup</button>
+                    <button type="button" class="add-btn" style="padding:7px 14px; font-size:12px; background:#0891b2;" onclick="document.getElementById('banner-view-backup-input').click()">👁️ Dekhein</button>
                     <input type="file" id="banner-view-backup-input" style="display:none;" accept=".json" onchange="openBackupViewer(event)">
-                    <button class="add-btn" style="padding:7px 14px; font-size:12px; background:#475569;" onclick="document.getElementById('banner-restore-input').click()">📥 Restore</button>
+                    <button type="button" class="add-btn" style="padding:7px 14px; font-size:12px; background:#475569;" onclick="document.getElementById('banner-restore-input').click()">📥 Restore</button>
                     <input type="file" id="banner-restore-input" style="display:none;" accept=".json" onchange="restoreBackupFile(event)">
                 </div>
             </div>
 
             <!-- DASHBOARD HOME VIEW -->
-            <div id="dashboard-view">
+            <section id="dashboard-view">
                 <div id="dash-karkhana-tabs-bar" class="sheet-tabs-bar" style="margin-bottom:14px;"></div>
 
                 <div class="menu-grid">
@@ -181,38 +211,46 @@
                     </div>
                 </div>
 
+                <!-- ROZANA DAYBOOK CONTAINER -->
                 <div class="daybook-container">
                     <div class="daybook-header">
-                        <div><h3 style="color:#1e3a8a; font-size:18px; font-weight:800;">📖 Rozana Day-Book</h3><p style="color:#64748b; font-size:13px;">Factory In/Out Register</p></div>
+                        <div>
+                            <h3 style="color:#1e3a8a; font-size:18px; font-weight:800;">📖 Rozana Day-Book</h3>
+                            <p style="color:#64748b; font-size:13px;">Factory In/Out Register</p>
+                        </div>
                         <div class="daily-controls">
                             <input type="date" id="dash-day-date" onchange="renderDashboardDayBook()">
-                            <button class="today-btn" onclick="setDashboardToday()">📅 Aaj</button>
+                            <button type="button" class="today-btn" onclick="setDashboardToday()">📅 Aaj</button>
                         </div>
                     </div>
                     <div class="daybook-btn-grid">
-                        <button class="daybook-tab-btn active" id="btn-tab-bana" onclick="switchDayBookTab('bana')"><span class="day-icon">🧶</span><div><div class="day-title">Bana</div><div class="day-sub" id="sub-day-bana">-</div></div></button>
-                        <button class="daybook-tab-btn" id="btn-tab-zari" onclick="switchDayBookTab('zari')"><span class="day-icon">✨</span><div><div class="day-title">Zari</div><div class="day-sub" id="sub-day-zari">-</div></div></button>
-                        <button class="daybook-tab-btn" id="btn-tab-saree" onclick="switchDayBookTab('saree')"><span class="day-icon">🥻</span><div><div class="day-title">Saree</div><div class="day-sub" id="sub-day-saree">-</div></div></button>
-                        <button class="daybook-tab-btn" id="btn-tab-payment" onclick="switchDayBookTab('payment')"><span class="day-icon">💳</span><div><div class="day-title">Payment</div><div class="day-sub" id="sub-day-payment">-</div></div></button>
-                        <button class="daybook-tab-btn" id="btn-tab-sancha" onclick="switchDayBookTab('sancha')"><span class="day-icon">⚙️</span><div><div class="day-title">Sancha</div><div class="day-sub" id="sub-day-sancha">-</div></div></button>
+                        <button type="button" class="daybook-tab-btn active" id="btn-tab-bana" onclick="switchDayBookTab('bana')"><span class="day-icon">🧶</span><div><div class="day-title">Bana</div><div class="day-sub" id="sub-day-bana">-</div></div></button>
+                        <button type="button" class="daybook-tab-btn" id="btn-tab-zari" onclick="switchDayBookTab('zari')"><span class="day-icon">✨</span><div><div class="day-title">Zari</div><div class="day-sub" id="sub-day-zari">-</div></div></button>
+                        <button type="button" class="daybook-tab-btn" id="btn-tab-saree" onclick="switchDayBookTab('saree')"><span class="day-icon">🥻</span><div><div class="day-title">Saree</div><div class="day-sub" id="sub-day-saree">-</div></div></button>
+                        <button type="button" class="daybook-tab-btn" id="btn-tab-payment" onclick="switchDayBookTab('payment')"><span class="day-icon">💳</span><div><div class="day-title">Payment</div><div class="day-sub" id="sub-day-payment">-</div></div></button>
+                        <button type="button" class="daybook-tab-btn" id="btn-tab-sancha" onclick="switchDayBookTab('sancha')"><span class="day-icon">⚙️</span><div><div class="day-title">Sancha</div><div class="day-sub" id="sub-day-sancha">-</div></div></button>
                     </div>
                     <div class="table-responsive">
-                        <table><thead id="dash-daybook-thead"></thead><tbody id="dash-daybook-tbody"></tbody><tfoot id="dash-daybook-tfoot"></tfoot></table>
+                        <table>
+                            <thead id="dash-daybook-thead"></thead>
+                            <tbody id="dash-daybook-tbody"></tbody>
+                            <tfoot id="dash-daybook-tfoot"></tfoot>
+                        </table>
                     </div>
                 </div>
-                <div class="creator-footer">Simplicity ERP • by <span>Farhan Jawed</span></div>
-            </div>
+                <footer class="creator-footer">Simplicity ERP • by <span>Farhan Jawed</span></footer>
+            </section>
 
             <!-- MODULE 1: KARIGER MASTER -->
-            <div id="kariger-section" class="module-section" style="display:none;">
+            <section id="kariger-section" class="module-section" style="display:none;">
                 <div class="module-header">
-                    <button class="back-btn" onclick="backToDashboard()">← Dashboard</button>
+                    <button type="button" class="back-btn" onclick="backToDashboard()">← Dashboard</button>
                     <h2 style="color:#0f766e; font-size:19px;">🧵 Kariger Master Directory</h2>
-                    <button class="add-btn" onclick="toggleKarigerForm()">+ Naya Kariger</button>
+                    <button type="button" class="add-btn" onclick="toggleKarigerForm()">+ Naya Kariger</button>
                 </div>
                 <div id="kariger-karkhana-tabs-bar" class="sheet-tabs-bar" style="margin-bottom:12px;"></div>
                 <div class="filter-panel">
-                    <input type="text" id="search-kariger-input" class="search-box" placeholder="🔍 Search Kariger..." oninput="filterKariger()">
+                    <input type="text" id="search-kariger-input" class="search-box" placeholder="🔍 Search Kariger...">
                     <select id="kariger-absent-filter" class="search-box" style="max-width:180px;" onchange="filterKariger()">
                         <option value="0">Sabhi Kariger</option>
                         <option value="15">⚠️ 15 Din se Absent</option>
@@ -234,8 +272,8 @@
                         <div></div>
                     </div>
                     <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:8px;">
-                        <button class="back-btn" onclick="toggleKarigerForm()">Cancel</button>
-                        <button class="add-btn" id="kar-save-btn" onclick="saveKariger()">Save</button>
+                        <button type="button" class="back-btn" onclick="toggleKarigerForm()">Cancel</button>
+                        <button type="button" class="add-btn" id="kar-save-btn" onclick="saveKariger()">Save</button>
                     </div>
                 </div>
                 <div class="table-responsive">
@@ -245,16 +283,16 @@
                     </table>
                 </div>
                 <div id="kariger-pagination-bar"></div>
-            </div>
+            </section>
 
             <!-- MODULE 1B: TANI KHATA SHEET -->
-            <div id="kariger-sheet-section" class="module-section" style="display:none;">
+            <section id="kariger-sheet-section" class="module-section" style="display:none;">
                 <div class="module-header">
-                    <button class="back-btn" onclick="openKarigerModule()">← Kariger List</button>
+                    <button type="button" class="back-btn" onclick="openKarigerModule()">← Kariger List</button>
                     <h2 id="sheet-kariger-title" style="color:#1e3a8a;">Tani Khata</h2>
                     <div style="display:flex; gap:8px;">
-                        <button class="add-btn" style="background:#25D366;" onclick="sendKarigerWhatsAppParchi()">📲 WhatsApp</button>
-                        <button class="add-btn" onclick="addNewTaniSheet()">+ Nayi Tani</button>
+                        <button type="button" class="add-btn" style="background:#25D366;" onclick="sendKarigerWhatsAppParchi()">📲 WhatsApp</button>
+                        <button type="button" class="add-btn" onclick="addNewTaniSheet()">+ Nayi Tani</button>
                     </div>
                 </div>
 
@@ -343,7 +381,7 @@
                         <div class="input-group"><label style="color:#059669;">RET BANA</label><input type="number" step="0.01" id="row-retbana" placeholder="0.00"></div>
                         <div class="input-group"><label style="color:#ea580c;">RET ZARI</label><input type="number" step="0.01" id="row-retzari" placeholder="0.00"></div>
                         <div style="display:flex; align-items:flex-end;">
-                            <button id="row-submit-btn" class="add-btn" style="width:100%; padding:10px; font-weight:800;" onclick="saveTaniRow()">+ Line Jodein & Stock Minus</button>
+                            <button type="button" id="row-submit-btn" class="add-btn" style="width:100%; padding:10px; font-weight:800;" onclick="saveTaniRow()">+ Line Jodein & Stock Minus</button>
                         </div>
                     </div>
                 </div>
@@ -414,14 +452,14 @@
                         </div>
                     </div>
                 </div>
-            </div>
+            </section>
 
             <!-- MODULE 2: BANA STOCK -->
-            <div id="bana-section" class="module-section" style="display:none;">
-                <div class="module-header"><button class="back-btn" onclick="backToDashboard()">← Dashboard</button><h2 style="color:#059669;">🧶 Bana Stock</h2><button class="add-btn" onclick="toggleBanaForm()">+ Naya Bana</button></div>
+            <section id="bana-section" class="module-section" style="display:none;">
+                <div class="module-header"><button type="button" class="back-btn" onclick="backToDashboard()">← Dashboard</button><h2 style="color:#059669;">🧶 Bana Stock</h2><button type="button" class="add-btn" onclick="toggleBanaForm()">+ Naya Bana</button></div>
                 <div id="bana-karkhana-tabs-bar" class="sheet-tabs-bar" style="margin-bottom:12px;"></div>
                 <div id="bana-opening-box" class="summary-box" style="margin-bottom:14px; text-align:left; background:#ecfdf5;"><h3 id="bana-opening-val" style="color:#059669;">0.00 Kg</h3></div>
-                <div class="filter-panel"><input type="text" id="search-bana-input" class="search-box" placeholder="🔍 Search Bana..." oninput="filterBana()"></div>
+                <div class="filter-panel"><input type="text" id="search-bana-input" class="search-box" placeholder="🔍 Search Bana..."></div>
                 <div id="add-bana-form" class="custom-form" style="display:none;">
                     <div style="display:flex; gap:20px; margin-bottom:12px;"><label><input type="radio" name="bana-type" id="bana-type-existing" checked onchange="toggleBanaItemType()"> Purana</label><label><input type="radio" name="bana-type" id="bana-type-new" onchange="toggleBanaItemType()"> + Naya</label></div>
                     <div class="form-row-3">
@@ -430,17 +468,17 @@
                         <div class="input-group" id="bana-new-group" style="display:none;"><label>Naam</label><input type="text" id="bana-new-name"></div>
                         <div class="input-group"><label>Qty (Kg)</label><input type="number" step="0.01" id="bana-aaya"></div>
                     </div>
-                    <div style="display:flex; justify-content:flex-end; gap:8px;"><button class="back-btn" onclick="toggleBanaForm()">Cancel</button><button class="add-btn" onclick="saveNewBana()">Save</button></div>
+                    <div style="display:flex; justify-content:flex-end; gap:8px;"><button type="button" class="back-btn" onclick="toggleBanaForm()">Cancel</button><button type="button" class="add-btn" onclick="saveNewBana()">Save</button></div>
                 </div>
                 <div class="table-responsive"><table><thead><tr style="background:#059669; color:white;"><th>Tarikh</th><th>Naam</th><th>Aaya</th><th>Gaya</th><th>Bacha</th><th>Action</th></tr></thead><tbody id="bana-table-body"></tbody></table></div>
-            </div>
+            </section>
 
             <!-- MODULE 3: ZARI STOCK -->
-            <div id="zari-section" class="module-section" style="display:none;">
-                <div class="module-header"><button class="back-btn" onclick="backToDashboard()">← Dashboard</button><h2 style="color:#ea580c;">✨ Zari Stock</h2><button class="add-btn" style="background:#ea580c;" onclick="toggleZariForm()">+ Nayi Zari</button></div>
+            <section id="zari-section" class="module-section" style="display:none;">
+                <div class="module-header"><button type="button" class="back-btn" onclick="backToDashboard()">← Dashboard</button><h2 style="color:#ea580c;">✨ Zari Stock</h2><button type="button" class="add-btn" style="background:#ea580c;" onclick="toggleZariForm()">+ Nayi Zari</button></div>
                 <div id="zari-karkhana-tabs-bar" class="sheet-tabs-bar" style="margin-bottom:12px;"></div>
                 <div id="zari-opening-box" class="summary-box" style="margin-bottom:14px; text-align:left; background:#fff7ed;"><h3 id="zari-opening-val" style="color:#ea580c;">0.00 Kg</h3></div>
-                <div class="filter-panel"><input type="text" id="search-zari-input" class="search-box" placeholder="🔍 Search Zari..." oninput="filterZari()"></div>
+                <div class="filter-panel"><input type="text" id="search-zari-input" class="search-box" placeholder="🔍 Search Zari..."></div>
                 <div id="add-zari-form" class="custom-form" style="display:none;">
                     <div style="display:flex; gap:20px; margin-bottom:12px;"><label><input type="radio" name="zari-type" id="zari-type-existing" checked onchange="toggleZariItemType()"> Purani</label><label><input type="radio" name="zari-type" id="zari-type-new" onchange="toggleZariItemType()"> + Naya</label></div>
                     <div class="form-row-3">
@@ -449,24 +487,24 @@
                         <div class="input-group" id="zari-new-group" style="display:none;"><label>Naam</label><input type="text" id="zari-new-name"></div>
                         <div class="input-group"><label>Qty (Kg)</label><input type="number" step="0.01" id="zari-aaya"></div>
                     </div>
-                    <div style="display:flex; justify-content:flex-end; gap:8px;"><button class="back-btn" onclick="toggleZariForm()">Cancel</button><button class="add-btn" style="background:#ea580c;" onclick="saveNewZari()">Save</button></div>
+                    <div style="display:flex; justify-content:flex-end; gap:8px;"><button type="button" class="back-btn" onclick="toggleZariForm()">Cancel</button><button type="button" class="add-btn" style="background:#ea580c;" onclick="saveNewZari()">Save</button></div>
                 </div>
                 <div class="table-responsive"><table><thead><tr style="background:#ea580c; color:white;"><th>Tarikh</th><th>Naam</th><th>Aayi</th><th>Gayi</th><th>Bacha</th><th>Action</th></tr></thead><tbody id="zari-table-body"></tbody></table></div>
-            </div>
+            </section>
 
             <!-- MODULE 4: SAREE STOCK -->
-            <div id="saree-section" class="module-section" style="display:none;">
-                <div class="module-header"><button class="back-btn" onclick="backToDashboard()">← Dashboard</button><h2 style="color:#2563eb;">🥻 Saree Stock</h2><button class="add-btn" onclick="toggleSareeForm()">+ Saree Inward</button></div>
+            <section id="saree-section" class="module-section" style="display:none;">
+                <div class="module-header"><button type="button" class="back-btn" onclick="backToDashboard()">← Dashboard</button><h2 style="color:#2563eb;">🥻 Saree Stock</h2><button type="button" class="add-btn" onclick="toggleSareeForm()">+ Saree Inward</button></div>
                 <div class="sheet-tabs-bar" style="margin-bottom:12px;">
                     <div style="display:flex; gap:8px;">
-                        <button class="sheet-tab active" id="tab-saree-fresh" onclick="switchSareeStockTab('fresh')">🟢 Fresh</button>
-                        <button class="sheet-tab" id="tab-saree-cutting" onclick="switchSareeStockTab('cutting')">✂️ Cutting</button>
-                        <button class="sheet-tab" id="tab-saree-finished" onclick="switchSareeStockTab('finished')">🟣 Finished</button>
-                        <button class="sheet-tab" id="tab-saree-lott" onclick="switchSareeStockTab('lott')">🔴 Lott</button>
+                        <button type="button" class="sheet-tab active" id="tab-saree-fresh" onclick="switchSareeStockTab('fresh')">🟢 Fresh</button>
+                        <button type="button" class="sheet-tab" id="tab-saree-cutting" onclick="switchSareeStockTab('cutting')">✂️ Cutting</button>
+                        <button type="button" class="sheet-tab" id="tab-saree-finished" onclick="switchSareeStockTab('finished')">🟣 Finished</button>
+                        <button type="button" class="sheet-tab" id="tab-saree-lott" onclick="switchSareeStockTab('lott')">🔴 Lott</button>
                     </div>
                 </div>
                 <div id="saree-karkhana-tabs-bar" class="sheet-tabs-bar" style="margin-bottom:12px;"></div>
-                <div class="filter-panel"><input type="text" id="search-saree-input" class="search-box" placeholder="🔍 Search Saree, Kariger, Godam..." oninput="filterSaree()"></div>
+                <div class="filter-panel"><input type="text" id="search-saree-input" class="search-box" placeholder="🔍 Search Saree, Kariger, Godam..."></div>
                 <div id="add-saree-form" class="custom-form" style="display:none;">
                     <div class="form-row-4">
                         <div class="input-group"><label>Tarikh</label><input type="date" id="saree-date"></div>
@@ -474,36 +512,36 @@
                         <div class="input-group"><label>Source</label><input type="text" id="saree-kariger"></div>
                         <div class="input-group"><label>Pcs</label><input type="number" id="saree-pcs"></div>
                     </div>
-                    <div style="display:flex; justify-content:flex-end; gap:8px;"><button class="back-btn" onclick="toggleSareeForm()">Cancel</button><button class="add-btn" onclick="saveNewSareeStock()">Save</button></div>
+                    <div style="display:flex; justify-content:flex-end; gap:8px;"><button type="button" class="back-btn" onclick="toggleSareeForm()">Cancel</button><button type="button" class="add-btn" onclick="saveNewSareeStock()">Save</button></div>
                 </div>
                 <div class="table-responsive"><table><thead id="saree-table-head"></thead><tbody id="saree-table-body"></tbody></table></div>
-            </div>
+            </section>
 
             <!-- MODULE 5: PAYMENTS -->
-            <div id="payment-section" class="module-section" style="display:none;">
-                <div class="module-header"><button class="back-btn" onclick="backToDashboard()">← Dashboard</button><h2 style="color:#7c3aed;">💳 Payments & Bakaya</h2></div>
+            <section id="payment-section" class="module-section" style="display:none;">
+                <div class="module-header"><button type="button" class="back-btn" onclick="backToDashboard()">← Dashboard</button><h2 style="color:#7c3aed;">💳 Payments & Bakaya</h2></div>
                 <div id="payment-karkhana-tabs-bar" class="sheet-tabs-bar" style="margin-bottom:12px;"></div>
                 <div style="display:flex; gap:12px; margin-bottom:14px;">
                     <div style="flex:1; background:white; padding:12px; border-radius:10px; text-align:center; border:1px solid #e2e8f0;">Paid: <h3 id="total-paid-display" style="color:#059669;">₹ 0</h3></div>
                     <div style="flex:1; background:white; padding:12px; border-radius:10px; text-align:center; border:1px solid #e2e8f0;">Baki: <h3 id="total-baki-display" style="color:#dc2626;">₹ 0</h3></div>
                 </div>
-                <div class="filter-panel"><input type="text" id="search-payment-input" class="search-box" placeholder="🔍 Search..." oninput="filterPayment()"></div>
+                <div class="filter-panel"><input type="text" id="search-payment-input" class="search-box" placeholder="🔍 Search..."></div>
                 <div class="table-responsive"><table><thead><tr style="background:#7c3aed; color:white;"><th>S.No.</th><th>Karkhana</th><th>Kariger</th><th>Saree</th><th>Mazdoori</th><th>Diya</th><th>Baki</th><th>Pay</th><th>Passbook</th></tr></thead><tbody id="payment-table-body"></tbody></table></div>
                 <div id="payment-pagination-bar"></div>
-            </div>
+            </section>
 
             <!-- MODULE 6: SANCHA (TANI & CHUKKA TABS + KG STOCK) -->
-            <div id="sancha-section" class="module-section" style="display:none;">
+            <section id="sancha-section" class="module-section" style="display:none;">
                 <div class="module-header">
-                    <button class="back-btn" onclick="backToDashboard()">← Dashboard</button>
+                    <button type="button" class="back-btn" onclick="backToDashboard()">← Dashboard</button>
                     <h2 style="color:#0284c7;">⚙️ Sancha Stock (Tani & Chukka)</h2>
-                    <button class="add-btn" style="background:#0284c7;" onclick="toggleAddSanchaForm()">+ Naya Sancha</button>
+                    <button type="button" class="add-btn" style="background:#0284c7;" onclick="toggleAddSanchaForm()">+ Naya Sancha</button>
                 </div>
 
                 <div class="sheet-tabs-bar" style="margin-bottom:12px;">
                     <div style="display:flex; gap:8px;">
-                        <button class="sheet-tab active" id="tab-sancha-tani" onclick="switchSanchaCategory('tani')">🧵 1. Tani Stock</button>
-                        <button class="sheet-tab" id="tab-sancha-chukka" onclick="switchSanchaCategory('chukka')">⚙️ 2. Chukka Stock</button>
+                        <button type="button" class="sheet-tab active" id="tab-sancha-tani" onclick="switchSanchaCategory('tani')">🧵 1. Tani Stock</button>
+                        <button type="button" class="sheet-tab" id="tab-sancha-chukka" onclick="switchSanchaCategory('chukka')">⚙️ 2. Chukka Stock</button>
                     </div>
                 </div>
 
@@ -511,7 +549,7 @@
                 <div id="sancha-opening-box" class="summary-box" style="margin-bottom:14px; text-align:left; background:#f0f9ff;">
                     <h3 id="sancha-opening-val" style="color:#0284c7;">0.00 Kg Bacha</h3>
                 </div>
-                <div class="filter-panel"><input type="text" id="search-sancha-input" class="search-box" placeholder="🔍 Search Sancha (Tani / Chukka)..." oninput="filterSancha()"></div>
+                <div class="filter-panel"><input type="text" id="search-sancha-input" class="search-box" placeholder="🔍 Search Sancha (Tani / Chukka)..."></div>
 
                 <div id="add-sancha-item-form" class="custom-form" style="display:none;">
                     <div style="display:flex; gap:20px; margin-bottom:12px; flex-wrap:wrap;">
@@ -534,8 +572,8 @@
                         <div class="input-group"><label>Person (Kiske Paas)</label><input type="text" id="sancha-person" placeholder="Person name..."></div>
                     </div>
                     <div style="display:flex; justify-content:flex-end; gap:8px;">
-                        <button class="back-btn" onclick="toggleAddSanchaForm()">Cancel</button>
-                        <button class="add-btn" style="background:#0284c7;" onclick="saveNewSanchaStock()">Save Stock</button>
+                        <button type="button" class="back-btn" onclick="toggleAddSanchaForm()">Cancel</button>
+                        <button type="button" class="add-btn" style="background:#0284c7;" onclick="saveNewSanchaStock()">Save Stock</button>
                     </div>
                 </div>
 
@@ -549,12 +587,12 @@
                         <tbody id="sancha-table-body"></tbody>
                     </table>
                 </div>
-            </div>
+            </section>
 
-            <!-- MODULE 7: JOB WORK -->
-            <div id="jobwork-section" class="module-section" style="display:none;">
+            <!-- MODULE 7: JOB WORK HUB -->
+            <section id="jobwork-section" class="module-section" style="display:none;">
                 <div class="module-header">
-                    <button class="back-btn" onclick="backToDashboard()">← Dashboard</button>
+                    <button type="button" class="back-btn" onclick="backToDashboard()">← Dashboard</button>
                     <h2 style="color:#0d9488;">✂️ Job Work Hub</h2>
                     <div></div>
                 </div>
@@ -593,9 +631,9 @@
                 <!-- 2. WORKERS LIST VIEW -->
                 <div id="jw-workers-view" style="display:none;">
                     <div style="display:flex; justify-content:space-between; margin-bottom:12px; align-items:center;">
-                        <button class="back-btn" onclick="showJobWorkHub()">← Hub Menu</button>
+                        <button type="button" class="back-btn" onclick="showJobWorkHub()">← Hub Menu</button>
                         <h3 id="jw-workers-title" style="color:#0f766e;">Workers Directory</h3>
-                        <button class="add-btn" onclick="toggleJobWorkerForm()"><span id="jw-add-worker-btn-text">+ Naya Kariger</span></button>
+                        <button type="button" class="add-btn" onclick="toggleJobWorkerForm()"><span id="jw-add-worker-btn-text">+ Naya Kariger</span></button>
                     </div>
 
                     <div style="display:flex; gap:10px; margin-bottom:12px; flex-wrap:wrap;">
@@ -611,7 +649,7 @@
                     </div>
 
                     <div class="filter-panel">
-                        <input type="text" id="jw-search-worker-input" class="search-box" placeholder="🔍 Search Kariger, Address, Mobile..." oninput="filterJobWorkWorkers()">
+                        <input type="text" id="jw-search-worker-input" class="search-box" placeholder="🔍 Search Kariger, Address, Mobile...">
                         <select id="jw-absent-filter" class="search-box" style="max-width:180px;" onchange="filterJobWorkWorkers()">
                             <option value="0">Sabhi Workers</option>
                             <option value="15">⚠️ 15 Din se Absent</option>
@@ -628,8 +666,8 @@
                             <div class="input-group"><label>Mobile</label><input type="tel" id="jw-worker-mobile" placeholder="10-digit Mobile"></div>
                         </div>
                         <div style="display:flex; justify-content:flex-end; gap:8px;">
-                            <button class="back-btn" id="jw-worker-cancel-btn" onclick="cancelJobWorkerEdit()" style="display:none;">Cancel</button>
-                            <button class="add-btn" id="jw-worker-save-btn" onclick="saveNewJobWorker()">Save Kariger</button>
+                            <button type="button" class="back-btn" id="jw-worker-cancel-btn" onclick="cancelJobWorkerEdit()" style="display:none;">Cancel</button>
+                            <button type="button" class="add-btn" id="jw-worker-save-btn" onclick="saveNewJobWorker()">Save Kariger</button>
                         </div>
                     </div>
 
@@ -648,11 +686,11 @@
                 <!-- 3. WORKER MONTHLY KHATA SHEET VIEW -->
                 <div id="jw-sheet-view" style="display:none;">
                     <div style="display:flex; justify-content:space-between; margin-bottom:12px; align-items:center; flex-wrap:wrap; gap:8px;">
-                        <button class="back-btn" onclick="closeJobWorkerSheet()">← Workers List</button>
+                        <button type="button" class="back-btn" onclick="closeJobWorkerSheet()">← Workers List</button>
                         <h3 id="jw-sheet-banner-name" style="color:#1e3a8a;">Worker Khata Sheet</h3>
                         <div style="display:flex; gap:8px;">
-                            <button class="add-btn" style="background:#25D366;" onclick="shareJobWorkOnWhatsApp()">📲 WhatsApp</button>
-                            <button class="add-btn" onclick="addNewJobWorkerMonthlySheet()">+ Naya Mahina</button>
+                            <button type="button" class="add-btn" style="background:#25D366;" onclick="shareJobWorkOnWhatsApp()">📲 WhatsApp</button>
+                            <button type="button" class="add-btn" onclick="addNewJobWorkerMonthlySheet()">+ Naya Mahina</button>
                         </div>
                     </div>
 
@@ -690,7 +728,7 @@
                     <div style="background:#f8fafc; border:1px solid #cbd5e1; padding:14px; border-radius:10px; margin-bottom:14px;">
                         <div style="font-weight:800; color:#1e293b; margin-bottom:10px;">➕ Rozana Batch Entry (Gayi / Aayi Saree):</div>
 
-                        <!-- 1. Saree Gayi Section -->
+                        <!-- Saree Gayi Section -->
                         <div style="background:#fff1f2; border:1px solid #fecaca; padding:10px; border-radius:8px; margin-bottom:10px;">
                             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
                                 <strong style="color:#dc2626;">📤 1. Saree Gayi (Kisko Diya):</strong>
@@ -713,7 +751,7 @@
                             <div id="jw-diya-batch-chips" style="display:flex; flex-wrap:wrap; gap:6px; margin-top:6px;"></div>
                         </div>
 
-                        <!-- 2. Saree Aayi Section -->
+                        <!-- Saree Aayi Section -->
                         <div style="background:#f0fdf4; border:1px solid #bbf7d0; padding:10px; border-radius:8px; margin-bottom:10px;">
                             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
                                 <strong style="color:#059669;">📥 2. Saree Wapas Aayi (Tayyar Hoke):</strong>
@@ -730,7 +768,7 @@
                             <div id="jw-aayi-batch-chips" style="display:flex; flex-wrap:wrap; gap:6px; margin-top:6px;"></div>
                         </div>
 
-                        <!-- 3. Damage & Submit -->
+                        <!-- Damage & Submit -->
                         <div class="form-row-3" style="align-items:flex-end;">
                             <div class="input-group"><label style="color:#ea580c;">⚠️ Damage Saree (Pcs)</label><input type="number" id="jw-form-damage-pcs" placeholder="0"></div>
                             <div class="input-group"><label style="color:#dc2626;">Damage Fine / Kaat (₹)</label><input type="number" id="jw-form-damage-amt" placeholder="0.00"></div>
@@ -753,12 +791,12 @@
                 <!-- 4. DUKAN BHEJA VIEW (FINAL OUT) -->
                 <div id="jw-dukan-view" style="display:none;">
                     <div style="display:flex; justify-content:space-between; margin-bottom:12px; align-items:center;">
-                        <button class="back-btn" onclick="showJobWorkHub()">← Hub Menu</button>
+                        <button type="button" class="back-btn" onclick="showJobWorkHub()">← Hub Menu</button>
                         <h3 style="color:#15803d;">🏪 Dukan Bheja (Final Out Register)</h3>
                         <div></div>
                     </div>
 
-                    <div style="display:gap; gap:10px; margin-bottom:14px; display:flex; flex-wrap:wrap;">
+                    <div style="gap:10px; margin-bottom:14px; display:flex; flex-wrap:wrap;">
                         <div style="flex:1; background:white; padding:10px; border-radius:8px; border:1px solid #cbd5e1; text-align:center;">
                             <small style="color:#64748b; font-weight:700;">Calender Finished</small>
                             <h4 id="jw-stat-calender-finished" style="color:#0284c7; margin-top:2px;">0 Pcs</h4>
@@ -781,7 +819,7 @@
                             <div class="input-group"><label>Note / Receiver</label><input type="text" id="jw-dukan-note" placeholder="Dukan ka naam / Note"></div>
                         </div>
                         <div style="display:flex; justify-content:flex-end; margin-top:8px;">
-                            <button class="add-btn" style="background:#15803d; padding:8px 16px; font-weight:800;" onclick="addDukanTransferEntry()">+ Dukan Bhejein & Minus Stock</button>
+                            <button type="button" class="add-btn" style="background:#15803d; padding:8px 16px; font-weight:800;" onclick="addDukanTransferEntry()">+ Dukan Bhejein & Minus Stock</button>
                         </div>
                     </div>
 
@@ -800,9 +838,9 @@
                 <!-- 5. JOB WORK BILLING & HISAB VIEW -->
                 <div id="jw-billing-view" style="display:none;">
                     <div style="display:flex; justify-content:space-between; margin-bottom:12px; align-items:center;">
-                        <button class="back-btn" onclick="showJobWorkHub()">← Hub Menu</button>
+                        <button type="button" class="back-btn" onclick="showJobWorkHub()">← Hub Menu</button>
                         <h3 style="color:#7c3aed;">💳 Job Work Bills & Hisab</h3>
-                        <button class="add-btn" style="background:#7c3aed;" onclick="toggleAddJwBillForm()">+ Naya Bill</button>
+                        <button type="button" class="add-btn" style="background:#7c3aed;" onclick="toggleAddJwBillForm()">+ Naya Bill</button>
                     </div>
 
                     <div style="display:flex; gap:10px; margin-bottom:14px; flex-wrap:wrap;">
@@ -822,8 +860,8 @@
 
                     <div class="sheet-tabs-bar" style="margin-bottom:12px;">
                         <div style="display:flex; gap:8px;">
-                            <button class="sheet-tab active" id="btn-jw-bill-pending" onclick="switchJwBillTab('pending')">🔴 Baki Bills</button>
-                            <button class="sheet-tab" id="btn-jw-bill-paid" onclick="switchJwBillTab('paid')">🟢 Chukta (Paid) Bills</button>
+                            <button type="button" class="sheet-tab active" id="btn-jw-bill-pending" onclick="switchJwBillTab('pending')">🔴 Baki Bills</button>
+                            <button type="button" class="sheet-tab" id="btn-jw-bill-paid" onclick="switchJwBillTab('paid')">🟢 Chukta (Paid) Bills</button>
                         </div>
                     </div>
 
@@ -840,13 +878,13 @@
                             <div class="input-group"><label>Note</label><input type="text" id="jw-bill-input-note" placeholder="Vivran..."></div>
                         </div>
                         <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:8px;">
-                            <button class="back-btn" onclick="toggleAddJwBillForm()">Cancel</button>
-                            <button class="add-btn" style="background:#7c3aed;" onclick="saveJobWorkNewBill()">Save Bill</button>
+                            <button type="button" class="back-btn" onclick="toggleAddJwBillForm()">Cancel</button>
+                            <button type="button" class="add-btn" style="background:#7c3aed;" onclick="saveJobWorkNewBill()">Save Bill</button>
                         </div>
                     </div>
 
                     <div class="filter-panel">
-                        <input type="text" id="jw-search-bill-input" class="search-box" placeholder="🔍 Search Worker, Bill No, Date..." oninput="filterJwBills()">
+                        <input type="text" id="jw-search-bill-input" class="search-box" placeholder="🔍 Search Worker, Bill No, Date...">
                     </div>
 
                     <div class="table-responsive">
@@ -860,28 +898,28 @@
                 <!-- 6. JOB WORK DAY-BOOK & TRACKING VIEW -->
                 <div id="jw-movement-view" style="display:none;">
                     <div style="display:flex; justify-content:space-between; margin-bottom:12px; align-items:center;">
-                        <button class="back-btn" onclick="showJobWorkHub()">← Hub Menu</button>
+                        <button type="button" class="back-btn" onclick="showJobWorkHub()">← Hub Menu</button>
                         <h3 style="color:#d97706;">🔄 Job Work Day-Book & Tracking</h3>
                         <div style="display:flex; gap:6px; align-items:center;">
                             <input type="date" id="jw-mov-date" onchange="renderJwMovementDaybook()">
-                            <button class="today-btn" onclick="setJwMovementToday()">📅 Aaj</button>
+                            <button type="button" class="today-btn" onclick="setJwMovementToday()">📅 Aaj</button>
                         </div>
                     </div>
 
                     <div class="daybook-btn-grid" style="margin-bottom:12px;">
-                        <button class="daybook-tab-btn active" id="btn-jw-mov-cutting" onclick="switchJwMovementTab('cutting')">
+                        <button type="button" class="daybook-tab-btn active" id="btn-jw-mov-cutting" onclick="switchJwMovementTab('cutting')">
                             <span class="day-icon">✂️</span><div><div class="day-title">Cutting</div><div class="day-sub" id="sub-jw-mov-cutting">-</div></div>
                         </button>
-                        <button class="daybook-tab-btn" id="btn-jw-mov-calender" onclick="switchJwMovementTab('calender')">
+                        <button type="button" class="daybook-tab-btn" id="btn-jw-mov-calender" onclick="switchJwMovementTab('calender')">
                             <span class="day-icon">🎛️</span><div><div class="day-title">Calender</div><div class="day-sub" id="sub-jw-mov-calender">-</div></div>
                         </button>
-                        <button class="daybook-tab-btn" id="btn-jw-mov-payment" onclick="switchJwMovementTab('payment')">
+                        <button type="button" class="daybook-tab-btn" id="btn-jw-mov-payment" onclick="switchJwMovementTab('payment')">
                             <span class="day-icon">💳</span><div><div class="day-title">Payment</div><div class="day-sub" id="sub-jw-mov-payment">-</div></div>
                         </button>
                     </div>
 
                     <div class="filter-panel">
-                        <input type="text" id="jw-mov-search" class="search-box" placeholder="🔍 Search Kariger, Sheet..." oninput="renderJwMovementDaybook()">
+                        <input type="text" id="jw-mov-search" class="search-box" placeholder="🔍 Search Kariger, Sheet...">
                     </div>
 
                     <div class="table-responsive">
@@ -892,33 +930,35 @@
                         </table>
                     </div>
                 </div>
-            </div>
+            </section>
 
             <!-- MODULE 8: ADMIN CONTROL -->
-            <div id="admin-section" class="module-section" style="display:none;">
-                <div class="module-header"><button class="back-btn" onclick="backToDashboard()">← Dashboard</button><h2 style="color:#d97706;">👑 Admin Panel</h2><button class="add-btn" onclick="refreshAdminUsersList()">🔄 Refresh</button></div>
-                <div class="table-responsive"><table><thead><tr style="background:#d97706; color:white;"><th>S.No.</th><th>Naam</th><th>Mobile</th><th>User ID</th><th>Password</th><th>Auto-Block</th><th>Status</th><th>Action</th></tr></thead><tbody id="admin-users-table-body"></tbody></table></div>
-            </div>
+            <section id="admin-section" class="module-section" style="display:none;">
+                <div class="module-header"><button type="button" class="back-btn" onclick="backToDashboard()">← Dashboard</button><h2 style="color:#d97706;">👑 Admin Panel</h2><button type="button" id="admin-refresh-users-btn" class="add-btn" onclick="refreshAdminUsersList()">🔄 Refresh List</button></div>
+                <div class="table-responsive"><table><thead><tr style="background:#d97706; color:white;"><th>S.No.</th><th>Naam</th><th>Mobile</th><th>User ID</th><th>Password</th><th>Join Date</th><th>Validity</th><th>Status</th><th style="text-align:center;">Action</th></tr></thead><tbody id="admin-users-table-body"></tbody></table></div>
+            </section>
         </div>
     </div>
 
-    <!-- 3. MODALS -->
-    <div id="item-modal" class="modal-overlay" style="display:none;">
+    <!-- ==================================================================== -->
+    <!-- 3. ACCESSIBLE MODAL OVERLAYS                                         -->
+    <!-- ==================================================================== -->
+    <div id="item-modal" class="modal-overlay" style="display:none;" role="dialog" aria-modal="true">
         <div class="modal-card">
-            <div class="modal-header"><h3 id="modal-item-title">Passbook</h3><button class="close-modal-btn" onclick="setDisplay('item-modal', 'none')">✕</button></div>
+            <div class="modal-header"><h3 id="modal-item-title">Passbook</h3><button type="button" class="close-modal-btn" onclick="setDisplay('item-modal', 'none')">✕</button></div>
             <div class="modal-body"><div class="table-responsive"><table><thead></thead><tbody id="modal-history-body"></tbody></table></div></div>
         </div>
     </div>
 
     <!-- Job Work Batch Breakdown Modal -->
-    <div id="jw-batch-modal" class="modal-overlay" style="display:none;">
+    <div id="jw-batch-modal" class="modal-overlay" style="display:none;" role="dialog" aria-modal="true">
         <div class="modal-card" style="max-width:540px;">
             <div class="modal-header">
                 <div>
                     <h3 id="jw-batch-modal-title" style="color:#0d9488;">Batch Breakdown</h3>
                     <small id="jw-batch-modal-subtitle" style="color:#64748b; font-weight:700;"></small>
                 </div>
-                <button class="close-modal-btn" onclick="closeJwBatchModal()">✕</button>
+                <button type="button" class="close-modal-btn" onclick="closeJwBatchModal()">✕</button>
             </div>
             <div class="modal-body">
                 <div class="table-responsive">
@@ -937,14 +977,14 @@
     </div>
 
     <!-- Job Work Bill Pay Modal -->
-    <div id="jw-pay-modal" class="modal-overlay" style="display:none;">
+    <div id="jw-pay-modal" class="modal-overlay" style="display:none;" role="dialog" aria-modal="true">
         <div class="modal-card" style="max-width:440px;">
             <div class="modal-header">
                 <div>
                     <h3 style="color:#059669;">💰 Bill Payment</h3>
                     <small id="jw-pay-modal-worker-text" style="color:#64748b; font-weight:bold;"></small>
                 </div>
-                <button class="close-modal-btn" onclick="closeJwPayModal()">✕</button>
+                <button type="button" class="close-modal-btn" onclick="closeJwPayModal()">✕</button>
             </div>
             <div class="modal-body">
                 <input type="hidden" id="jw-pay-bill-id">
@@ -961,43 +1001,43 @@
                     </select>
                 </div>
                 <div class="input-group"><label>Note / Remark</label><input type="text" id="jw-pay-note"></div>
-                <button class="btn" style="background:#059669;" onclick="saveJobWorkPayment()">Confirm Payment</button>
+                <button type="button" class="btn" style="background:#059669;" onclick="saveJobWorkPayment()">Confirm Payment</button>
             </div>
         </div>
     </div>
 
-    <div id="profile-modal" class="modal-overlay" style="display:none;">
+    <div id="profile-modal" class="modal-overlay" style="display:none;" role="dialog" aria-modal="true">
         <div class="modal-card" style="max-width:440px;">
-            <div class="modal-header"><h3>👤 Profile</h3><button class="close-modal-btn" onclick="closeProfileModal()">✕</button></div>
+            <div class="modal-header"><h3>👤 Profile Settings</h3><button type="button" class="close-modal-btn" onclick="closeProfileModal()">✕</button></div>
             <div class="modal-body">
                 <div class="input-group"><label>Naam</label><input type="text" id="prof-name"></div>
-                <div class="input-group"><label>User ID</label><input type="text" id="prof-id" disabled></div>
+                <div class="input-group"><label>User ID</label><input type="text" id="prof-id" readonly></div>
                 <div class="input-group"><label>Mobile</label><input type="tel" id="prof-mobile"></div>
-                <div class="input-group"><label>Password</label><input type="text" id="prof-pass"></div>
+                <div class="input-group"><label>Password</label><input type="password" id="prof-pass"></div>
                 <div class="input-group"><label>PIN</label><input type="password" maxlength="4" id="prof-pin"></div>
-                <button class="btn" onclick="saveProfileSettings()">Save</button>
+                <button type="button" id="prof-save-btn" class="btn" onclick="saveProfileSettings()">Save Settings</button>
             </div>
         </div>
     </div>
 
-    <div id="session-closing-modal" class="modal-overlay" style="display:none;">
+    <div id="session-closing-modal" class="modal-overlay" style="display:none;" role="dialog" aria-modal="true">
         <div class="modal-card" style="max-width:480px;">
-            <div class="modal-header"><h3 style="color:#7c3aed;">📅 1 April Year Closing (Naya Saal)</h3><button class="close-modal-btn" onclick="closeSessionClosingModal()">✕</button></div>
+            <div class="modal-header"><h3 style="color:#7c3aed;">📅 1 April Year Closing (Naya Saal)</h3><button type="button" class="close-modal-btn" onclick="closeSessionClosingModal()">✕</button></div>
             <div class="modal-body">
                 <div class="input-group"><label>Abhi Ka Session</label><input type="text" id="session-current-display" disabled></div>
                 <div class="input-group"><label>Naya Saal (Session)</label><input type="text" id="session-new-input" placeholder="jaise: 2027-2028"></div>
-                <button class="btn" style="background:#7c3aed;" onclick="startSequentialYearClosing()">🚀 Naya Saal Chalu Karein</button>
+                <button type="button" class="btn" style="background:#7c3aed;" onclick="startSequentialYearClosing()">🚀 Naya Saal Chalu Karein</button>
                 <hr style="margin:20px 0; border:none; border-top:1px solid #e2e8f0;">
                 <h4 style="color:#dc2626;">🗑️ Delete Zone</h4>
                 <div class="input-group"><label>Session</label><select id="session-delete-select"></select></div>
                 <div class="input-group"><label>User ID</label><input type="text" id="session-del-user-id"></div>
                 <div class="input-group"><label>Password</label><input type="password" id="session-del-password"></div>
-                <button class="btn" style="background:#dc2626;" onclick="confirmAndDeleteSessionWithAuth()">Confirm Delete</button>
+                <button type="button" class="btn" style="background:#dc2626;" onclick="confirmAndDeleteSessionWithAuth()">Confirm Delete</button>
             </div>
         </div>
     </div>
 
-    <div id="session-transfer-modal" class="modal-overlay" style="display:none;">
+    <div id="session-transfer-modal" class="modal-overlay" style="display:none;" role="dialog" aria-modal="true">
         <div class="modal-card" style="max-width:540px;">
             <div class="modal-header"><h3>⏳ Naya Saal Transfer...</h3></div>
             <div class="modal-body" id="transfer-progress-view">
@@ -1011,65 +1051,75 @@
         </div>
     </div>
 
+    <!-- SHARED GLOBAL DATALISTS -->
     <datalist id="dl-karigers-list"></datalist>
 
-    <!-- 4. MODULAR SCRIPTS (CACHE-BUSTING v2.0) -->
-    <script src="core/utils.js?v=2.0"></script>
-    <script src="core/storage.js?v=2.0"></script>
-    <script src="core/database.js?v=2.0"></script>
-    <script src="core/karkhana.js?v=2.0"></script>
+    <!-- ==================================================================== -->
+    <!-- 4. MODULAR SCRIPTS (STRICT ENTERPRISE DEPENDENCY ORDER v2.5)         -->
+    <!-- ==================================================================== -->
+    <!-- Step 1: Core Foundation & Safe Array Engines -->
+    <script src="core/utils.js?v=2.5"></script>
+    <script src="core/storage.js?v=2.5"></script>
+    <script src="core/database.js?v=2.5"></script>
+    <script src="core/karkhana.js?v=2.5"></script>
 
-    <script src="auth/auth.js?v=2.0"></script>
-    <script src="auth/profile.js?v=2.0"></script>
+    <!-- Step 2: Access & Identity Management -->
+    <script src="auth/auth.js?v=2.5"></script>
+    <script src="auth/profile.js?v=2.5"></script>
 
-    <script src="session/session.js?v=2.0"></script>
-    <script src="session/session-closing.js?v=2.0"></script>
+    <!-- Step 3: Session Lifecycle & Year Closing -->
+    <script src="session/session.js?v=2.5"></script>
+    <script src="session/session-closing.js?v=2.5"></script>
 
-    <script src="kariger/kariger-calc.js?v=2.0"></script>
-    <script src="kariger/kariger-ui.js?v=2.0"></script>
+    <!-- Step 4: All Calculation Engines (MUST load BEFORE UI modules) -->
+    <script src="kariger/kariger-calc.js?v=2.5"></script>
+    <script src="bana/bana-calc.js?v=2.5"></script>
+    <script src="zari/zari-calc.js?v=2.5"></script>
+    <script src="sancha/sancha-calc.js?v=2.5"></script>
+    <script src="saree/saree-calc.js?v=2.5"></script>
+    <script src="cutting/cutting-calc.js?v=2.5"></script>
+    <script src="calender/calender-calc.js?v=2.5"></script>
 
-    <script src="bana/bana-calc.js?v=2.0"></script>
-    <script src="bana/bana-ui.js?v=2.0"></script>
+    <!-- Step 5: All UI Controllers & DOM Synchronizers -->
+    <script src="kariger/kariger-ui.js?v=2.5"></script>
+    <script src="bana/bana-ui.js?v=2.5"></script>
+    <script src="zari/zari-ui.js?v=2.5"></script>
+    <script src="sancha/sancha-ui.js?v=2.5"></script>
+    <script src="saree/saree-ui.js?v=2.5"></script>
+    <script src="cutting/cutting-ui.js?v=2.5"></script>
+    <script src="calender/calender-ui.js?v=2.5"></script>
+    <script src="dukan/dukan.js?v=2.5"></script>
+    <script src="payment/payment.js?v=2.5"></script>
+    <script src="jobwork.js?v=2.5"></script>
+    <script src="daybook/daybook.js?v=2.5"></script>
 
-    <script src="zari/zari-calc.js?v=2.0"></script>
-    <script src="zari/zari-ui.js?v=2.0"></script>
+    <!-- Step 6: Administration & Data Portability -->
+    <script src="admin/admin.js?v=2.5"></script>
+    <script src="backup/backup.js?v=2.5"></script>
 
-    <script src="sancha/sancha-calc.js?v=2.0"></script>
-    <script src="sancha/sancha-ui.js?v=2.0"></script>
-
-    <script src="saree/saree-calc.js?v=2.0"></script>
-    <script src="saree/saree-ui.js?v=2.0"></script>
-
-    <script src="payment/payment.js?v=2.0"></script>
-    <script src="backup/backup.js?v=2.0"></script>
-    <script src="admin/admin.js?v=2.0"></script>
-
-    <!-- JOB WORK & SUB-MODULES -->
-    <script src="cutting/cutting-calc.js?v=2.0"></script>
-    <script src="calender/calender-calc.js?v=2.0"></script>
-    <script src="dukan/dukan.js?v=2.0"></script>
-    <script src="jobwork.js?v=2.0"></script>
-
-    <!-- ROZANA DAY-BOOK & APP ENGINE -->
-    <script src="daybook/daybook.js?v=2.0"></script>
-
-    <!-- MULTI-KARKHANA NAVBAR CONTROLLER -->
+    <!-- ==================================================================== -->
+    <!-- 5. APPLICATION INITIALIZER & NAVBAR CONTROLLER                       -->
+    <!-- ==================================================================== -->
     <script>
+        /**
+         * Populates Karkhana selection dropdown in top navigation bar
+         */
         function populateNavbarKarkhanaDropdown() {
-            var sel = document.getElementById("app-karkhana-select");
+            const sel = document.getElementById("app-karkhana-select");
             if (!sel) return;
             sel.innerHTML = "";
-            var list = (typeof getKarkhanasSafe === "function") ? getKarkhanasSafe() : [];
-            var activeKid = (typeof getActiveKarkhanaId === "function") ? getActiveKarkhanaId() : "all";
-            
-            var optAll = document.createElement("option");
+
+            const list = (typeof window.getKarkhanasSafe === "function") ? window.getKarkhanasSafe() : [];
+            const activeKid = (typeof window.getActiveKarkhanaId === "function") ? window.getActiveKarkhanaId() : "all";
+
+            const optAll = document.createElement("option");
             optAll.value = "all";
             optAll.textContent = "🌐 Sabhi Karkhane";
             if (activeKid === "all") optAll.selected = true;
             sel.appendChild(optAll);
 
-            list.forEach(function(k) {
-                var opt = document.createElement("option");
+            list.forEach((k) => {
+                const opt = document.createElement("option");
                 opt.value = k.id;
                 opt.textContent = (k.id === "k_main" || k.isDefault ? "🏢 " : "🏭 ") + k.name;
                 if (String(k.id) === String(activeKid)) opt.selected = true;
@@ -1077,67 +1127,38 @@
             });
         }
 
+        /**
+         * Dispatches navbar branch changes to all active modules
+         */
         function handleNavbarKarkhanaChange(val) {
-            if (typeof setActiveKarkhanaId === "function") {
-                setActiveKarkhanaId(val, function() {
-                    if (typeof switchDashboardKarkhanaTab === "function") {
-                        switchDashboardKarkhanaTab(val);
+            if (typeof window.setActiveKarkhanaId === "function") {
+                window.setActiveKarkhanaId(val, () => {
+                    if (typeof window.switchDashboardKarkhanaTab === "function") {
+                        window.switchDashboardKarkhanaTab(val);
                     }
-                    if (typeof triggerActiveSectionRefresh === "function") {
-                        triggerActiveSectionRefresh();
+                    if (typeof window.triggerActiveSectionRefresh === "function") {
+                        window.triggerActiveSectionRefresh();
                     }
                 });
             }
         }
 
-        var origInitApp = typeof initApp === "function" ? initApp : null;
-        initApp = function() {
-            populateNavbarKarkhanaDropdown();
-            if (origInitApp) origInitApp();
-        };
-    </script>
-
-    <!-- 🚀 PWA REGISTRATION SCRIPT & DIRECT IN-APP INSTALL TRIGGER -->
-    <script>
-        let pwaDeferredPrompt = null;
-
-        // 1. Capture the Chrome install prompt
-        window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault();
-            pwaDeferredPrompt = e;
-            const btn = document.getElementById('pwa-install-nav-btn');
-            if (btn) btn.style.display = 'inline-flex';
-        });
-
-        // 2. Direct click handler on Navbar Button
-        function triggerPwaInstall() {
-            if (pwaDeferredPrompt) {
-                pwaDeferredPrompt.prompt();
-                pwaDeferredPrompt.userChoice.then((choiceResult) => {
-                    if (choiceResult.outcome === 'accepted') {
-                        console.log('✅ PWA Installed successfully!');
-                    }
-                    pwaDeferredPrompt = null;
-                    const btn = document.getElementById('pwa-install-nav-btn');
-                    if (btn) btn.style.display = 'none';
-                });
-            } else {
-                alert("Agar install prompt na khule, toh Chrome ke 3-dots (⋮) par click karein aur 'Install Simplicity ERP' chunein!");
-            }
-        }
-
-        // 3. Register Service Worker with safe fallback
+        // PWA Service Worker Registration
         if ('serviceWorker' in navigator) {
-            window.addEventListener('load', function() {
-                navigator.serviceWorker.register('./sw.js')
-                    .then(function(reg) {
-                        console.log('✅ Simplicity PWA Service Worker Registered:', reg.scope);
-                    })
-                    .catch(function(err) {
-                        console.error('❌ Service Worker Registration Failed:', err);
-                    });
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js?v=2.5')
+                    .then(() => console.log('✅ [PWA] Service Worker Active.'))
+                    .catch((err) => console.warn('⚠️ [PWA] SW Registration failed:', err));
             });
         }
+
+        // Auto-bootstrap app on DOM Ready
+        document.addEventListener('DOMContentLoaded', () => {
+            populateNavbarKarkhanaDropdown();
+            if (typeof window.checkAutoLogin === 'function') {
+                window.checkAutoLogin();
+            }
+        });
     </script>
 </body>
 </html>
