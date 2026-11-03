@@ -4,9 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     
-    <!-- SEO & Social Sharing -->
+    <!-- SEO & Social Preview -->
     <title>Simplicity • The Art of Saree Manufacturing</title>
-    <meta name="description" content="Experience the timeless craftsmanship of luxury Banarasi weaving, precision booti cutting, and industrial calender finishing. Managed with zero-friction digital intelligence.">
+    <meta name="description" content="Experience traditional handloom weaving, precision booti cutting, and massive industrial steam calender finishing. Managed with zero-friction digital intelligence.">
     <meta name="theme-color" content="#000000">
 
     <!-- Fonts: Inter & SF-Pro Fallbacks -->
@@ -72,7 +72,7 @@
             align-items: center;
             justify-content: space-between;
             padding: 0 max(24px, calc((100vw - 1180px) / 2));
-            transition: background 0.3s ease, border-color 0.3s ease;
+            transition: background 0.3s ease;
         }
 
         .nav-brand {
@@ -220,7 +220,6 @@
             background: rgba(255, 255, 255, 0.05);
         }
 
-        /* Large Studio Visual Stage */
         .hero-visual-frame {
             width: min(1140px, 92vw);
             height: clamp(340px, 60vh, 640px);
@@ -249,7 +248,7 @@
             position: absolute;
             bottom: 24px;
             left: 24px;
-            background: rgba(10, 10, 12, 0.65);
+            background: rgba(10, 10, 12, 0.75);
             backdrop-filter: blur(16px);
             -webkit-backdrop-filter: blur(16px);
             padding: 8px 18px;
@@ -262,7 +261,7 @@
         }
 
         /* ====================================================================
-           4. FULL-WIDTH CINEMATIC SECTIONS (STORYTELLING FLOW)
+           4. FULL-WIDTH CINEMATIC SECTIONS
            ==================================================================== */
         .section-block {
             padding: 120px max(24px, calc((100vw - 1140px) / 2));
@@ -311,7 +310,7 @@
             font-weight: 400;
             line-height: 1.6;
             margin-bottom: 28px;
-            max-width: 480px;
+            max-width: 500px;
         }
 
         .metric-pill-row {
@@ -337,7 +336,6 @@
             letter-spacing: 0.05em;
         }
 
-        /* Visual Card Wrapper */
         .cinematic-card {
             border-radius: var(--radius-outer);
             overflow: hidden;
@@ -360,7 +358,7 @@
             transform: scale(1.04);
         }
 
-        /* Full Bleed Showcase Banner */
+        /* Calender Industrial Frame */
         .full-bleed-banner {
             width: 100%;
             border-radius: var(--radius-outer);
@@ -368,7 +366,7 @@
             border: 1px solid var(--border-subtle);
             overflow: hidden;
             position: relative;
-            height: clamp(400px, 65vh, 620px);
+            height: clamp(420px, 68vh, 640px);
             margin-top: 40px;
             cursor: zoom-in;
             box-shadow: 0 35px 80px rgba(0,0,0,0.8);
@@ -391,17 +389,17 @@
             bottom: 40px;
             left: 40px;
             right: 40px;
-            max-width: 600px;
-            background: rgba(8, 8, 10, 0.7);
+            max-width: 650px;
+            background: rgba(8, 8, 10, 0.78);
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
-            padding: 30px;
+            padding: 32px;
             border-radius: var(--radius-inner);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.12);
         }
 
         /* ====================================================================
-           5. SIMPLICITY ERP PLATFORM SHOWCASE (THE SOFTWARE BRIDGE)
+           5. ERP SOFTWARE BRIDGE
            ==================================================================== */
         .software-stage {
             background: radial-gradient(circle at 50% 10%, rgba(41, 151, 255, 0.08) 0%, rgba(0,0,0,0) 70%);
@@ -456,7 +454,6 @@
             font-weight: 700;
             color: var(--text-primary);
             margin-bottom: 8px;
-            letter-spacing: -0.015em;
         }
 
         .tile-desc {
@@ -465,7 +462,6 @@
             line-height: 1.6;
         }
 
-        /* Big High-Impact Launch Card */
         .portal-launch-card {
             background: linear-gradient(135deg, #0e121d 0%, #06080e 100%);
             border: 1px solid rgba(41, 151, 255, 0.25);
@@ -480,7 +476,6 @@
             font-size: 32px;
             font-weight: 800;
             margin-bottom: 12px;
-            letter-spacing: -0.025em;
         }
 
         .portal-launch-card p {
@@ -491,7 +486,7 @@
         }
 
         /* ====================================================================
-           6. INTERACTIVE CINEMATIC IMAGE LIGHTBOX MODAL
+           6. LIGHTBOX MODAL
            ==================================================================== */
         .lightbox-overlay {
             position: fixed;
@@ -606,9 +601,6 @@
             color: var(--text-primary);
         }
 
-        /* ====================================================================
-           9. RESPONSIVE BREAKPOINTS
-           ==================================================================== */
         @media (max-width: 900px) {
             .apple-grid-two, .apple-grid-two.reverse {
                 grid-template-columns: 1fr;
@@ -647,15 +639,15 @@
 
         <ul class="nav-links">
             <li><a href="#saree-drape">The Drape</a></li>
-            <li><a href="#the-loom">Artisan Loom</a></li>
-            <li><a href="#booti-cutting">Precision Cut</a></li>
-            <li><a href="#calender-finish">Silken Lustre</a></li>
-            <li><a href="#technology">ERP Intelligence</a></li>
+            <li><a href="#the-loom">Master Weaver</a></li>
+            <li><a href="#booti-cutting">Precision Cutting</a></li>
+            <li><a href="#calender-finish">Steam Calender Iron</a></li>
+            <li><a href="#technology">ERP Platform</a></li>
         </ul>
 
         <div style="display:flex; align-items:center; gap:12px;">
-            <a href="tel:+917985402962" style="font-size:12px; color:var(--text-secondary); text-decoration:none; display:none; @media(min-width:600px){display:inline;}">📞 Support</a>
-            <a href="index.html" class="nav-cta-btn">Launch Portal →</a>
+            <a href="tel:+917985402962" style="font-size:12px; color:var(--text-secondary); text-decoration:none;">📞 7985402962</a>
+            <a href="index.html" class="nav-cta-btn">Karkhana Portal →</a>
         </div>
     </header>
 
@@ -664,12 +656,12 @@
          ==================================================================== -->
     <section class="hero-stage" id="saree-drape">
         <div class="reveal">
-            <span class="hero-eyebrow">The Masterwork of Banaras</span>
+            <span class="hero-eyebrow">The Heritage of Banaras</span>
             <h1 class="hero-headline">Woven in Heritage.<br>Perfected by Precision.</h1>
-            <p class="hero-subhead">Every shimmer of golden zari, every intertwined filament of silk tells a centuries-old story of craftsmanship.</p>
+            <p class="hero-subhead">From the rhythmic click of the wooden shuttle to the gleaming heat of industrial calender rolls — the complete journey of luxury handloom perfection.</p>
             
             <div class="hero-actions">
-                <a href="index.html" class="btn-apple-primary">Enter Karkhana Portal</a>
+                <a href="index.html" class="btn-apple-primary">Launch Karkhana Portal</a>
                 <a href="#the-loom" class="btn-apple-ghost">Explore Craftsmanship ↓</a>
             </div>
         </div>
@@ -683,121 +675,123 @@
     </section>
 
     <!-- ====================================================================
-         SECTION 2: THE WEAVER AT THE LOOM (BINAI & ARTISAN CRAFT)
+         SECTION 2: THE WEAVER AT THE LOOM (BINAI & SATTAL)
+         [Exact Prompt 1 Scene: Master Weaver, Wooden Loom, Gold Zari, Dust in Light]
          ==================================================================== -->
     <section class="section-block" id="the-loom">
         <div class="apple-grid-two">
             <div class="section-content-side reveal">
-                <span class="section-tag">01 • The Handloom Shuttle</span>
-                <h2 class="section-title">Where Rhythm Meets Resilience.</h2>
-                <p class="section-copy">Deep inside the weaving ateliers, ambient shadows yield to a single focused spotlight. Hands move with mathematical dexterity as the wooden shuttle glides across warp and weft, binding threads into wearable art.</p>
+                <span class="section-tag">01 • The Handloom Shuttle (Sattal)</span>
+                <h2 class="section-title">Where Zari Meets the Silk.</h2>
+                <p class="section-copy">Deep inside the traditional karkhana, dramatic side spotlighting cuts through the ambient darkness, illuminating the flying shuttle (sattal) and floating dust particles in the air. A master weaver binds pure metallic zari into deep maroon silk with lifelong mastery.</p>
                 <div class="metric-pill-row">
                     <div class="metric-unit">
                         <h4>10,000+</h4>
-                        <p>Jacquard Warp Ties</p>
+                        <p>Warp Threads</p>
                     </div>
                     <div class="metric-unit">
-                        <h4>14 Days</h4>
-                        <p>Per Master Drape</p>
+                        <h4>Pure Zari</h4>
+                        <p>Metallic Shimmer</p>
                     </div>
                     <div class="metric-unit">
                         <h4>0.00 Grams</h4>
-                        <p>Tracked Zari Waste</p>
+                        <p>Material Leakage</p>
                     </div>
                 </div>
             </div>
 
             <div class="cinematic-card reveal" onclick="openLightbox(this)">
-                <img src="https://images.unsplash.com/photo-1606760227091-3dd870d97f1d?auto=format&fit=crop&w=1400&q=85" 
-                     alt="Artisan hands operating the weaving loom shuttle under dramatic studio lighting"
+                <img src="https://images.unsplash.com/photo-1606760227091-3dd870d97f1d?auto=format&fit=crop&w=1600&q=85" 
+                     alt="Cinematic low-angle shot of master weaver operating wooden loom and shuttle with golden zari threads"
                      loading="lazy">
-                <div class="visual-caption-glass">🧵 Kariger at the Loom • Shuttle & Tani Synchrony</div>
+                <div class="visual-caption-glass">🧵 Master Weaver at Loom • Shuttle & Shimmering Gold Zari</div>
             </div>
         </div>
     </section>
 
     <!-- ====================================================================
          SECTION 3: CRAFTSMANSHIP & PRECISION (BOOTI CUTTING)
+         [Exact Prompt 2 Scene: Indian Lady Hands, Bangles, Sharp Tailor Scissors, Jute Mat]
          ==================================================================== -->
     <section class="section-block" id="booti-cutting" style="background: radial-gradient(circle at 80% 50%, rgba(212, 175, 55, 0.05) 0%, rgba(0,0,0,0) 60%);">
         <div class="apple-grid-two reverse">
             <div class="section-content-side reveal">
                 <span class="section-tag">02 • Bariki Aur Mehnat</span>
-                <h2 class="section-title">The Grace of the Tailor's Shears.</h2>
-                <p class="section-copy">True luxury is defined by the unseen reverse of the fabric. Expert Indian artisans gently separate excess brocade filaments with fine tailor shears—one booti at a time, ensuring unbroken silk integrity and absolute comfort.</p>
+                <h2 class="section-title">The Razor-Sharp Art of Booti Cutting.</h2>
+                <p class="section-copy">Seated gracefully on a traditional woven jute mat (chatai), an Indian woman’s experienced hands adorned with simple bangles hold razor-sharp tailor scissors. In soft directional daylight, she carefully snips excess brocade threads from floral and paisley bootis without grazing a single silk strand.</p>
                 <div class="metric-pill-row">
                     <div class="metric-unit">
                         <h4>100%</h4>
-                        <p>Hand-Snipped Bootis</p>
+                        <p>Hand-Snipped Motifs</p>
                     </div>
                     <div class="metric-unit">
-                        <h4>Micro-Shear</h4>
-                        <p>Blade Precision</p>
+                        <h4>Zero Pull</h4>
+                        <p>Tension Integrity</p>
                     </div>
                 </div>
             </div>
 
             <div class="cinematic-card reveal" onclick="openLightbox(this)">
-                <img src="https://images.unsplash.com/photo-1528458876861-544fd1761a91?auto=format&fit=crop&w=1400&q=85" 
-                     alt="Extreme macro close up of artisan hands cutting delicate silk saree bootis with shears"
+                <img src="https://images.unsplash.com/photo-1598300042247-d088f8ab3a91?auto=format&fit=crop&w=1600&q=85" 
+                     alt="Extreme macro closeup of Indian woman's hands cutting floral bootis from silk saree using tailor scissors"
                      loading="lazy">
-                <div class="visual-caption-glass">✂️ Booti Cutting & Pallu Finishing • Zero Thread Pull</div>
+                <div class="visual-caption-glass">✂️ Precision Booti Cutting • Artisan Hands on Jute Mat</div>
             </div>
         </div>
     </section>
 
     <!-- ====================================================================
-         SECTION 4: CALENDER MACHINE & THE SILKEN LUSTRE
+         SECTION 4: CALENDER MACHINE & STEAM IRON FINISH
+         [Industrial Giant Heated Steel Cylinders, High-Pressure Press, Polished Sheen]
          ==================================================================== -->
     <section class="section-block" id="calender-finish">
-        <div class="reveal" style="text-align: center; max-width: 720px; margin: 0 auto 30px;">
-            <span class="section-tag">03 • Polished Lustre</span>
+        <div class="reveal" style="text-align: center; max-width: 760px; margin: 0 auto 30px;">
+            <span class="section-tag">03 • Industrial Steam Iron & Finish</span>
             <h2 class="section-title">The Mirror Glaze of Heavy Calender Rolls.</h2>
-            <p class="section-copy" style="max-width: 620px; margin: 0 auto;">Through heavy steam-heated mirrored steel cylinders, raw woven textures transform into a fluid, liquid-gold sheen that slips through fingers like velvet.</p>
+            <p class="section-copy" style="max-width: 640px; margin: 0 auto;">Inside the finishing unit stands the massive calender machine. Heavy, heated mirror-polished chrome and steel cylinders rotate with unstoppable pressure, steam-ironing long lengths of saree to bestow an unbelievable liquid-glass lustre.</p>
         </div>
 
         <div class="full-bleed-banner reveal" onclick="openLightbox(this)">
-            <img src="https://images.unsplash.com/photo-1558769132-cb1aea458c5e?auto=format&fit=crop&w=1800&q=85" 
-                 alt="High-gloss calender finish on rich luxury silk saree rolls"
+            <img src="https://images.unsplash.com/photo-1504917599217-d4dc5ebe6122?auto=format&fit=crop&w=1800&q=85" 
+                 alt="Massive industrial saree calender ironing machine with heavy heated steel cylinders and steam press"
                  loading="lazy">
             <div class="banner-overlay-content">
-                <h3 style="font-size:22px; font-weight:800; color:#ffffff; margin-bottom:6px;">Calender Finish</h3>
-                <p style="font-size:13px; color:var(--text-secondary); line-height:1.5;">Steam-compacted weave alignment guarantees uncreased fall, radiant light reflection, and showroom-ready texture.</p>
+                <h3 style="font-size:22px; font-weight:800; color:#ffffff; margin-bottom:8px;">🔥 Industrial Calender Press Machine</h3>
+                <p style="font-size:13px; color:var(--text-secondary); line-height:1.6;">High-pressure steam-iron cylinders compact every woven thread, permanently eliminating creases and creating the iconic radiant shine demanded by luxury bridal showrooms.</p>
             </div>
         </div>
     </section>
 
     <!-- ====================================================================
-         SECTION 5: SIMPLICITY ERP - THE TECHNOLOGY POWERING THE ART
+         SECTION 5: SIMPLICITY ERP - THE TECHNOLOGY BEHIND THE ART
          ==================================================================== -->
     <section class="software-stage" id="technology">
         <div class="software-header-box reveal">
             <span class="hero-eyebrow">Enterprise Intelligence</span>
             <h2 class="software-headline">The Art of Handloom.<br>The Power of Zero-Defect Code.</h2>
-            <p class="hero-subhead" style="margin-bottom:0;">Behind the timeless beauty of every saree operates Simplicity ERP—monitoring every single gram of zari, weaver passbook balances, and stage-by-stage multi-godown distribution in real-time.</p>
+            <p class="hero-subhead" style="margin-bottom:0;">Behind the loom, the cutting mat, and the heavy calender press operates Simplicity ERP — tracking every single gram of zari, weaver wages, and multi-godown stock movements with zero discrepancy.</p>
         </div>
 
         <div class="software-grid-trio reveal">
             <div class="apple-feature-tile">
                 <span class="tile-icon">🧶</span>
                 <h3 class="tile-title">Atomic Zari Ledger</h3>
-                <p class="tile-desc">Epsilon-safe weight arithmetic. Cone deductions, topis, and waste tracking eliminate unaccounted material drift across all godowns.</p>
+                <p class="tile-desc">Less TP, Topi, and cone wastage calculations. Every gram of gold and silver zari is accounted for with zero material drift.</p>
             </div>
             <div class="apple-feature-tile">
-                <span class="tile-icon">🧵</span>
-                <h3 class="tile-title">2,000+ Weaver Scalability</h3>
-                <p class="tile-desc">Virtualized pagination and targeted Firebase event streaming provide instantaneous 60fps responses, even on entry-level mobile devices.</p>
+                <span class="tile-icon">✂️</span>
+                <h3 class="tile-title">Batch Job Work Hub</h3>
+                <p class="tile-desc">Track sarees sent for booti cutting and calender ironing in single-line batch registers with real-time damage fines.</p>
             </div>
             <div class="apple-feature-tile">
                 <span class="tile-icon">🏢</span>
                 <h3 class="tile-title">Multi-Godam Isolation</h3>
-                <p class="tile-desc">Main Godown, Bahadurganj, and Mubarakpur branches operate on segregated ledger partitions with zero inventory collapse on 1st April closing.</p>
+                <p class="tile-desc">Main Godown, Bahadurganj, and Mubarakpur branches maintain segregated inventory with automatic live cloud sync.</p>
             </div>
         </div>
 
-        <!-- Big Launch Card -->
         <div class="portal-launch-card reveal">
-            <h3>Ready to Experience Digital Mastery?</h3>
+            <h3>Karkhana Business Management Portal</h3>
             <p>Access your live production workspace, passbooks, and real-time karkhana synchronization.</p>
             <div style="display:flex; justify-content:center; gap:16px; flex-wrap:wrap;">
                 <a href="index.html" class="btn-apple-primary" style="padding:15px 34px; font-size:15px;">Launch Simplicity ERP →</a>
@@ -812,7 +806,7 @@
     <div id="imageLightbox" class="lightbox-overlay" onclick="closeLightbox(event)">
         <div class="lightbox-content-wrap">
             <button type="button" class="lightbox-close-btn" onclick="closeLightbox(event)" aria-label="Close Preview">&times;</button>
-            <img id="lightboxImg" class="lightbox-image" src="" alt="Fullscreen Cinematic View">
+            <img id="lightboxImg" class="lightbox-image" src="" alt="Fullscreen View">
             <p id="lightboxCaption" class="lightbox-caption"></p>
         </div>
     </div>
@@ -835,7 +829,6 @@
          8. JAVASCRIPT: SCROLL REVEAL & INTERACTIVE LIGHTBOX
          ==================================================================== -->
     <script>
-        // Smooth Intersection Observer for Scroll Reveals
         document.addEventListener('DOMContentLoaded', () => {
             const reveals = document.querySelectorAll('.reveal');
             
@@ -843,7 +836,6 @@
                 entries.forEach((entry) => {
                     if (entry.isIntersecting) {
                         entry.target.classList.add('active');
-                        // Unobserve once revealed to save CPU & battery
                         observer.unobserve(entry.target);
                     }
                 });
@@ -856,7 +848,6 @@
             reveals.forEach((el) => revealObserver.observe(el));
         });
 
-        // Cinematic Image Lightbox Handler
         function openLightbox(container) {
             const img = container.querySelector('img');
             const captionBadge = container.querySelector('.visual-caption-glass') || 
@@ -873,14 +864,12 @@
             modalCaption.textContent = captionBadge ? captionBadge.textContent : (img.alt || '');
 
             modal.style.display = 'flex';
-            // Trigger reflow to animate opacity
             void modal.offsetWidth;
             modal.classList.add('active');
             document.body.style.overflow = 'hidden';
         }
 
         function closeLightbox(e) {
-            // Only close if clicking outside image or on close button
             if (e.target.id === 'imageLightbox' || e.target.classList.contains('lightbox-close-btn')) {
                 const modal = document.getElementById('imageLightbox');
                 modal.classList.remove('active');
@@ -891,7 +880,6 @@
             }
         }
 
-        // Close Lightbox on ESC key
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
                 const modal = document.getElementById('imageLightbox');
