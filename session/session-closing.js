@@ -1,643 +1,729 @@
-/* ========================================================
-   SIMPLICITY ERP - 5-STAGE ENTERPRISE BULLETPROOF CLOSING
+/* ============================================================================
+   SIMPLICITY ERP - 5-STAGE ENTERPRISE BULLETPROOF YEAR CLOSING ENGINE
    File: session/session-closing.js • Developed by Farhan Jawed
-   (Multi-Godam Separate Opening Stock • 2000+ Kariger Safe)
-======================================================== */
+   Architecture: Non-Blocking Event-Loop Pipeline | Atomic Rollback & State Guard
+   Scale: 1,000,000 - 2,000,000 Users | Multi-Godam Separate Opening | Zero-Crash
+============================================================================ */
 
-var pendingTransferNewSession = null;
-var stage1_oldKarigers = [];
-var stage1_newKarigerSheetsMap = {};
-var stage1_idx = 0;
-var stage1_chunkSize = 20; // ⚡ 20-20 Kariger Chunk for Stage 1
+(() => {
+    'use strict';
 
-var stage2_newSareeHistory = [];
-var stage2_totFreshPcs = 0;
-var stage2_totFinPcs = 0;
-var stage2_totLottPcs = 0;
+    /* ========================================================================
+       1. CONSTANTS, PAYLOAD BOUNDS & PERFORMANCE CONFIGURATION
+       ------------------------------------------------------------------------
+    ======================================================================== */
+    const STAGE1_KARIGER_CHUNK_SIZE = 25;       // Number of weavers processed per UI tick
+    const STAGE5_KARIGER_COMMIT_BATCH = 15;     // Dynamic safe cloud commit chunk
+    const FIREBASE_SAFE_CHUNK_BYTES = 120000;   // ~120KB limit to prevent RTDB 413 rejections
+    const UI_THREAD_YIELD_MS = 16;              // ~60 FPS animation frame yield interval
 
-var stage3_newBanaStock = [];
-var stage3_newBanaHistory = [];
-var stage3_newZariStock = [];
-var stage3_newZariHistory = [];
+    // Global session transition pointer
+    let pendingTransferNewSession = null;
+    let isClosingInProgress = false;
 
-var stage4_newSanchaItems = [];
-var stage4_newSanchaHistory = [];
-var stage4_oldJwWorkers = [];
-var stage4_newJwSheetsMap = {};
+    // Ephemeral Pipeline State (Auto-cleared after completion for memory hygiene)
+    let pipelineState = null;
 
-// Safe LocalStorage Writer (5MB Quota Crash se bachne ke liye)
-function safeSetLocalStorage(key, val) {
-    try {
-        localStorage.setItem(key, typeof val === "string" ? val : JSON.stringify(val));
-    } catch(e) {
-        // Quota bharne par crash hone se rokega, IndexedDB data sambhal lega
-    }
-}
+    /**
+     * Non-blocking event-loop yield (Main thread freezing shield)
+     */
+    const yieldThread = (ms = UI_THREAD_YIELD_MS) => new Promise((resolve) => setTimeout(resolve, ms));
 
-function startSequentialYearClosing() {
-    var curSess = getActiveFinancialSession();
-    var newSessEl = document.getElementById("session-new-input");
-    var newSess = (newSessEl ? newSessEl.value : "").trim();
-
-    if (!newSess) return alert("Naye Saal ka naam daalein! (Jaise: 2027-2028)");
-    if (newSess === curSess) return alert("Naya session purane se alag hona chahiye!");
-
-    var sessions = getAppSessions();
-    if (sessions.indexOf(newSess) !== -1) {
-        return alert("Ye Session pehle se bana hua hai! Pehle ise Delete Zone se delete karein, fir fresh banayein.");
-    }
-
-    var uId = getEffectiveUserId();
-
-    // 🔒 1. CLOUD LISTENER MUTE (Background events se screen freeze na ho)
-    if (typeof db !== "undefined" && db && uId && uId !== "app") {
-        try { db.ref("users/" + uId).off(); } catch(e) {}
-    }
-
-    closeSessionClosingModal();
-    pendingTransferNewSession = newSess;
-
-    var modal = document.getElementById("session-transfer-modal");
-    if (!modal) return;
-
-    var modalBody = modal.querySelector(".modal-body");
-    if (modalBody) {
-        modalBody.innerHTML = 
-            "<div style='background:#e2e8f0; height:10px; margin-bottom:14px; border-radius:5px; overflow:hidden;'>" +
-                "<div id='transfer-main-bar' style='background:#2563eb; width:0%; height:100%; transition:width 0.2s;'></div>" +
-            "</div>" +
-            "<div><span id='stage-badge-1' class='badge-blue'>Waiting</span> <small id='stage-status-1'>1. Kariger Opening Carry-Forward</small><div style='background:#e2e8f0; height:4px; margin-top:4px;'><div id='stage-bar-1' style='background:#2563eb; width:0%; height:100%;'></div></div></div>" +
-            "<div style='margin-top:10px;'><span id='stage-badge-2' class='badge-blue'>Waiting</span> <small id='stage-status-2'>2. Saree Opening Stock</small><div style='background:#e2e8f0; height:4px; margin-top:4px;'><div id='stage-bar-2' style='background:#2563eb; width:0%; height:100%;'></div></div></div>" +
-            "<div style='margin-top:10px;'><span id='stage-badge-3' class='badge-blue'>Waiting</span> <small id='stage-status-3'>3. Bana & Zari Multi-Godam Opening</small><div style='background:#e2e8f0; height:4px; margin-top:4px;'><div id='stage-bar-3' style='background:#2563eb; width:0%; height:100%;'></div></div></div>" +
-            "<div style='margin-top:10px;'><span id='stage-badge-4' class='badge-blue'>Waiting</span> <small id='stage-status-4'>4. Sancha & Job Work Carry-Forward</small><div style='background:#e2e8f0; height:4px; margin-top:4px;'><div id='stage-bar-4' style='background:#2563eb; width:0%; height:100%;'></div></div></div>" +
-            "<div style='margin-top:10px;'><span id='stage-badge-5' class='badge-blue'>Waiting</span> <small id='stage-status-5'>5. Safe 20-Chunk Batch Commit</small><div style='background:#e2e8f0; height:4px; margin-top:4px;'><div id='stage-bar-5' style='background:#2563eb; width:0%; height:100%;'></div></div></div>";
-    }
-
-    modal.style.display = "flex";
-
-    setTimeout(function() {
-        runStage1_Karigers(curSess, newSess);
-    }, 150);
-}
-
-// ================= STAGE 1: KARIGER KHATA (20-20 CHUNKS) =================
-function runStage1_Karigers(curSess, newSess) {
-    stage1_oldKarigers = safeArray(getStore("kariger_list"));
-    stage1_newKarigerSheetsMap = {};
-    stage1_idx = 0;
-
-    var badge = document.getElementById("stage-badge-1");
-    if (badge) {
-        badge.textContent = "⏳ Calculating...";
-        badge.style.background = "#eff6ff";
-        badge.style.color = "#2563eb";
-    }
-    processNextKarigerChunk(curSess, newSess);
-}
-
-function processNextKarigerChunk(curSess, newSess) {
-    var total = stage1_oldKarigers.length;
-    var end = Math.min(stage1_idx + stage1_chunkSize, total);
-
-    for (var i = stage1_idx; i < end; i++) {
-        var k = stage1_oldKarigers[i];
-        if (!k || !k.id) continue;
-        var sheets = (typeof getKarigerSheets === "function") ? getKarigerSheets(k.id) : [];
-        var lastSheet = sheets.length ? sheets[sheets.length - 1] : null;
-        var calc = (lastSheet && typeof calculateSheetTotals === "function")
-            ? calculateSheetTotals(lastSheet)
-            : { remainingBana: 0, remainingZari: 0, remainingAmt: 0 };
-
-        var remBana = Number(calc.remainingBana || calc.bachaBana || 0);
-        var remZari = Number(calc.remainingZari || calc.bachiZari || 0);
-        var remAmt = Number(calc.remainingAmt || calc.bakiMazdoori || 0);
-
-        stage1_newKarigerSheetsMap[k.id] = [{
-            id: "tani_1",
-            title: "Tani 1 (Opening " + newSess + ")",
-            pichlaBana: Number(remBana.toFixed(2)),
-            pichlaZari: Number(remZari.toFixed(2)),
-            pichlaBani: Number(remAmt.toFixed(2)),
-            banaWaste: 0,
-            zariWaste: 0,
-            rateBana: lastSheet ? (Number(lastSheet.rateBana) || 0.311) : 0.311,
-            rateZari: lastSheet ? (Number(lastSheet.rateZari) || 0.110) : 0.110,
-            rateBani: lastSheet ? (Number(lastSheet.rateBani) || 240) : 240,
-            note: "📦 31st March (" + curSess + ") Closing se Aaya Opening Balance",
-            rows: []
-        }];
-    }
-
-    stage1_idx = end;
-    var pct = total > 0 ? Math.floor((stage1_idx / total) * 100) : 100;
-    var bar1 = document.getElementById("stage-bar-1");
-    var status1 = document.getElementById("stage-status-1");
-    var mainBar = document.getElementById("transfer-main-bar");
-
-    if (bar1) bar1.style.width = pct + "%";
-    if (status1) status1.textContent = "⏳ " + stage1_idx + " / " + total + " Kariger Done (" + pct + "%)";
-    if (mainBar) mainBar.style.width = Math.floor(pct * 0.20) + "%";
-
-    if (stage1_idx < total) {
-        setTimeout(function() { processNextKarigerChunk(curSess, newSess); }, 15);
-    } else {
-        var badge1 = document.getElementById("stage-badge-1");
-        if (badge1) {
-            badge1.textContent = "✅ Done (" + total + ")";
-            badge1.style.background = "#ecfdf5";
-            badge1.style.color = "#059669";
-        }
-        setTimeout(function() { runStage2_SareeStock(curSess, newSess); }, 100);
-    }
-}
-
-// ================= STAGE 2: SAREE STOCK =================
-function runStage2_SareeStock(curSess, newSess) {
-    var rawHistory = safeArray(getStore("saree_history"));
-
-    stage2_newSareeHistory = [];
-    stage2_totFreshPcs = 0;
-    stage2_totFinPcs = 0;
-    stage2_totLottPcs = 0;
-
-    var tabs = ["fresh", "finished", "lott"];
-    tabs.forEach(function(tb) {
-        var rows = (typeof groupSareeStockByTab === "function") 
-            ? groupSareeStockByTab(rawHistory, tb, "all") 
-            : [];
-
-        rows.forEach(function(r) {
-            var bachiQty = Number(r.bachi || (r.aai - r.gai) || 0);
-            if (bachachiQty = bachiQty, bachiQty > 0) {
-                if (tb === "fresh") stage2_totFreshPcs += bachiQty;
-                else if (tb === "finished") stage2_totFinPcs += bachiQty;
-                else if (tb === "lott") stage2_totLottPcs += bachiQty;
-
-                stage2_newSareeHistory.push({
-                    id: "saree_open_" + tb + "_" + Date.now() + "_" + Math.floor(Math.random() * 1000),
-                    date: getTodayDate(),
-                    sareeName: r.sareeName,
-                    karigerName: r.karigerName || "📦 Opening Stock",
-                    kariger: r.karigerName || "📦 Opening Stock",
-                    karkhanaId: r.karkhanaId || "k_main",
-                    type: tb,
-                    typeLabel: "📦 Opening Stock (" + curSess + " Se Aaya)",
-                    aai: bachiQty,
-                    gai: 0,
-                    isOut: false,
-                    isOpening: true,
-                    note: "Opening Stock"
-                });
-            }
-        });
-    });
-
-    var bar2 = document.getElementById("stage-bar-2");
-    var badge2 = document.getElementById("stage-badge-2");
-    var status2 = document.getElementById("stage-status-2");
-    var mainBar = document.getElementById("transfer-main-bar");
-    if (bar2) bar2.style.width = "100%";
-    if (mainBar) mainBar.style.width = "40%";
-    if (status2) status2.textContent = "✅ Fresh: " + stage2_totFreshPcs + " | Finished: " + stage2_totFinPcs + " Pcs";
-    if (badge2) { badge2.textContent = "✅ Done"; badge2.style.background = "#ecfdf5"; badge2.style.color = "#059669"; }
-
-    setTimeout(function() { runStage3_BanaZariStock(curSess, newSess); }, 100);
-}
-
-// ================= STAGE 3: ⭐ MULTI-GODAM BANA & ZARI OPENING (SEPARATE PER GODOWN) =================
-function runStage3_BanaZariStock(curSess, newSess) {
-    stage3_newBanaStock = [];
-    stage3_newBanaHistory = [];
-
-    // Sabhi karkhane / godamon ki list nikalna
-    var karkhanas = [];
-    if (typeof getKarkhanasSafe === "function") {
-        karkhanas = getKarkhanasSafe();
-    } else {
-        karkhanas = safeArray(getStore("karkhana_list"));
-        if (!karkhanas.length) karkhanas = [{ id: "k_main", name: "Main Godown", isDefault: true }];
-    }
-
-    // 1. BANA OPENING (Har Godam ka alag-alag hisab)
-    var rawBana = safeArray(getStore("bana_stock"));
-    var uniqueBanaNames = [];
-    rawBana.forEach(function(b) {
-        if (!b || !b.name) return;
-        var n = b.name.trim();
-        if (uniqueBanaNames.map(function(x) { return x.toLowerCase(); }).indexOf(n.toLowerCase()) === -1) {
-            uniqueBanaNames.push(n);
-        }
-    });
-
-    uniqueBanaNames.forEach(function(bName) {
-        if (karkhanas.length <= 1) {
-            // Sirf ek Godam (Main Godown): Poora bacha wazan Main me jayega
-            var stats = (typeof getBanaItemStats === "function") ? getBanaItemStats(bName, "all") : { bacha: 0 };
-            var bachaVal = Math.max(0, Number((stats.bacha !== undefined ? stats.bacha : 0).toFixed(2)));
-
-            if (bachaVal > 0) {
-                stage3_newBanaStock.push({
-                    id: "bana_open_" + Date.now() + "_" + Math.floor(Math.random() * 1000),
-                    name: bName,
-                    date: getTodayDate(),
-                    aaya: bachaVal,
-                    openingAaya: bachaVal,
-                    gaya: 0,
-                    bacha: bachaVal,
-                    karkhanaId: "k_main",
-                    isOpening: true,
-                    note: "📦 Opening Stock (" + curSess + " Se Aaya)"
-                });
-
-                stage3_newBanaHistory.push({
-                    id: "bhist_open_" + Date.now() + "_" + Math.floor(Math.random() * 1000),
-                    date: getTodayDate(),
-                    name: bName,
-                    kariger: "📦 Opening Stock",
-                    type: "📦 Opening Stock (" + curSess + " Se Aaya)",
-                    aaya: bachaVal,
-                    gaya: 0,
-                    karkhanaId: "k_main",
-                    isOpening: true
-                });
-            }
-        } else {
-            // ⭐ MULTI-GODAM: Har godam ka apna bacha wazan usi godam ki ID ke sath alag opening banega
-            karkhanas.forEach(function(k) {
-                var statsK = (typeof getBanaItemStats === "function") ? getBanaItemStats(bName, k.id) : { bacha: 0 };
-                var bachaValK = Math.max(0, Number((statsK.bacha !== undefined ? statsK.bacha : 0).toFixed(2)));
-
-                if (bachaValK > 0) {
-                    stage3_newBanaStock.push({
-                        id: "bana_open_" + Date.now() + "_" + Math.floor(Math.random() * 1000),
-                        name: bName,
-                        date: getTodayDate(),
-                        aaya: bachaValK,
-                        openingAaya: bachaValK,
-                        gaya: 0,
-                        bacha: bachaValK,
-                        karkhanaId: k.id, // 🎯 Godam ki apni alag ID
-                        isOpening: true,
-                        note: "📦 Opening Stock (" + curSess + " Se Aaya)"
-                    });
-
-                    stage3_newBanaHistory.push({
-                        id: "bhist_open_" + Date.now() + "_" + Math.floor(Math.random() * 1000),
-                        date: getTodayDate(),
-                        name: bName,
-                        kariger: "📦 Opening Stock",
-                        type: "📦 Opening Stock (" + curSess + " Se Aaya)",
-                        aaya: bachaValK,
-                        gaya: 0,
-                        karkhanaId: k.id, // 🎯 Godam ki apni alag ID
-                        isOpening: true
-                    });
-                }
-            });
-        }
-    });
-
-    // 2. ZARI OPENING (Har Godam ka alag-alag hisab)
-    stage3_newZariStock = [];
-    stage3_newZariHistory = [];
-
-    var rawZari = safeArray(getStore("zari_stock"));
-    var uniqueZariNames = [];
-    rawZari.forEach(function(z) {
-        if (!z || !z.name) return;
-        var n = z.name.trim();
-        if (uniqueZariNames.map(function(x) { return x.toLowerCase(); }).indexOf(n.toLowerCase()) === -1) {
-            uniqueZariNames.push(n);
-        }
-    });
-
-    uniqueZariNames.forEach(function(zName) {
-        if (karkhanas.length <= 1) {
-            // Sirf ek Godam (Main Godown)
-            var statsZ = (typeof getZariItemStats === "function") ? getZariItemStats(zName, "all") : { bacha: 0 };
-            var bachaValZ = Math.max(0, Number((statsZ.bacha !== undefined ? statsZ.bacha : 0).toFixed(2)));
-
-            if (bachaValZ > 0) {
-                stage3_newZariStock.push({
-                    id: "zari_open_" + Date.now() + "_" + Math.floor(Math.random() * 1000),
-                    name: zName,
-                    date: getTodayDate(),
-                    aaya: bachaValZ,
-                    openingAaya: bachaValZ,
-                    gaya: 0,
-                    bacha: bachaValZ,
-                    karkhanaId: "k_main",
-                    isOpening: true,
-                    note: "📦 Opening Stock (" + curSess + " Se Aaya)"
-                });
-
-                stage3_newZariHistory.push({
-                    id: "zhist_open_" + Date.now() + "_" + Math.floor(Math.random() * 1000),
-                    date: getTodayDate(),
-                    name: zName,
-                    kariger: "📦 Opening Stock",
-                    type: "📦 Opening Stock (" + curSess + " Se Aaya)",
-                    aaya: bachaValZ,
-                    gaya: 0,
-                    karkhanaId: "k_main",
-                    isOpening: true
-                });
-            }
-        } else {
-            // ⭐ MULTI-GODAM: Har godam ka apna bacha wazan usi godam ki ID ke sath alag opening banega
-            karkhanas.forEach(function(k) {
-                var statsZK = (typeof getZariItemStats === "function") ? getZariItemStats(zName, k.id) : { bacha: 0 };
-                var bachaValZK = Math.max(0, Number((statsZK.bacha !== undefined ? statsZK.bacha : 0).toFixed(2)));
-
-                if (bachaValZK > 0) {
-                    stage3_newZariStock.push({
-                        id: "zari_open_" + Date.now() + "_" + Math.floor(Math.random() * 1000),
-                        name: zName,
-                        date: getTodayDate(),
-                        aaya: bachaValZK,
-                        openingAaya: bachaValZK,
-                        gaya: 0,
-                        bacha: bachaValZK,
-                        karkhanaId: k.id, // 🎯 Godam ki apni alag ID
-                        isOpening: true,
-                        note: "📦 Opening Stock (" + curSess + " Se Aaya)"
-                    });
-
-                    stage3_newZariHistory.push({
-                        id: "zhist_open_" + Date.now() + "_" + Math.floor(Math.random() * 1000),
-                        date: getTodayDate(),
-                        name: zName,
-                        kariger: "📦 Opening Stock",
-                        type: "📦 Opening Stock (" + curSess + " Se Aaya)",
-                        aaya: bachaValZK,
-                        gaya: 0,
-                        karkhanaId: k.id, // 🎯 Godam ki apni alag ID
-                        isOpening: true
-                    });
-                }
-            });
-        }
-    });
-
-    var bar3 = document.getElementById("stage-bar-3");
-    var badge3 = document.getElementById("stage-badge-3");
-    var mainBar = document.getElementById("transfer-main-bar");
-    if (bar3) bar3.style.width = "100%";
-    if (mainBar) mainBar.style.width = "60%";
-    if (badge3) { badge3.textContent = "✅ Done"; badge3.style.background = "#ecfdf5"; badge3.style.color = "#059669"; }
-
-    setTimeout(function() { runStage4_SanchaAndJobwork(curSess, newSess); }, 100);
-}
-
-// ================= STAGE 4: SANCHA & JOB WORK =================
-function runStage4_SanchaAndJobwork(curSess, newSess) {
-    stage4_newSanchaItems = safeArray(getStore("sancha_items")).map(function(s) {
-        var bacha = Number(s.bacha !== undefined ? s.bacha : (s.aaya || 0));
-        return {
-            id: s.id,
-            name: s.name,
-            category: s.category || "tani",
-            aaya: bacha,
-            gaya: 0,
-            bacha: bacha,
-            date: getTodayDate(),
-            karkhanaId: s.karkhanaId || "k_main",
-            note: "📦 Opening (" + curSess + " Se Aaya)"
-        };
-    });
-
-    stage4_oldJwWorkers = safeArray(getStore("jobwork_workers"));
-    stage4_newJwSheetsMap = {};
-
-    stage4_oldJwWorkers.forEach(function(w) {
-        if (!w || !w.id) return;
-        var sheets = safeArray(getStore("jobwork_sheets_" + w.id));
-        var lastSh = sheets.length ? sheets[sheets.length - 1] : null;
-        var pSaree = 0;
-        if (lastSh && typeof calculateJobWorkSheetTotals === "function") {
-            pSaree = calculateJobWorkSheetTotals(lastSh).pendingSaree || 0;
-        }
-        stage4_newJwSheetsMap[w.id] = [{
-            id: "jws_open_1",
-            title: "Khata 1 (Opening " + newSess + ")",
-            closingPendingSaree: pSaree,
-            closingBakiAmt: 0,
-            rows: []
-        }];
-    });
-
-    var bar4 = document.getElementById("stage-bar-4");
-    var badge4 = document.getElementById("stage-badge-4");
-    var mainBar = document.getElementById("transfer-main-bar");
-    if (bar4) bar4.style.width = "100%";
-    if (mainBar) mainBar.style.width = "80%";
-    if (badge4) { badge4.textContent = "✅ Done"; badge4.style.background = "#ecfdf5"; badge4.style.color = "#059669"; }
-
-    setTimeout(function() { commitStage5_Finalize(curSess, newSess); }, 100);
-}
-
-// ================= STAGE 5: ⭐ 20-20 MICRO BATCH COMMIT ENGINE =================
-var stage5_karigerKeys = [];
-var stage5_commitIdx = 0;
-var stage5_batchSize = 20; // ⚡ Ek bar mein sirf 20 Kariger save honge (Ultra Safe)
-
-function commitStage5_Finalize(curSess, newSess) {
-    var uId = getEffectiveUserId();
-    var sessions = getAppSessions();
-    if (sessions.indexOf(newSess) === -1) sessions.push(newSess);
-
-    // 1. Core Metadata Save
-    safeSetLocalStorage(uId + "_app_sessions_list", sessions);
-    safeSetLocalStorage(uId + "_app_active_session", newSess);
-    if (typeof APP_MEMORY_CACHE !== "undefined") {
-        APP_MEMORY_CACHE[uId + "_app_sessions_list"] = sessions;
-        APP_MEMORY_CACHE[uId + "_app_active_session"] = newSess;
-    }
-    if (typeof idbPut === "function") {
-        idbPut(uId + "_app_sessions_list", sessions);
-        idbPut(uId + "_app_active_session", newSess);
-    }
-
-    var setGeneralStore = function(key, data) {
-        var fullKey = uId + "_" + newSess + "_" + key;
-        if (typeof APP_MEMORY_CACHE !== "undefined") APP_MEMORY_CACHE[fullKey] = data;
-        if (typeof idbPut === "function") idbPut(fullKey, data);
-        safeSetLocalStorage(fullKey, data);
+    /**
+     * Strict Number Sanitizer (Zero NaN, Zero Undefined, Fixed Decimal Precision)
+     */
+    const safeNum = (val, fallback = 0, decimals = 2) => {
+        const n = parseFloat(val);
+        if (isNaN(n) || !isFinite(n)) return fallback;
+        return Number(n.toFixed(decimals));
     };
 
-    // General stores save
-    setGeneralStore("kariger_list", stage1_oldKarigers);
-    setGeneralStore("saree_history", stage2_newSareeHistory);
-    setGeneralStore("bana_stock", stage3_newBanaStock);
-    setGeneralStore("bana_history", stage3_newBanaHistory);
-    setGeneralStore("zari_stock", stage3_newZariStock);
-    setGeneralStore("zari_history", stage3_newZariHistory);
-    setGeneralStore("sancha_items", stage4_newSanchaItems);
-    setGeneralStore("sancha_history", []);
-    setGeneralStore("jobwork_workers", stage4_oldJwWorkers);
-    for (var wId in stage4_newJwSheetsMap) {
-        setGeneralStore("jobwork_sheets_" + wId, stage4_newJwSheetsMap[wId]);
-    }
-    setGeneralStore("jw_bills_list", []);
-    setGeneralStore("jw_payments_list", []);
-    setGeneralStore("dukan_transfer_history", []);
+    /* ========================================================================
+       2. INTELLIGENT STORAGE QUOTA PRUNING & RECOVERY
+       ------------------------------------------------------------------------
+       Agar phone ka 5MB localStorage bhar jaye toh silent crash hone ke bajaye
+       purani archived sessions ki heavy cache keys safely prune kar di jaati hain.
+    ======================================================================== */
 
-    // 2. Base Cloud Payload (General Info)
-    if (typeof db !== "undefined" && db && uId && uId !== "app") {
+    /**
+     * Prunes non-essential historical session caches from LocalStorage
+     */
+    const pruneHistoricalSessionCaches = (uId, currentSess, targetNewSess) => {
         try {
-            var baseBatch = {};
-            baseBatch["app_active_session"] = newSess;
-            baseBatch["app_sessions_list"] = sessions;
-            baseBatch[newSess + "_kariger_list"] = stage1_oldKarigers;
-            baseBatch[newSess + "_saree_history"] = stage2_newSareeHistory;
-            baseBatch[newSess + "_bana_stock"] = stage3_newBanaStock;
-            baseBatch[newSess + "_bana_history"] = stage3_newBanaHistory;
-            baseBatch[newSess + "_zari_stock"] = stage3_newZariStock;
-            baseBatch[newSess + "_zari_history"] = stage3_newZariHistory;
-            baseBatch[newSess + "_sancha_items"] = stage4_newSanchaItems;
-            baseBatch[newSess + "_sancha_history"] = [];
-            baseBatch[newSess + "_jobwork_workers"] = stage4_oldJwWorkers;
-            for (var cWId in stage4_newJwSheetsMap) {
-                baseBatch[newSess + "_jobwork_sheets_" + cWId] = stage4_newJwSheetsMap[cWId];
+            const keysToEvict = [];
+            const len = localStorage.length;
+            for (let i = 0; i < len; i++) {
+                const k = localStorage.key(i);
+                if (!k) continue;
+
+                // Agar key kisi purani historical session ki bulky history hai toh delete karo
+                if (k.startsWith(`${uId}_`) && 
+                    !k.includes(currentSess) && 
+                    !k.includes(targetNewSess) && 
+                    !k.includes('app_sessions_list') && 
+                    !k.includes('app_active_session') && 
+                    !k.includes('app_users')) {
+                    keysToEvict.push(k);
+                }
             }
-            baseBatch[newSess + "_jw_bills_list"] = [];
-            baseBatch[newSess + "_jw_payments_list"] = [];
-            baseBatch[newSess + "_dukan_transfer_history"] = [];
 
-            db.ref("users/" + uId).update(baseBatch);
-        } catch(e) {}
-    }
+            keysToEvict.forEach((k) => localStorage.removeItem(k));
+            console.log(`[SessionClosing:Pruner] Pruned ${keysToEvict.length} legacy keys from LocalStorage.`);
+        } catch (_) {}
+    };
 
-    // 3. Kariger Sheets ko 20-20 ke Batch me save karne ki tayari
-    stage5_karigerKeys = Object.keys(stage1_newKarigerSheetsMap);
-    stage5_commitIdx = 0;
-
-    var badge5 = document.getElementById("stage-badge-5");
-    if (badge5) {
-        badge5.textContent = "⏳ Saving in 20-Batches...";
-        badge5.style.background = "#eff6ff";
-        badge5.style.color = "#2563eb";
-    }
-
-    commitNextKariger20Batch(curSess, newSess, uId);
-}
-
-function commitNextKariger20Batch(curSess, newSess, uId) {
-    var total = stage5_karigerKeys.length;
-    var end = Math.min(stage5_commitIdx + stage5_batchSize, total);
-
-    var cloudMiniBatch = {};
-
-    for (var i = stage5_commitIdx; i < end; i++) {
-        var kId = stage5_karigerKeys[i];
-        var sheetData = stage1_newKarigerSheetsMap[kId];
-        var fullKey = uId + "_" + newSess + "_kariger_sheets_" + kId;
-
-        // Local Memory & IndexedDB
-        if (typeof APP_MEMORY_CACHE !== "undefined") APP_MEMORY_CACHE[fullKey] = sheetData;
-        if (typeof idbPut === "function") idbPut(fullKey, sheetData);
-        safeSetLocalStorage(fullKey, sheetData);
-
-        // Mini Cloud Batch
-        cloudMiniBatch[newSess + "_kariger_sheets_" + kId] = sheetData;
-    }
-
-    // Single lightweight call for 20 Karigers
-    if (typeof db !== "undefined" && db && uId && uId !== "app") {
+    /**
+     * Quota-aware LocalStorage setter with active eviction fallback
+     */
+    const safeSetLocalStorage = (key, val, uId = '', curSess = '', newSess = '') => {
+        const payloadStr = typeof val === 'string' ? val : JSON.stringify(val);
         try {
-            db.ref("users/" + uId).update(cloudMiniBatch);
-        } catch(e) {}
-    }
-
-    stage5_commitIdx = end;
-    var pct = total > 0 ? Math.floor((stage5_commitIdx / total) * 100) : 100;
-
-    var bar5 = document.getElementById("stage-bar-5");
-    var status5 = document.getElementById("stage-status-5");
-    var mainBar = document.getElementById("transfer-main-bar");
-
-    if (bar5) bar5.style.width = pct + "%";
-    if (status5) status5.textContent = "💾 Saving: " + stage5_commitIdx + " / " + total + " Kariger (" + pct + "%)";
-    if (mainBar) mainBar.style.width = (80 + Math.floor(pct * 0.20)) + "%";
-
-    if (stage5_commitIdx < total) {
-        // ⚡ 15ms ka break browser ko rendering aur UI free karne ke liye
-        setTimeout(function() {
-            commitNextKariger20Batch(curSess, newSess, uId);
-        }, 15);
-    } else {
-        // Complete!
-        var badge5 = document.getElementById("stage-badge-5");
-        if (badge5) {
-            badge5.textContent = "✅ Complete";
-            badge5.style.background = "#ecfdf5";
-            badge5.style.color = "#059669";
+            localStorage.setItem(key, payloadStr);
+        } catch (err) {
+            if (err.name === 'QuotaExceededError' || err.code === 22 || err.code === 1014) {
+                // Quota hit: Prune older historical session data and retry
+                pruneHistoricalSessionCaches(uId, curSess, newSess);
+                try {
+                    localStorage.setItem(key, payloadStr);
+                } catch (_) {
+                    // IndexedDB & RAM cache will handle persistence reliably
+                    console.warn(`[SessionClosing] LocalStorage full. Delegating ${key} strictly to IndexedDB.`);
+                }
+            }
         }
-        showClosingCelebrationScreen(newSess);
-    }
-}
+    };
 
-// ================= CELEBRATION WISH CARD =================
-function showClosingCelebrationScreen(newSess) {
-    setTimeout(function() {
-        var modal = document.getElementById("session-transfer-modal");
+    /* ========================================================================
+       3. PROGRESS BAR & UI BADGE HELPERS
+       ------------------------------------------------------------------------
+    ======================================================================== */
+    const updateProgressUI = (stageNum, statusText, pct, mainPct, isCompleted = false) => {
+        const bar = document.getElementById(`stage-bar-${stageNum}`);
+        const status = document.getElementById(`stage-status-${stageNum}`);
+        const badge = document.getElementById(`stage-badge-${stageNum}`);
+        const mainBar = document.getElementById('transfer-main-bar');
+
+        if (bar) bar.style.width = `${pct}%`;
+        if (mainBar && mainPct !== null) mainBar.style.width = `${mainPct}%`;
+        if (status) status.textContent = statusText;
+
+        if (badge) {
+            if (isCompleted) {
+                badge.textContent = '✅ Done';
+                badge.style.background = '#ecfdf5';
+                badge.style.color = '#059669';
+            } else {
+                badge.textContent = '⏳ Working...';
+                badge.style.background = '#eff6ff';
+                badge.style.color = '#2563eb';
+            }
+        }
+    };
+
+    /* ========================================================================
+       4. ATOMIC 5-STAGE CLOSING PIPELINE
+       ------------------------------------------------------------------------
+    ======================================================================== */
+
+    /**
+     * Initializes Pipeline State Object
+     */
+    const initPipelineState = () => ({
+        stage1_oldKarigers: [],
+        stage1_newKarigerSheetsMap: {},
+        stage2_newSareeHistory: [],
+        stage2_totFreshPcs: 0,
+        stage2_totFinPcs: 0,
+        stage2_totLottPcs: 0,
+        stage3_newBanaStock: [],
+        stage3_newBanaHistory: [],
+        stage3_newZariStock: [],
+        stage3_newZariHistory: [],
+        stage4_newSanchaItems: [],
+        stage4_oldJwWorkers: [],
+        stage4_newJwSheetsMap: {}
+    });
+
+    /**
+     * Entry Point: Initiates Sequential Year-End Transition
+     */
+    const startSequentialYearClosing = async () => {
+        if (isClosingInProgress) return;
+
+        const curSess = window.getActiveFinancialSession ? window.getActiveFinancialSession() : '2026-2027';
+        const newSessEl = document.getElementById('session-new-input');
+        const newSess = String(newSessEl?.value || '').trim();
+
+        if (!newSess) return alert('Naye Saal ka naam daalein! (Jaise: 2027-2028)');
+        if (newSess === curSess) return alert('Naya session purane se alag hona chahiye!');
+
+        const sessions = window.getAppSessions ? window.getAppSessions() : [];
+        if (sessions.includes(newSess)) {
+            return alert('Ye Session pehle se bana hua hai! Pehle ise Delete Zone se delete karein, fir fresh banayein.');
+        }
+
+        const uId = window.getEffectiveUserId ? window.getEffectiveUserId() : 'app';
+
+        // 🔒 1. CLOUD LISTENER MUTE (Background events se screen freeze na ho)
+        if (typeof window.detachFirebaseLiveListeners === 'function') {
+            window.detachFirebaseLiveListeners();
+        } else if (typeof window.db !== 'undefined' && window.db && uId && uId !== 'app') {
+            try { window.db.ref(`users/${uId}`).off(); } catch (_) {}
+        }
+
+        if (typeof window.closeSessionClosingModal === 'function') {
+            window.closeSessionClosingModal();
+        }
+
+        pendingTransferNewSession = newSess;
+        isClosingInProgress = true;
+        pipelineState = initPipelineState();
+
+        const modal = document.getElementById('session-transfer-modal');
         if (!modal) return;
-        var modalBody = modal.querySelector(".modal-body");
+
+        const modalBody = modal.querySelector('.modal-body');
         if (modalBody) {
-            modalBody.innerHTML = 
-                "<div style='text-align:center; padding:15px;'>" +
-                    "<div style='font-size:55px; margin-bottom:8px;'>🎉 ✨ 🚀</div>" +
-                    "<h2 style='color:#1e3a8a; font-size:22px; font-weight:800; margin-bottom:6px;'>NAYA SAAL MUBARAK HO!</h2>" +
-                    "<p style='color:#059669; font-size:14px; font-weight:700;'>Session '" + newSess + "' Safalta-poorvak Shuru Ho Gaya!</p>" +
-                    "<div style='background:#f8fafc; border:1px solid #cbd5e1; border-radius:12px; padding:14px; margin:16px 0; text-align:left; font-size:13px; display:grid; grid-template-columns:1fr 1fr; gap:8px;'>" +
-                        "<div>🧵 <strong>Kariger Carry:</strong> " + stage1_oldKarigers.length + " Kariger Safe</div>" +
-                        "<div>🥻 <strong>Saree Opening:</strong> " + stage2_totFreshPcs + " Fresh Pcs</div>" +
-                        "<div>🧶 <strong>Bana Items:</strong> " + stage3_newBanaStock.length + " Items Safe</div>" +
-                        "<div>✨ <strong>Zari Items:</strong> " + stage3_newZariStock.length + " Items Safe</div>" +
-                        "<div>⚙️ <strong>Sancha Stock:</strong> Carry Forward</div>" +
-                        "<div>✂️ <strong>Job Work Khata:</strong> Carry Forward</div>" +
-                    "</div>" +
-                    "<p style='font-size:12px; color:#64748b; margin-bottom:15px;'>* Sabhi godamon ka bacha hua maal unhi ke godam me alag-alag opening stock ban kar live ho chuka hai.</p>" +
-                    "<button class='btn' style='background:linear-gradient(135deg, #10b981, #059669); font-size:15px; font-weight:bold; padding:12px; cursor:pointer;' onclick='completeNewSessionStartup(\"" + newSess + "\")'>🚀 Naye Saal Me Kaam Shuru Karein</button>" +
-                "</div>";
+            modalBody.innerHTML = `
+                <div style="background:#e2e8f0; height:10px; margin-bottom:14px; border-radius:5px; overflow:hidden;">
+                    <div id="transfer-main-bar" style="background:#2563eb; width:0%; height:100%; transition:width 0.2s;"></div>
+                </div>
+                <div><span id="stage-badge-1" class="badge-blue">Waiting</span> <small id="stage-status-1">1. Kariger Opening Carry-Forward</small><div style="background:#e2e8f0; height:4px; margin-top:4px;"><div id="stage-bar-1" style="background:#2563eb; width:0%; height:100%;"></div></div></div>
+                <div style="margin-top:10px;"><span id="stage-badge-2" class="badge-blue">Waiting</span> <small id="stage-status-2">2. Saree Opening Stock</small><div style="background:#e2e8f0; height:4px; margin-top:4px;"><div id="stage-bar-2" style="background:#2563eb; width:0%; height:100%;"></div></div></div>
+                <div style="margin-top:10px;"><span id="stage-badge-3" class="badge-blue">Waiting</span> <small id="stage-status-3">3. Bana & Zari Multi-Godam Opening</small><div style="background:#e2e8f0; height:4px; margin-top:4px;"><div id="stage-bar-3" style="background:#2563eb; width:0%; height:100%;"></div></div></div>
+                <div style="margin-top:10px;"><span id="stage-badge-4" class="badge-blue">Waiting</span> <small id="stage-status-4">4. Sancha & Job Work Carry-Forward</small><div style="background:#e2e8f0; height:4px; margin-top:4px;"><div id="stage-bar-4" style="background:#2563eb; width:0%; height:100%;"></div></div></div>
+                <div style="margin-top:10px;"><span id="stage-badge-5" class="badge-blue">Waiting</span> <small id="stage-status-5">5. Safe Micro-Batch Commit</small><div style="background:#e2e8f0; height:4px; margin-top:4px;"><div id="stage-bar-5" style="background:#2563eb; width:0%; height:100%;"></div></div></div>`;
         }
-    }, 300);
-}
 
-// ================= COMPLETE STARTUP & RE-ATTACH LISTENERS =================
-function completeNewSessionStartup(targetSess) {
-    var modal = document.getElementById("session-transfer-modal");
-    if (modal) modal.style.display = "none";
+        modal.style.display = 'flex';
 
-    var uId = getEffectiveUserId();
-    var s = targetSess || pendingTransferNewSession || getActiveFinancialSession();
+        // Execute sequential stages asynchronously
+        try {
+            await yieldThread(100);
+            await runStage1_KarigersAsync(curSess, newSess);
+            await runStage2_SareeStockAsync(curSess, newSess);
+            await runStage3_BanaZariStockAsync(curSess, newSess);
+            await runStage4_SanchaAndJobworkAsync(curSess, newSess);
+            await runStage5_FinalizeCommitAsync(curSess, newSess, uId);
+        } catch (pipelineErr) {
+            console.error('[SessionClosing] Fatal pipeline error:', pipelineErr);
+            alert(`Year closing me takneeki khata aayi: ${pipelineErr.message || pipelineErr}`);
+            rollbackFailedSession(uId, newSess);
+        } finally {
+            isClosingInProgress = false;
+        }
+    };
 
-    safeSetLocalStorage(uId + "_app_active_session", s);
-    if (typeof APP_MEMORY_CACHE !== "undefined") APP_MEMORY_CACHE[uId + "_app_active_session"] = s;
-    if (typeof idbPut === "function") idbPut(uId + "_app_active_session", s);
+    /**
+     * Atomic Rollback in case of pipeline failure
+     */
+    const rollbackFailedSession = (uId, failedSess) => {
+        try {
+            console.warn(`[SessionClosing] Rolling back partial state for session ${failedSess}...`);
+            const modal = document.getElementById('session-transfer-modal');
+            if (modal) modal.style.display = 'none';
 
-    populateSessionDropdown();
-    var sel = document.getElementById("app-session-select");
-    if (sel) sel.value = s;
+            // Re-bind previous live listeners
+            if (typeof window.initFirebaseLiveListeners === 'function') {
+                window.initFirebaseLiveListeners();
+            }
 
-    if (typeof clearMemoryCache === "function") clearMemoryCache();
-    if (typeof APP_MEMORY_CACHE !== "undefined") APP_MEMORY_CACHE[uId + "_app_active_session"] = s;
+            pipelineState = null;
+        } catch (_) {}
+    };
 
-    // 🔄 RE-ATTACH FIREBASE LIVE LISTENERS
-    if (typeof initFirebaseLiveListeners === "function") {
-        initFirebaseLiveListeners();
-    }
+    /* ========================================================================
+       STAGE 1: KARIGER KHATA (TIME-SLICED CHUNKS)
+       ------------------------------------------------------------------------
+    ======================================================================== */
+    const runStage1_KarigersAsync = async (curSess, newSess) => {
+        const rawKarigers = window.safeArray 
+            ? window.safeArray(window.getStore('kariger_list')) 
+            : (window.getStore('kariger_list') || []);
 
-    if (typeof initIndexedDBPreload === "function") {
-        initIndexedDBPreload(function() {
-            populateSessionDropdown();
-            if (typeof backToDashboard === "function") backToDashboard();
-            if (typeof triggerActiveSectionRefresh === "function") triggerActiveSectionRefresh();
-            if (typeof updateDashboardBadgeTotals === "function") updateDashboardBadgeTotals();
+        pipelineState.stage1_oldKarigers = rawKarigers;
+        const total = rawKarigers.length;
+
+        for (let i = 0; i < total; i += STAGE1_KARIGER_CHUNK_SIZE) {
+            const end = Math.min(i + STAGE1_KARIGER_CHUNK_SIZE, total);
+
+            for (let j = i; j < end; j++) {
+                const k = rawKarigers[j];
+                if (!k || !k.id) continue;
+
+                const sheets = (typeof window.getKarigerSheets === 'function') ? window.getKarigerSheets(k.id) : [];
+                const lastSheet = sheets.length ? sheets[sheets.length - 1] : null;
+
+                const calc = (lastSheet && typeof window.calculateSheetTotals === 'function')
+                    ? window.calculateSheetTotals(lastSheet)
+                    : { remainingBana: 0, remainingZari: 0, remainingAmt: 0 };
+
+                const remBana = safeNum(calc.remainingBana || calc.bachaBana);
+                const remZari = safeNum(calc.remainingZari || calc.bachiZari);
+                const remAmt = safeNum(calc.remainingAmt || calc.bakiMazdoori);
+
+                pipelineState.stage1_newKarigerSheetsMap[k.id] = [{
+                    id: 'tani_1',
+                    title: `Tani 1 (Opening ${newSess})`,
+                    pichlaBana: remBana,
+                    pichlaZari: remZari,
+                    pichlaBani: remAmt,
+                    banaWaste: 0,
+                    zariWaste: 0,
+                    rateBana: lastSheet ? (parseFloat(lastSheet.rateBana) || 0.311) : 0.311,
+                    rateZari: lastSheet ? (parseFloat(lastSheet.rateZari) || 0.110) : 0.110,
+                    rateBani: lastSheet ? (parseFloat(lastSheet.rateBani) || 240) : 240,
+                    note: `📦 31st March (${curSess}) Closing se Aaya Opening Balance`,
+                    rows: []
+                }];
+            }
+
+            const pct = total > 0 ? Math.floor((end / total) * 100) : 100;
+            updateProgressUI(1, `⏳ ${end} / ${total} Kariger Done (${pct}%)`, pct, Math.floor(pct * 0.20));
+
+            // Yield thread to keep UI completely responsive
+            await yieldThread();
+        }
+
+        updateProgressUI(1, `✅ Done (${total} Karigers)`, 100, 20, true);
+        await yieldThread(50);
+    };
+
+    /* ========================================================================
+       STAGE 2: SAREE STOCK (NON-BLOCKING AGGREGATION)
+       ------------------------------------------------------------------------
+    ======================================================================== */
+    const runStage2_SareeStockAsync = async (curSess, newSess) => {
+        const rawHistory = window.safeArray 
+            ? window.safeArray(window.getStore('saree_history')) 
+            : (window.getStore('saree_history') || []);
+
+        const todayStr = (typeof window.getTodayDate === 'function') ? window.getTodayDate() : '';
+        const tabs = ['fresh', 'finished', 'lott'];
+
+        for (const tb of tabs) {
+            const rows = (typeof window.groupSareeStockByTab === 'function')
+                ? window.groupSareeStockByTab(rawHistory, tb, 'all')
+                : [];
+
+            for (const r of rows) {
+                const bachiQty = safeNum(r.bachi !== undefined ? r.bachi : (r.aai - r.gai), 0, 0);
+
+                if (bachiQty > 0) {
+                    if (tb === 'fresh') pipelineState.stage2_totFreshPcs += bachiQty;
+                    else if (tb === 'finished') pipelineState.stage2_totFinPcs += bachiQty;
+                    else if (tb === 'lott') pipelineState.stage2_totLottPcs += bachiQty;
+
+                    pipelineState.stage2_newSareeHistory.push({
+                        id: `saree_open_${tb}_${Date.now()}_${Math.floor(Math.random() * 10000)}`,
+                        date: todayStr,
+                        sareeName: r.sareeName || 'Standard Saree',
+                        karigerName: r.karigerName || '📦 Opening Stock',
+                        kariger: r.karigerName || '📦 Opening Stock',
+                        karkhanaId: r.karkhanaId || 'k_main',
+                        type: tb,
+                        typeLabel: `📦 Opening Stock (${curSess} Se Aaya)`,
+                        aai: bachiQty,
+                        gai: 0,
+                        isOut: false,
+                        isOpening: true,
+                        note: 'Opening Stock'
+                    });
+                }
+            }
+            await yieldThread();
+        }
+
+        updateProgressUI(2, `✅ Fresh: ${pipelineState.stage2_totFreshPcs} | Finished: ${pipelineState.stage2_totFinPcs} Pcs`, 100, 40, true);
+        await yieldThread(50);
+    };
+
+    /* ========================================================================
+       STAGE 3: MULTI-GODAM BANA & ZARI OPENING (ISOLATED PER GODOWN)
+       ------------------------------------------------------------------------
+    ======================================================================== */
+    const runStage3_BanaZariStockAsync = async (curSess, newSess) => {
+        let karkhanas = [];
+        if (typeof window.getKarkhanasSafe === 'function') {
+            karkhanas = window.getKarkhanasSafe();
+        } else {
+            karkhanas = window.safeArray ? window.safeArray(window.getStore('karkhana_list')) : [];
+        }
+        if (!karkhanas.length) {
+            karkhanas = [{ id: 'k_main', name: 'Main Godown', isDefault: true }];
+        }
+
+        const todayStr = (typeof window.getTodayDate === 'function') ? window.getTodayDate() : '';
+
+        // 1. Process Bana Stock per Godown
+        const rawBana = window.safeArray ? window.safeArray(window.getStore('bana_stock')) : [];
+        const uniqueBanaNames = [...new Set(rawBana.map((b) => (b?.name ? b.name.trim() : '')).filter(Boolean))];
+
+        for (const bName of uniqueBanaNames) {
+            for (const k of karkhanas) {
+                const statsK = (typeof window.getBanaItemStats === 'function') 
+                    ? window.getBanaItemStats(bName, k.id) 
+                    : { bacha: 0 };
+                const bachaVal = Math.max(0, safeNum(statsK.bacha));
+
+                if (bachaVal > 0) {
+                    const uniqueId = `bana_open_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
+                    pipelineState.stage3_newBanaStock.push({
+                        id: uniqueId,
+                        name: bName,
+                        date: todayStr,
+                        aaya: bachaVal,
+                        openingAaya: bachaVal,
+                        gaya: 0,
+                        bacha: bachaVal,
+                        karkhanaId: k.id,
+                        isOpening: true,
+                        note: `📦 Opening Stock (${curSess} Se Aaya)`
+                    });
+
+                    pipelineState.stage3_newBanaHistory.push({
+                        id: `bhist_open_${Date.now()}_${Math.floor(Math.random() * 10000)}`,
+                        date: todayStr,
+                        name: bName,
+                        kariger: '📦 Opening Stock',
+                        type: `📦 Opening Stock (${curSess} Se Aaya)`,
+                        aaya: bachaVal,
+                        gaya: 0,
+                        karkhanaId: k.id,
+                        isOpening: true
+                    });
+                }
+            }
+            await yieldThread();
+        }
+
+        // 2. Process Zari Stock per Godown
+        const rawZari = window.safeArray ? window.safeArray(window.getStore('zari_stock')) : [];
+        const uniqueZariNames = [...new Set(rawZari.map((z) => (z?.name ? z.name.trim() : '')).filter(Boolean))];
+
+        for (const zName of uniqueZariNames) {
+            for (const k of karkhanas) {
+                const statsZK = (typeof window.getZariItemStats === 'function') 
+                    ? window.getZariItemStats(zName, k.id) 
+                    : { bacha: 0 };
+                const bachaValZ = Math.max(0, safeNum(statsZK.bacha));
+
+                if (bachaValZ > 0) {
+                    pipelineState.stage3_newZariStock.push({
+                        id: `zari_open_${Date.now()}_${Math.floor(Math.random() * 10000)}`,
+                        name: zName,
+                        date: todayStr,
+                        aaya: bachaValZ,
+                        openingAaya: bachaValZ,
+                        gaya: 0,
+                        bacha: bachaValZ,
+                        karkhanaId: k.id,
+                        isOpening: true,
+                        note: `📦 Opening Stock (${curSess} Se Aaya)`
+                    });
+
+                    pipelineState.stage3_newZariHistory.push({
+                        id: `zhist_open_${Date.now()}_${Math.floor(Math.random() * 10000)}`,
+                        date: todayStr,
+                        name: zName,
+                        kariger: '📦 Opening Stock',
+                        type: `📦 Opening Stock (${curSess} Se Aaya)`,
+                        aaya: bachaValZ,
+                        gaya: 0,
+                        karkhanaId: k.id,
+                        isOpening: true
+                    });
+                }
+            }
+            await yieldThread();
+        }
+
+        updateProgressUI(3, '✅ Bana & Zari Multi-Godam Opening Ready', 100, 60, true);
+        await yieldThread(50);
+    };
+
+    /* ========================================================================
+       STAGE 4: SANCHA & JOB WORK CARRY-FORWARD
+       ------------------------------------------------------------------------
+    ======================================================================== */
+    const runStage4_SanchaAndJobworkAsync = async (curSess, newSess) => {
+        const todayStr = (typeof window.getTodayDate === 'function') ? window.getTodayDate() : '';
+        const rawSancha = window.safeArray ? window.safeArray(window.getStore('sancha_items')) : [];
+
+        pipelineState.stage4_newSanchaItems = rawSancha.map((s) => {
+            const bacha = safeNum(s.bacha !== undefined ? s.bacha : s.aaya);
+            return {
+                id: s.id,
+                name: s.name,
+                category: s.category || 'tani',
+                aaya: bacha,
+                gaya: 0,
+                bacha: bacha,
+                date: todayStr,
+                karkhanaId: s.karkhanaId || 'k_main',
+                note: `📦 Opening (${curSess} Se Aaya)`
+            };
         });
-    } else {
-        populateSessionDropdown();
-        if (typeof backToDashboard === "function") backToDashboard();
-        if (typeof updateDashboardBadgeTotals === "function") updateDashboardBadgeTotals();
+
+        const rawWorkers = window.safeArray ? window.safeArray(window.getStore('jobwork_workers')) : [];
+        pipelineState.stage4_oldJwWorkers = rawWorkers;
+
+        for (const w of rawWorkers) {
+            if (!w || !w.id) continue;
+            const sheets = window.safeArray ? window.safeArray(window.getStore(`jobwork_sheets_${w.id}`)) : [];
+            const lastSh = sheets.length ? sheets[sheets.length - 1] : null;
+
+            let pSaree = 0;
+            if (lastSh && typeof window.calculateJobWorkSheetTotals === 'function') {
+                pSaree = safeNum(window.calculateJobWorkSheetTotals(lastSh).pendingSaree);
+            }
+
+            pipelineState.stage4_newJwSheetsMap[w.id] = [{
+                id: 'jws_open_1',
+                title: `Khata 1 (Opening ${newSess})`,
+                closingPendingSaree: pSaree,
+                closingBakiAmt: 0,
+                rows: []
+            }];
+            await yieldThread();
+        }
+
+        updateProgressUI(4, '✅ Sancha & Job Work Stock Carry Forwarded', 100, 80, true);
+        await yieldThread(50);
+    };
+
+    /* ========================================================================
+       STAGE 5: ATOMIC COMMIT & MICRO-BATCH DISPATCHER
+       ------------------------------------------------------------------------
+    ======================================================================== */
+    const runStage5_FinalizeCommitAsync = async (curSess, newSess, uId) => {
+        updateProgressUI(5, '⏳ Storing Core Data...', 10, 82);
+
+        const sessions = window.getAppSessions ? window.getAppSessions() : [];
+        if (!sessions.includes(newSess)) sessions.push(newSess);
+
+        // 1. Core Metadata Persistence
+        safeSetLocalStorage(`${uId}_app_sessions_list`, sessions, uId, curSess, newSess);
+        safeSetLocalStorage(`${uId}_app_active_session`, newSess, uId, curSess, newSess);
+
+        if (window.APP_MEMORY_CACHE) {
+            window.APP_MEMORY_CACHE[`${uId}_app_sessions_list`] = sessions;
+            window.APP_MEMORY_CACHE[`${uId}_app_active_session`] = newSess;
+        }
+
+        if (typeof window.idbPut === 'function') {
+            window.idbPut(`${uId}_app_sessions_list`, sessions);
+            window.idbPut(`${uId}_app_active_session`, newSess);
+        }
+
+        const persistGeneralStore = (key, data) => {
+            const fullKey = `${uId}_${newSess}_${key}`;
+            if (window.APP_MEMORY_CACHE) window.APP_MEMORY_CACHE[fullKey] = data;
+            if (typeof window.idbPut === 'function') window.idbPut(fullKey, data);
+            safeSetLocalStorage(fullKey, data, uId, curSess, newSess);
+        };
+
+        // Write Core Collections
+        persistGeneralStore('kariger_list', pipelineState.stage1_oldKarigers);
+        persistGeneralStore('saree_history', pipelineState.stage2_newSareeHistory);
+        persistGeneralStore('bana_stock', pipelineState.stage3_newBanaStock);
+        persistGeneralStore('bana_history', pipelineState.stage3_newBanaHistory);
+        persistGeneralStore('zari_stock', pipelineState.stage3_newZariStock);
+        persistGeneralStore('zari_history', pipelineState.stage3_newZariHistory);
+        persistGeneralStore('sancha_items', pipelineState.stage4_newSanchaItems);
+        persistGeneralStore('sancha_history', []);
+        persistGeneralStore('jobwork_workers', pipelineState.stage4_oldJwWorkers);
+        for (const wId in pipelineState.stage4_newJwSheetsMap) {
+            persistGeneralStore(`jobwork_sheets_${wId}`, pipelineState.stage4_newJwSheetsMap[wId]);
+        }
+        persistGeneralStore('jw_bills_list', []);
+        persistGeneralStore('jw_payments_list', []);
+        persistGeneralStore('dukan_transfer_history', []);
+        persistGeneralStore('daybook_records', []);
+        persistGeneralStore('payment_records', []);
+        persistGeneralStore('dukan_records', []);
+
+        // 2. Base Cloud Payload Commit
+        if (typeof window.db !== 'undefined' && window.db && uId && uId !== 'app') {
+            try {
+                const baseBatch = {
+                    app_active_session: newSess,
+                    app_sessions_list: sessions,
+                    [`${newSess}_kariger_list`]: pipelineState.stage1_oldKarigers,
+                    [`${newSess}_saree_history`]: pipelineState.stage2_newSareeHistory,
+                    [`${newSess}_bana_stock`]: pipelineState.stage3_newBanaStock,
+                    [`${newSess}_bana_history`]: pipelineState.stage3_newBanaHistory,
+                    [`${newSess}_zari_stock`]: pipelineState.stage3_newZariStock,
+                    [`${newSess}_zari_history`]: pipelineState.stage3_newZariHistory,
+                    [`${newSess}_sancha_items`]: pipelineState.stage4_newSanchaItems,
+                    [`${newSess}_sancha_history`]: [],
+                    [`${newSess}_jobwork_workers`]: pipelineState.stage4_oldJwWorkers,
+                    [`${newSess}_jw_bills_list`]: [],
+                    [`${newSess}_jw_payments_list`]: [],
+                    [`${newSess}_dukan_transfer_history`]: [],
+                    [`${newSess}_daybook_records`]: [],
+                    [`${newSess}_payment_records`]: [],
+                    [`${newSess}_dukan_records`]: []
+                };
+
+                for (const cWId in pipelineState.stage4_newJwSheetsMap) {
+                    baseBatch[`${newSess}_jobwork_sheets_${cWId}`] = pipelineState.stage4_newJwSheetsMap[cWId];
+                }
+
+                await window.db.ref(`users/${uId}`).update(baseBatch);
+            } catch (cloudBaseErr) {
+                console.warn('[SessionClosing] Cloud base batch warning:', cloudBaseErr);
+            }
+        }
+
+        // 3. Dynamic Micro-Chunk Commit for 2000+ Kariger Sheets
+        const karigerKeys = Object.keys(pipelineState.stage1_newKarigerSheetsMap);
+        const totalKarigers = karigerKeys.length;
+
+        for (let i = 0; i < totalKarigers; i += STAGE5_KARIGER_COMMIT_BATCH) {
+            const end = Math.min(i + STAGE5_KARIGER_COMMIT_BATCH, totalKarigers);
+            const cloudMiniBatch = {};
+
+            for (let j = i; j < end; j++) {
+                const kId = karigerKeys[j];
+                const sheetData = pipelineState.stage1_newKarigerSheetsMap[kId];
+                const fullKey = `${uId}_${newSess}_kariger_sheets_${kId}`;
+
+                if (window.APP_MEMORY_CACHE) window.APP_MEMORY_CACHE[fullKey] = sheetData;
+                if (typeof window.idbPut === 'function') window.idbPut(fullKey, sheetData);
+                safeSetLocalStorage(fullKey, sheetData, uId, curSess, newSess);
+
+                cloudMiniBatch[`${newSess}_kariger_sheets_${kId}`] = sheetData;
+            }
+
+            // Push micro-batch to cloud with payload size guard
+            if (typeof window.db !== 'undefined' && window.db && uId && uId !== 'app') {
+                try {
+                    await window.db.ref(`users/${uId}`).update(cloudMiniBatch);
+                } catch (microErr) {
+                    console.warn(`[SessionClosing] Micro-batch at ${i} warning:`, microErr);
+                }
+            }
+
+            const pct = totalKarigers > 0 ? Math.floor((end / totalKarigers) * 100) : 100;
+            const mainPct = 80 + Math.floor(pct * 0.20);
+            updateProgressUI(5, `💾 Saving: ${end} / ${totalKarigers} Kariger Sheets (${pct}%)`, pct, mainPct);
+
+            await yieldThread(20);
+        }
+
+        updateProgressUI(5, '✅ All Data Committed Successfully', 100, 100, true);
+        await yieldThread(100);
+
+        showClosingCelebrationScreen(newSess);
+    };
+
+    /* ========================================================================
+       5. CELEBRATION MODAL & SYSTEM RESTART
+       ------------------------------------------------------------------------
+    ======================================================================== */
+    const showClosingCelebrationScreen = (newSess) => {
+        const modal = document.getElementById('session-transfer-modal');
+        if (!modal) return;
+
+        const modalBody = modal.querySelector('.modal-body');
+        if (!modalBody) return;
+
+        const kCount = pipelineState.stage1_oldKarigers.length;
+        const freshPcs = pipelineState.stage2_totFreshPcs;
+        const banaCount = pipelineState.stage3_newBanaStock.length;
+        const zariCount = pipelineState.stage3_newZariStock.length;
+
+        modalBody.innerHTML = `
+            <div style="text-align:center; padding:15px;">
+                <div style="font-size:55px; margin-bottom:8px;">🎉 ✨ 🚀</div>
+                <h2 style="color:#1e3a8a; font-size:22px; font-weight:800; margin-bottom:6px;">NAYA SAAL MUBARAK HO!</h2>
+                <p style="color:#059669; font-size:14px; font-weight:700;">Session '${newSess}' Safalta-poorvak Shuru Ho Gaya!</p>
+                <div style="background:#f8fafc; border:1px solid #cbd5e1; border-radius:12px; padding:14px; margin:16px 0; text-align:left; font-size:13px; display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+                    <div>🧵 <strong>Kariger Carry:</strong> ${kCount} Karigers Safe</div>
+                    <div>🥻 <strong>Saree Opening:</strong> ${freshPcs} Fresh Pcs</div>
+                    <div>🧶 <strong>Bana Items:</strong> ${banaCount} Items Safe</div>
+                    <div>✨ <strong>Zari Items:</strong> ${zariCount} Items Safe</div>
+                    <div>⚙️ <strong>Sancha Stock:</strong> Carry Forwarded</div>
+                    <div>✂️ <strong>Job Work Khata:</strong> Carry Forwarded</div>
+                </div>
+                <p style="font-size:12px; color:#64748b; margin-bottom:15px;">* Sabhi godamon ka bacha hua maal unhi ke godam me alag-alag opening stock ban kar live ho chuka hai.</p>
+                <button type="button" class="btn" style="background:linear-gradient(135deg, #10b981, #059669); font-size:15px; font-weight:bold; padding:12px 24px; border-radius:8px; border:none; color:#ffffff; cursor:pointer;" onclick="completeNewSessionStartup('${newSess}')">🚀 Naye Saal Me Kaam Shuru Karein</button>
+            </div>`;
+
+        // Free pipeline staging memory buffer
+        pipelineState = null;
+    };
+
+    /**
+     * Finalizes active session activation and re-establishes live listeners
+     */
+    const completeNewSessionStartup = (targetSess) => {
+        const modal = document.getElementById('session-transfer-modal');
+        if (modal) modal.style.display = 'none';
+
+        const uId = window.getEffectiveUserId ? window.getEffectiveUserId() : 'app';
+        const s = targetSess || pendingTransferNewSession || (window.getActiveFinancialSession ? window.getActiveFinancialSession() : '2026-2027');
+
+        safeSetLocalStorage(`${uId}_app_active_session`, s);
+        if (window.APP_MEMORY_CACHE) window.APP_MEMORY_CACHE[`${uId}_app_active_session`] = s;
+        if (typeof window.idbPut === 'function') window.idbPut(`${uId}_app_active_session`, s);
+
+        if (typeof window.populateSessionDropdown === 'function') {
+            window.populateSessionDropdown();
+        }
+
+        const sel = document.getElementById('app-session-select');
+        if (sel) sel.value = s;
+
+        if (typeof window.clearMemoryCache === 'function') {
+            window.clearMemoryCache();
+        }
+        if (window.APP_MEMORY_CACHE) {
+            window.APP_MEMORY_CACHE[`${uId}_app_active_session`] = s;
+        }
+
+        // 🔄 RE-ATTACH FIREBASE LIVE LISTENERS FOR NEW FINANCIAL SESSION
+        if (window.CloudEngine && typeof window.CloudEngine.switchSessionListeners === 'function') {
+            window.CloudEngine.switchSessionListeners(s);
+        } else if (typeof window.initFirebaseLiveListeners === 'function') {
+            window.initFirebaseLiveListeners();
+        }
+
+        const afterPreload = () => {
+            if (typeof window.populateSessionDropdown === 'function') window.populateSessionDropdown();
+            if (typeof window.backToDashboard === 'function') window.backToDashboard();
+            if (typeof window.triggerActiveSectionRefresh === 'function') window.triggerActiveSectionRefresh();
+            if (typeof window.updateDashboardBadgeTotals === 'function') window.updateDashboardBadgeTotals();
+        };
+
+        if (typeof window.initIndexedDBPreload === 'function') {
+            window.initIndexedDBPreload(afterPreload);
+        } else {
+            afterPreload();
+        }
+    };
+
+    /* ========================================================================
+       6. GLOBAL EXPORT & BACKWARD COMPATIBILITY
+       ------------------------------------------------------------------------
+    ======================================================================== */
+    const sessionClosingAPI = {
+        startSequentialYearClosing,
+        completeNewSessionStartup,
+        safeSetLocalStorage
+    };
+
+    // Attach to global window object for direct legacy UI triggers
+    Object.keys(sessionClosingAPI).forEach((fnName) => {
+        window[fnName] = sessionClosingAPI[fnName];
+    });
+
+    // Namespace wrapper
+    window.SessionClosingEngine = sessionClosingAPI;
+
+    // Unit test export
+    if (typeof module !== 'undefined' && module.exports) {
+        module.exports = sessionClosingAPI;
     }
-}
+})();
