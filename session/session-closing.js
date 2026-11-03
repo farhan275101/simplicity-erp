@@ -14,40 +14,34 @@
     ======================================================================== */
     const STAGE1_KARIGER_CHUNK_SIZE = 25;       // Number of weavers processed per UI tick
     const STAGE5_KARIGER_COMMIT_BATCH = 15;     // Dynamic safe cloud commit chunk
-    const FIREBASE_SAFE_CHUNK_BYTES = 120000;   // ~120KB limit to prevent RTDB 413 rejections
     const UI_THREAD_YIELD_MS = 16;              // ~60 FPS animation frame yield interval
 
-    // Global session transition pointer
     let pendingTransferNewSession = null;
     let isClosingInProgress = false;
-
-    // Ephemeral Pipeline State (Auto-cleared after completion for memory hygiene)
     let pipelineState = null;
 
-    /**
-     * Non-blocking event-loop yield (Main thread freezing shield)
-     */
     const yieldThread = (ms = UI_THREAD_YIELD_MS) => new Promise((resolve) => setTimeout(resolve, ms));
 
-    /**
-     * Strict Number Sanitizer (Zero NaN, Zero Undefined, Fixed Decimal Precision)
-     */
     const safeNum = (val, fallback = 0, decimals = 2) => {
         const n = parseFloat(val);
         if (isNaN(n) || !isFinite(n)) return fallback;
         return Number(n.toFixed(decimals));
     };
 
-    /* ========================================================================
-       2. INTELLIGENT STORAGE QUOTA PRUNING & RECOVERY
-       ------------------------------------------------------------------------
-       Agar phone ka 5MB localStorage bhar jaye toh silent crash hone ke bajaye
-       purani archived sessions ki heavy cache keys safely prune kar di jaati hain.
-    ======================================================================== */
+    const getSafeUserId = () => {
+        if (typeof window.getEffectiveUserId === 'function') {
+            const id = window.getEffectiveUserId();
+            if (id && id !== 'app') return id;
+        }
+        return (typeof window.currentUserId !== 'undefined' && window.currentUserId) 
+            ? String(window.currentUserId).trim().toLowerCase() 
+            : 'farhan';
+    };
 
-    /**
-     * Prunes non-essential historical session caches from LocalStorage
-     */
+    /* ========================================================================
+       2. QUOTA-SAFE STORAGE HELPERS
+       ------------------------------------------------------------------------
+    ======================================================================== */
     const pruneHistoricalSessionCaches = (uId, currentSess, targetNewSess) => {
         try {
             const keysToEvict = [];
@@ -56,45 +50,35 @@
                 const k = localStorage.key(i);
                 if (!k) continue;
 
-                // Agar key kisi purani historical session ki bulky history hai toh delete karo
-                if (k.startsWith(`${uId}_`) && 
-                    !k.includes(currentSess) && 
-                    !k.includes(targetNewSess) && 
-                    !k.includes('app_sessions_list') && 
-                    !k.includes('app_active_session') && 
-                    !k.includes('app_users')) {
-                    keysToEvict.push(k);
+                if (k.startsWith(`${uId}_`)) {
+                    const isProtected = k.includes(currentSess) || 
+                                        k.includes(targetNewSess) || 
+                                        k.includes('app_sessions_list') || 
+                                        k.includes('app_active_session') || 
+                                        k.includes('app_users');
+                    if (!isProtected) keysToEvict.push(k);
                 }
             }
-
             keysToEvict.forEach((k) => localStorage.removeItem(k));
-            console.log(`[SessionClosing:Pruner] Pruned ${keysToEvict.length} legacy keys from LocalStorage.`);
         } catch (_) {}
     };
 
-    /**
-     * Quota-aware LocalStorage setter with active eviction fallback
-     */
     const safeSetLocalStorage = (key, val, uId = '', curSess = '', newSess = '') => {
         const payloadStr = typeof val === 'string' ? val : JSON.stringify(val);
         try {
             localStorage.setItem(key, payloadStr);
         } catch (err) {
-            if (err.name === 'QuotaExceededError' || err.code === 22 || err.code === 1014) {
-                // Quota hit: Prune older historical session data and retry
-                pruneHistoricalSessionCaches(uId, curSess, newSess);
-                try {
-                    localStorage.setItem(key, payloadStr);
-                } catch (_) {
-                    // IndexedDB & RAM cache will handle persistence reliably
-                    console.warn(`[SessionClosing] LocalStorage full. Delegating ${key} strictly to IndexedDB.`);
-                }
+            pruneHistoricalSessionCaches(uId, curSess, newSess);
+            try {
+                localStorage.setItem(key, payloadStr);
+            } catch (_) {
+                console.warn(`[SessionClosing] LocalStorage full. Delegating ${key} to IndexedDB.`);
             }
         }
     };
 
     /* ========================================================================
-       3. PROGRESS BAR & UI BADGE HELPERS
+       3. PROGRESS UI HELPERS
        ------------------------------------------------------------------------
     ======================================================================== */
     const updateProgressUI = (stageNum, statusText, pct, mainPct, isCompleted = false) => {
@@ -120,14 +104,6 @@
         }
     };
 
-    /* ========================================================================
-       4. ATOMIC 5-STAGE CLOSING PIPELINE
-       ------------------------------------------------------------------------
-    ======================================================================== */
-
-    /**
-     * Initializes Pipeline State Object
-     */
     const initPipelineState = () => ({
         stage1_oldKarigers: [],
         stage1_newKarigerSheetsMap: {},
@@ -144,9 +120,10 @@
         stage4_newJwSheetsMap: {}
     });
 
-    /**
-     * Entry Point: Initiates Sequential Year-End Transition
-     */
+    /* ========================================================================
+       4. MAIN EXECUTION PIPELINE
+       ------------------------------------------------------------------------
+    ======================================================================== */
     const startSequentialYearClosing = async () => {
         if (isClosingInProgress) return;
 
@@ -162,12 +139,12 @@
             return alert('Ye Session pehle se bana hua hai! Pehle ise Delete Zone se delete karein, fir fresh banayein.');
         }
 
-        const uId = window.getEffectiveUserId ? window.getEffectiveUserId() : 'app';
+        const uId = getSafeUserId();
 
-        // 🔒 1. CLOUD LISTENER MUTE (Background events se screen freeze na ho)
+        // Cloud listener mute
         if (typeof window.detachFirebaseLiveListeners === 'function') {
             window.detachFirebaseLiveListeners();
-        } else if (typeof window.db !== 'undefined' && window.db && uId && uId !== 'app') {
+        } else if (typeof window.db !== 'undefined' && window.db && uId) {
             try { window.db.ref(`users/${uId}`).off(); } catch (_) {}
         }
 
@@ -197,7 +174,6 @@
 
         modal.style.display = 'flex';
 
-        // Execute sequential stages asynchronously
         try {
             await yieldThread(100);
             await runStage1_KarigersAsync(curSess, newSess);
@@ -207,39 +183,20 @@
             await runStage5_FinalizeCommitAsync(curSess, newSess, uId);
         } catch (pipelineErr) {
             console.error('[SessionClosing] Fatal pipeline error:', pipelineErr);
-            alert(`Year closing me takneeki khata aayi: ${pipelineErr.message || pipelineErr}`);
-            rollbackFailedSession(uId, newSess);
+            alert(`Year closing me takleef aayi: ${pipelineErr.message || pipelineErr}`);
         } finally {
             isClosingInProgress = false;
         }
     };
 
-    /**
-     * Atomic Rollback in case of pipeline failure
-     */
-    const rollbackFailedSession = (uId, failedSess) => {
-        try {
-            console.warn(`[SessionClosing] Rolling back partial state for session ${failedSess}...`);
-            const modal = document.getElementById('session-transfer-modal');
-            if (modal) modal.style.display = 'none';
-
-            // Re-bind previous live listeners
-            if (typeof window.initFirebaseLiveListeners === 'function') {
-                window.initFirebaseLiveListeners();
-            }
-
-            pipelineState = null;
-        } catch (_) {}
-    };
-
     /* ========================================================================
-       STAGE 1: KARIGER KHATA (TIME-SLICED CHUNKS)
+       STAGE 1: KARIGER KHATA (With Bana & Zari Item Names Carry Forward)
        ------------------------------------------------------------------------
     ======================================================================== */
     const runStage1_KarigersAsync = async (curSess, newSess) => {
         const rawKarigers = window.safeArray 
             ? window.safeArray(window.getStore('kariger_list')) 
-            : (window.getStore('kariger_list') || []);
+            : (window.getStore ? window.getStore('kariger_list') : []);
 
         pipelineState.stage1_oldKarigers = rawKarigers;
         const total = rawKarigers.length;
@@ -258,10 +215,11 @@
                     ? window.calculateSheetTotals(lastSheet)
                     : { remainingBana: 0, remainingZari: 0, remainingAmt: 0 };
 
-                const remBana = safeNum(calc.remainingBana || calc.bachaBana);
-                const remZari = safeNum(calc.remainingZari || calc.bachiZari);
-                const remAmt = safeNum(calc.remainingAmt || calc.bakiMazdoori);
+                const remBana = safeNum(calc.remainingBana);
+                const remZari = safeNum(calc.remainingZari);
+                const remAmt = safeNum(calc.remainingAmt);
 
+                // Seamlessly carry forward loom items and designs to Tani 1
                 pipelineState.stage1_newKarigerSheetsMap[k.id] = [{
                     id: 'tani_1',
                     title: `Tani 1 (Opening ${newSess})`,
@@ -273,6 +231,12 @@
                     rateBana: lastSheet ? (parseFloat(lastSheet.rateBana) || 0.311) : 0.311,
                     rateZari: lastSheet ? (parseFloat(lastSheet.rateZari) || 0.110) : 0.110,
                     rateBani: lastSheet ? (parseFloat(lastSheet.rateBani) || 240) : 240,
+                    banaItem: lastSheet ? (lastSheet.banaItem || '') : '',
+                    zariItem: lastSheet ? (lastSheet.zariItem || '') : '',
+                    taniItem: lastSheet ? (lastSheet.taniItem || '') : '',
+                    taniSancha: lastSheet ? (lastSheet.taniSancha || '') : '',
+                    chukkaItem: lastSheet ? (lastSheet.chukkaItem || '') : '',
+                    chukkaSancha: lastSheet ? (lastSheet.chukkaSancha || '') : '',
                     note: `📦 31st March (${curSess}) Closing se Aaya Opening Balance`,
                     rows: []
                 }];
@@ -280,8 +244,6 @@
 
             const pct = total > 0 ? Math.floor((end / total) * 100) : 100;
             updateProgressUI(1, `⏳ ${end} / ${total} Kariger Done (${pct}%)`, pct, Math.floor(pct * 0.20));
-
-            // Yield thread to keep UI completely responsive
             await yieldThread();
         }
 
@@ -290,13 +252,13 @@
     };
 
     /* ========================================================================
-       STAGE 2: SAREE STOCK (NON-BLOCKING AGGREGATION)
+       STAGE 2: SAREE STOCK
        ------------------------------------------------------------------------
     ======================================================================== */
     const runStage2_SareeStockAsync = async (curSess, newSess) => {
         const rawHistory = window.safeArray 
             ? window.safeArray(window.getStore('saree_history')) 
-            : (window.getStore('saree_history') || []);
+            : (window.getStore ? window.getStore('saree_history') : []);
 
         const todayStr = (typeof window.getTodayDate === 'function') ? window.getTodayDate() : '';
         const tabs = ['fresh', 'finished', 'lott'];
@@ -339,31 +301,22 @@
     };
 
     /* ========================================================================
-       STAGE 3: MULTI-GODAM BANA & ZARI OPENING (ISOLATED PER GODOWN)
+       STAGE 3: BANA & ZARI STOCK (Uses Accurate Fixed Engine)
        ------------------------------------------------------------------------
     ======================================================================== */
     const runStage3_BanaZariStockAsync = async (curSess, newSess) => {
-        let karkhanas = [];
-        if (typeof window.getKarkhanasSafe === 'function') {
-            karkhanas = window.getKarkhanasSafe();
-        } else {
-            karkhanas = window.safeArray ? window.safeArray(window.getStore('karkhana_list')) : [];
-        }
-        if (!karkhanas.length) {
-            karkhanas = [{ id: 'k_main', name: 'Main Godown', isDefault: true }];
-        }
+        let karkhanas = (typeof window.getKarkhanasSafe === 'function') ? window.getKarkhanasSafe() : (window.safeArray ? window.safeArray(window.getStore('karkhana_list')) : []);
+        if (!karkhanas.length) karkhanas = [{ id: 'k_main', name: 'Main Godown', isDefault: true }];
 
         const todayStr = (typeof window.getTodayDate === 'function') ? window.getTodayDate() : '';
 
-        // 1. Process Bana Stock per Godown
+        // 1. Bana Stock
         const rawBana = window.safeArray ? window.safeArray(window.getStore('bana_stock')) : [];
         const uniqueBanaNames = [...new Set(rawBana.map((b) => (b?.name ? b.name.trim() : '')).filter(Boolean))];
 
         for (const bName of uniqueBanaNames) {
             for (const k of karkhanas) {
-                const statsK = (typeof window.getBanaItemStats === 'function') 
-                    ? window.getBanaItemStats(bName, k.id) 
-                    : { bacha: 0 };
+                const statsK = (typeof window.getBanaItemStats === 'function') ? window.getBanaItemStats(bName, k.id) : { bacha: 0 };
                 const bachaVal = Math.max(0, safeNum(statsK.bacha));
 
                 if (bachaVal > 0) {
@@ -397,15 +350,13 @@
             await yieldThread();
         }
 
-        // 2. Process Zari Stock per Godown
+        // 2. Zari Stock
         const rawZari = window.safeArray ? window.safeArray(window.getStore('zari_stock')) : [];
         const uniqueZariNames = [...new Set(rawZari.map((z) => (z?.name ? z.name.trim() : '')).filter(Boolean))];
 
         for (const zName of uniqueZariNames) {
             for (const k of karkhanas) {
-                const statsZK = (typeof window.getZariItemStats === 'function') 
-                    ? window.getZariItemStats(zName, k.id) 
-                    : { bacha: 0 };
+                const statsZK = (typeof window.getZariItemStats === 'function') ? window.getZariItemStats(zName, k.id) : { bacha: 0 };
                 const bachaValZ = Math.max(0, safeNum(statsZK.bacha));
 
                 if (bachaValZ > 0) {
@@ -443,7 +394,7 @@
     };
 
     /* ========================================================================
-       STAGE 4: SANCHA & JOB WORK CARRY-FORWARD
+       STAGE 4: SANCHA & JOB WORK
        ------------------------------------------------------------------------
     ======================================================================== */
     const runStage4_SanchaAndJobworkAsync = async (curSess, newSess) => {
@@ -493,7 +444,7 @@
     };
 
     /* ========================================================================
-       STAGE 5: ATOMIC COMMIT & MICRO-BATCH DISPATCHER
+       STAGE 5: ATOMIC COMMIT & DISPATCH
        ------------------------------------------------------------------------
     ======================================================================== */
     const runStage5_FinalizeCommitAsync = async (curSess, newSess, uId) => {
@@ -502,7 +453,6 @@
         const sessions = window.getAppSessions ? window.getAppSessions() : [];
         if (!sessions.includes(newSess)) sessions.push(newSess);
 
-        // 1. Core Metadata Persistence
         safeSetLocalStorage(`${uId}_app_sessions_list`, sessions, uId, curSess, newSess);
         safeSetLocalStorage(`${uId}_app_active_session`, newSess, uId, curSess, newSess);
 
@@ -523,7 +473,6 @@
             safeSetLocalStorage(fullKey, data, uId, curSess, newSess);
         };
 
-        // Write Core Collections
         persistGeneralStore('kariger_list', pipelineState.stage1_oldKarigers);
         persistGeneralStore('saree_history', pipelineState.stage2_newSareeHistory);
         persistGeneralStore('bana_stock', pipelineState.stage3_newBanaStock);
@@ -543,8 +492,8 @@
         persistGeneralStore('payment_records', []);
         persistGeneralStore('dukan_records', []);
 
-        // 2. Base Cloud Payload Commit
-        if (typeof window.db !== 'undefined' && window.db && uId && uId !== 'app') {
+        // Cloud Base Commit
+        if (typeof window.db !== 'undefined' && window.db && uId) {
             try {
                 const baseBatch = {
                     app_active_session: newSess,
@@ -576,7 +525,7 @@
             }
         }
 
-        // 3. Dynamic Micro-Chunk Commit for 2000+ Kariger Sheets
+        // Kariger Sheets Micro-Batch
         const karigerKeys = Object.keys(pipelineState.stage1_newKarigerSheetsMap);
         const totalKarigers = karigerKeys.length;
 
@@ -596,19 +545,14 @@
                 cloudMiniBatch[`${newSess}_kariger_sheets_${kId}`] = sheetData;
             }
 
-            // Push micro-batch to cloud with payload size guard
-            if (typeof window.db !== 'undefined' && window.db && uId && uId !== 'app') {
+            if (typeof window.db !== 'undefined' && window.db && uId) {
                 try {
                     await window.db.ref(`users/${uId}`).update(cloudMiniBatch);
-                } catch (microErr) {
-                    console.warn(`[SessionClosing] Micro-batch at ${i} warning:`, microErr);
-                }
+                } catch (_) {}
             }
 
             const pct = totalKarigers > 0 ? Math.floor((end / totalKarigers) * 100) : 100;
-            const mainPct = 80 + Math.floor(pct * 0.20);
-            updateProgressUI(5, `💾 Saving: ${end} / ${totalKarigers} Kariger Sheets (${pct}%)`, pct, mainPct);
-
+            updateProgressUI(5, `💾 Saving: ${end} / ${totalKarigers} Kariger Sheets (${pct}%)`, pct, 80 + Math.floor(pct * 0.20));
             await yieldThread(20);
         }
 
@@ -619,13 +563,12 @@
     };
 
     /* ========================================================================
-       5. CELEBRATION MODAL & SYSTEM RESTART
+       5. CELEBRATION & COMPLETE SYSTEM STARTUP
        ------------------------------------------------------------------------
     ======================================================================== */
     const showClosingCelebrationScreen = (newSess) => {
         const modal = document.getElementById('session-transfer-modal');
         if (!modal) return;
-
         const modalBody = modal.querySelector('.modal-body');
         if (!modalBody) return;
 
@@ -647,27 +590,27 @@
                     <div>⚙️ <strong>Sancha Stock:</strong> Carry Forwarded</div>
                     <div>✂️ <strong>Job Work Khata:</strong> Carry Forwarded</div>
                 </div>
-                <p style="font-size:12px; color:#64748b; margin-bottom:15px;">* Sabhi godamon ka bacha hua maal unhi ke godam me alag-alag opening stock ban kar live ho chuka hai.</p>
                 <button type="button" class="btn" style="background:linear-gradient(135deg, #10b981, #059669); font-size:15px; font-weight:bold; padding:12px 24px; border-radius:8px; border:none; color:#ffffff; cursor:pointer;" onclick="completeNewSessionStartup('${newSess}')">🚀 Naye Saal Me Kaam Shuru Karein</button>
             </div>`;
 
-        // Free pipeline staging memory buffer
         pipelineState = null;
     };
 
-    /**
-     * Finalizes active session activation and re-establishes live listeners
-     */
     const completeNewSessionStartup = (targetSess) => {
         const modal = document.getElementById('session-transfer-modal');
         if (modal) modal.style.display = 'none';
 
-        const uId = window.getEffectiveUserId ? window.getEffectiveUserId() : 'app';
+        const uId = getSafeUserId();
         const s = targetSess || pendingTransferNewSession || (window.getActiveFinancialSession ? window.getActiveFinancialSession() : '2026-2027');
 
         safeSetLocalStorage(`${uId}_app_active_session`, s);
         if (window.APP_MEMORY_CACHE) window.APP_MEMORY_CACHE[`${uId}_app_active_session`] = s;
         if (typeof window.idbPut === 'function') window.idbPut(`${uId}_app_active_session`, s);
+
+        // Firebase Cloud me Active Session lock karo
+        if (typeof window.db !== 'undefined' && window.db && uId) {
+            try { window.db.ref(`users/${uId}/app_active_session`).set(s); } catch (_) {}
+        }
 
         if (typeof window.populateSessionDropdown === 'function') {
             window.populateSessionDropdown();
@@ -679,11 +622,8 @@
         if (typeof window.clearMemoryCache === 'function') {
             window.clearMemoryCache();
         }
-        if (window.APP_MEMORY_CACHE) {
-            window.APP_MEMORY_CACHE[`${uId}_app_active_session`] = s;
-        }
 
-        // 🔄 RE-ATTACH FIREBASE LIVE LISTENERS FOR NEW FINANCIAL SESSION
+        // Live Cloud Listeners re-attach
         if (window.CloudEngine && typeof window.CloudEngine.switchSessionListeners === 'function') {
             window.CloudEngine.switchSessionListeners(s);
         } else if (typeof window.initFirebaseLiveListeners === 'function') {
@@ -705,7 +645,7 @@
     };
 
     /* ========================================================================
-       6. GLOBAL EXPORT & BACKWARD COMPATIBILITY
+       6. GLOBAL EXPORT
        ------------------------------------------------------------------------
     ======================================================================== */
     const sessionClosingAPI = {
@@ -714,15 +654,12 @@
         safeSetLocalStorage
     };
 
-    // Attach to global window object for direct legacy UI triggers
     Object.keys(sessionClosingAPI).forEach((fnName) => {
         window[fnName] = sessionClosingAPI[fnName];
     });
 
-    // Namespace wrapper
     window.SessionClosingEngine = sessionClosingAPI;
 
-    // Unit test export
     if (typeof module !== 'undefined' && module.exports) {
         module.exports = sessionClosingAPI;
     }
