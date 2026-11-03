@@ -1,18 +1,16 @@
 /* ========================================================
    SIMPLICITY ERP - LIVE ADMIN CONTROL & REALTIME USER APPROVAL
    File: admin/admin.js • Developed by Farhan Jawed
-   (Auto-Inject Approval Banner + Case-Insensitive Pending Detection)
 ======================================================== */
 
 window.adminUsersData = [];
 var fbUsersListenerAttached = false;
 
-// 👑 1. ADMIN PANEL OPEN (Direct Realtime Connection)
+// 👑 1. ADMIN PANEL OPEN
 function openAdminModule() {
     var uid = (typeof currentUserId !== "undefined" ? String(currentUserId).trim().toLowerCase() : "");
     var role = (typeof currentUserRole !== "undefined" ? String(currentUserRole).trim().toLowerCase() : "");
 
-    // Farhan Master Admin hamesha allowed hai
     if (role !== "admin" && uid !== "farhan") {
         return alert("⛔ Sirf Master Admin (Farhan) is panel ko access kar sakte hain!");
     }
@@ -20,16 +18,16 @@ function openAdminModule() {
     if (typeof hideAllSections === "function") hideAllSections();
     setDisplay("admin-section", "block");
 
-    // Pehle jo local hai wo dikhao
     renderAdminUsersTable();
-
-    // Firebase Cloud se LIVE sync karo
     fetchAndListenAdminUsers();
 }
 
-// 🌐 2. FIREBASE REALTIME LISTENER (Live Streaming)
-function fetchAndListenAdminUsers() {
-    if (typeof db === "undefined" || !db) return;
+// 🌐 2. FIREBASE REALTIME LISTENER
+function fetchAndListenAdminUsers(callback) {
+    if (typeof db === "undefined" || !db) {
+        if (typeof callback === "function") callback(false, "Firebase DB not connected");
+        return;
+    }
 
     db.ref("app_users").on("value", function(snap) {
         var v = snap.val();
@@ -46,7 +44,6 @@ function fetchAndListenAdminUsers() {
             }
         }
 
-        // Farhan ko hamesha barkarar rakho
         if (!arr.some(function(u) { return String(u.id).toLowerCase() === "farhan"; })) {
             arr.push({
                 id: "farhan",
@@ -68,16 +65,17 @@ function fetchAndListenAdminUsers() {
                 APP_MEMORY_CACHE["app_users"] = arr;
                 APP_MEMORY_CACHE["farhan_app_users"] = arr;
             }
-            if (typeof setStore === "function") setStore("app_users", arr);
         } catch (_) {}
 
         renderAdminUsersTable();
+        if (typeof callback === "function") callback(true, arr);
     }, function(error) {
         console.error("Firebase fetch error:", error);
+        if (typeof callback === "function") callback(false, error.message);
     });
 }
 
-// 📊 3. TABLE & APPROVAL BANNER RENDERER (Auto-Inject Banner)
+// 📊 3. TABLE & APPROVAL BANNER RENDERER
 function renderAdminUsersTable() {
     var users = window.adminUsersData;
     
@@ -88,11 +86,6 @@ function renderAdminUsersTable() {
         } catch (_) {
             users = [];
         }
-    }
-
-    if (!users.length && typeof getUsersList === "function") {
-        var gList = getUsersList();
-        if (Array.isArray(gList) && gList.length > 0) users = gList;
     }
 
     if (!users.length) {
@@ -121,7 +114,7 @@ function renderAdminUsersTable() {
         var uIdStr = String(u.id || "").trim();
         var isOwner = (uIdStr.toLowerCase() === "farhan" || u.role === "admin");
         
-        // ⭐ Case-Insensitive Pending Detection
+        // ⭐ Case-Insensitive Pending Check
         var st = String(u.status || "").toLowerCase().trim();
         var isPending = !isOwner && (st === "pending" || st === "pending_approval" || st === "waiting");
         var isBlocked = (st === "blocked");
@@ -141,7 +134,7 @@ function renderAdminUsersTable() {
             act++;
         }
 
-        // Badges
+        // Status Badges
         var stBadge = "";
         if (isOwner) {
             stBadge = "<span class='badge-green' style='background:#10b981; color:#fff; padding:3px 8px; border-radius:12px; font-weight:700;'>👑 Owner</span>";
@@ -196,7 +189,7 @@ function renderAdminUsersTable() {
 
     tbody.innerHTML = rowsHtml;
 
-    // 🔔 TOP PENDING CARD (Auto-Creates itself right above the table if missing)
+    // 🔔 AUTO-INJECT APPROVAL BANNER (Table ke theek upar)
     var adminSec = document.getElementById("admin-section");
     var pendingBanner = document.getElementById("admin-pending-approval-banner");
     
@@ -237,7 +230,65 @@ function renderAdminUsersTable() {
     }
 }
 
-// ✅ ACTIONS
+// 🔄 4. FIXED REFRESH BUTTON (With Live Visual Feedback & Exact Count Alert)
+function refreshAdminUsersList() {
+    var btn = document.getElementById("admin-refresh-users-btn");
+    if (btn) btn.textContent = "⏳ Syncing...";
+
+    if (typeof db === "undefined" || !db) {
+        if (btn) btn.textContent = "🔄 Refresh List";
+        return alert("⚠️ Firebase connect nahi hai!");
+    }
+
+    db.ref("app_users").once("value").then(function(snap) {
+        var v = snap.val();
+        var arr = [];
+        var pendingCount = 0;
+
+        if (v && typeof v === "object") {
+            for (var key in v) {
+                if (v[key] && typeof v[key] === "object") {
+                    var u = v[key];
+                    u.id = u.id || key;
+                    u.name = u.name || key;
+                    var st = String(u.status || "").toLowerCase().trim();
+                    if (st === "pending" || st === "pending_approval" || st === "waiting") {
+                        pendingCount++;
+                    }
+                    arr.push(u);
+                }
+            }
+        }
+
+        if (!arr.some(function(u) { return String(u.id).toLowerCase() === "farhan"; })) {
+            arr.push({
+                id: "farhan",
+                name: "Farhan jawed",
+                mobile: "7065572191",
+                pass: "97438090641154",
+                role: "admin",
+                status: "active",
+                date: "2026-01-01"
+            });
+        }
+
+        window.adminUsersData = arr;
+        try {
+            localStorage.setItem("app_users", JSON.stringify(arr));
+        } catch (_) {}
+
+        renderAdminUsersTable();
+        if (btn) btn.textContent = "🔄 Refresh List";
+
+        // 📢 Exact Status Alert!
+        alert("✅ Refresh Ho Gaya!\n\n📊 Kul Users: " + arr.length + "\n⏳ Approval Pending: " + pendingCount + "\n🟢 Active: " + (arr.length - pendingCount));
+    }).catch(function(err) {
+        if (btn) btn.textContent = "🔄 Refresh List";
+        alert("❌ Refresh Error: " + err.message);
+    });
+}
+
+// ✅ 5. ACTIONS
 function approveUserByAdmin(uid) {
     var exp = new Date();
     exp.setDate(exp.getDate() + 30);
@@ -248,7 +299,8 @@ function approveUserByAdmin(uid) {
             status: "active",
             expiryDate: formattedExp
         }).then(function() {
-            alert("🎉 User '" + uid + "' approve ho gaya!\nAb wo turant login kar sakta hai.");
+            alert("🎉 User '" + uid + "' APPROVE ho gaya!\nAb wo turant login kar sakta hai.");
+            refreshAdminUsersList();
         });
     }
 }
@@ -271,6 +323,7 @@ function extendValidity(uid, days) {
             status: "active"
         }).then(function() {
             alert("✅ Validity 30 din badh gayi!");
+            refreshAdminUsersList();
         });
     }
 }
@@ -282,6 +335,7 @@ function resetUserPasswordByAdmin(uid) {
     if (typeof db !== "undefined" && db) {
         db.ref("app_users/" + uid + "/pass").set(newPass.trim()).then(function() {
             alert("✅ Password update ho gaya!");
+            refreshAdminUsersList();
         });
     }
 }
@@ -292,25 +346,25 @@ function toggleUserBlockStatus(uid) {
     var nextStatus = (u && u.status === "blocked") ? "active" : "blocked";
 
     if (typeof db !== "undefined" && db) {
-        db.ref("app_users/" + uid + "/status").set(nextStatus);
+        db.ref("app_users/" + uid + "/status").set(nextStatus).then(function() {
+            refreshAdminUsersList();
+        });
     }
 }
 
 function deleteUserByAdmin(uid) {
     if (String(uid).toLowerCase() === "farhan") return alert("⛔ Master Admin delete nahi ho sakta!");
-    if (!confirm("Kya aap sach me is User ko delete karna chahte hain?")) return;
+    if (!confirm("Kya aap sach me is User ko delete/reject karna chahte hain?")) return;
 
     if (typeof db !== "undefined" && db) {
         db.ref("app_users/" + uid).remove().then(function() {
             alert("🗑️ User delete ho gaya!");
+            refreshAdminUsersList();
         });
     }
 }
 
-function refreshAdminUsersList() {
-    fetchAndListenAdminUsers();
-}
-
+// Window bindings
 window.openAdminModule = openAdminModule;
 window.renderAdminUsersTable = renderAdminUsersTable;
 window.approveUserByAdmin = approveUserByAdmin;
