@@ -190,6 +190,8 @@
             gap: 8px;
             box-shadow: 0 10px 25px rgba(37, 211, 102, 0.25);
             transition: all 0.2s;
+            cursor: pointer;
+            border: none;
         }
         .btn-apple-green:hover { transform: scale(1.02); background: #20ba57; }
 
@@ -205,6 +207,8 @@
             align-items: center;
             gap: 8px;
             transition: all 0.2s;
+            cursor: pointer;
+            border: none;
         }
         .btn-apple-blue:hover { transform: scale(1.02); background: #0077ed; }
 
@@ -225,7 +229,7 @@
         .stat-item p { font-size: 12px; color: var(--text-secondary); text-transform: uppercase; font-weight: 600; }
 
         /* ====================================================================
-           4. ULTRA HD PORTAL PREVIEW (REPLACED THE 5 SAREE PHOTOS)
+           4. ULTRA HD DASHBOARD SHOWCASE
            ==================================================================== */
         .portal-preview-section {
             padding: 20px max(20px, calc((100vw - 1180px) / 2)) 70px;
@@ -247,7 +251,6 @@
             box-shadow: 0 40px 120px rgba(0, 0, 0, 0.95), 0 0 80px rgba(41, 151, 255, 0.25);
         }
 
-        /* macOS Window Header Bar */
         .window-bar {
             background: #f1f5f9;
             padding: 12px 18px;
@@ -283,7 +286,6 @@
             color: #1e293b;
         }
 
-        /* 8 Dashboard Action Buttons Grid */
         .erp-tiles-grid {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
@@ -312,6 +314,13 @@
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.03);
             position: relative;
             border-top: 3.5px solid #0284c7;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .erp-tile:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.08);
         }
 
         .erp-tile .icon-box {
@@ -337,7 +346,6 @@
             margin-top: 2px;
         }
 
-        /* Rozana Day Book Section Preview */
         .daybook-preview {
             background: #ffffff;
             border: 1px solid #e2e8f0;
@@ -416,7 +424,7 @@
         }
 
         /* ====================================================================
-           5. PROBLEMS SOLVED (THE 3 BIGGEST HEADACHES)
+           5. PROBLEMS SOLVED
            ==================================================================== */
         .section-container {
             padding: 80px max(20px, calc((100vw - 1180px) / 2));
@@ -469,7 +477,7 @@
         .problem-card p { font-size: 13px; color: var(--text-secondary); line-height: 1.6; }
 
         /* ====================================================================
-           6. FULL STEP-BY-STEP KARKHANA WORKFLOW (WITH INTERACTIVE APP BUTTONS)
+           6. WORKFLOW & FAST INTERACTIVE APP BUTTONS (NO LOGIN NEEDED)
            ==================================================================== */
         .workflow-grid {
             display: grid;
@@ -515,19 +523,19 @@
             letter-spacing: 0.05em;
         }
 
-        /* 🚀 NEW: App Quick Action Button placed directly in card */
+        /* 🚀 Fast Interactive Button */
         .btn-card-app {
             background: linear-gradient(135deg, #1e293b, #0f172a);
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            color: #f8fafc;
-            padding: 6px 14px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #ffffff;
+            padding: 7px 14px;
             border-radius: 24px;
-            font-size: 11px;
+            font-size: 11.5px;
             font-weight: 700;
             display: inline-flex;
             align-items: center;
             gap: 6px;
-            text-decoration: none;
+            cursor: pointer;
             transition: all 0.25s;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
         }
@@ -537,7 +545,7 @@
             color: #000000;
             border-color: #ffffff;
             transform: scale(1.05);
-            box-shadow: 0 6px 20px rgba(255, 255, 255, 0.25);
+            box-shadow: 0 6px 20px rgba(255, 255, 255, 0.3);
         }
 
         .step-module-card h4 {
@@ -643,61 +651,157 @@
             color: var(--text-tertiary);
         }
 
-        /* LIGHTBOX */
+        /* ====================================================================
+           8. ULTRA-HD DIRECT MODAL SYSTEM (TARIKA 2)
+           ==================================================================== */
         .lightbox-overlay {
             position: fixed;
             top: 0;
             left: 0;
             width: 100vw;
             height: 100vh;
-            background: rgba(0, 0, 0, 0.94);
+            background: rgba(0, 0, 0, 0.88);
             backdrop-filter: blur(25px);
             -webkit-backdrop-filter: blur(25px);
             z-index: 99999;
             display: none;
             align-items: center;
             justify-content: center;
-            padding: 30px;
+            padding: 20px;
             opacity: 0;
             transition: opacity 0.3s ease;
         }
 
         .lightbox-overlay.active { display: flex; opacity: 1; }
 
-        .lightbox-wrap {
-            position: relative;
-            max-width: 1100px;
-            width: 95%;
-            max-height: 85vh;
+        .modal-container {
+            background: #0f172a;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 20px;
+            width: 100%;
+            max-width: 900px;
+            max-height: 90vh;
             display: flex;
             flex-direction: column;
+            box-shadow: 0 40px 100px rgba(0, 0, 0, 0.95), 0 0 50px rgba(41, 151, 255, 0.2);
+            overflow: hidden;
+            animation: modalPop 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes modalPop {
+            0% { transform: scale(0.95) translateY(20px); opacity: 0; }
+            100% { transform: scale(1) translateY(0); opacity: 1; }
+        }
+
+        .modal-header {
+            background: #1e293b;
+            padding: 16px 22px;
+            display: flex;
             align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
 
-        .lightbox-img {
-            max-width: 100%;
-            max-height: 75vh;
-            border-radius: var(--radius-inner);
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            box-shadow: 0 30px 90px rgba(0, 0, 0, 0.9);
+        .modal-header h3 {
+            font-size: 16px;
+            font-weight: 800;
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
 
-        .lightbox-caption {
-            margin-top: 14px;
-            font-size: 13px;
-            color: var(--text-secondary);
-            font-weight: 500;
-        }
-
-        .lightbox-close {
-            position: absolute;
-            top: -42px;
-            right: 0;
-            background: transparent;
+        .modal-close-btn {
+            background: rgba(255, 255, 255, 0.1);
             border: none;
-            color: white;
-            font-size: 30px;
+            color: #ffffff;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            font-size: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .modal-close-btn:hover {
+            background: #ef4444;
+            transform: scale(1.1);
+        }
+
+        .modal-body {
+            padding: 24px;
+            overflow-y: auto;
+            color: #e2e8f0;
+            font-size: 13.5px;
+            background: #090d16;
+        }
+
+        .modal-footer {
+            background: #1e293b;
+            padding: 14px 22px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        /* HD Preview Box inside Modal */
+        .preview-stat-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        @media (max-width: 600px) { .preview-stat-grid { grid-template-columns: 1fr; } }
+
+        .stat-badge-box {
+            background: #131b2e;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            padding: 14px;
+            text-align: center;
+        }
+
+        .stat-badge-box span { font-size: 11px; color: #94a3b8; text-transform: uppercase; font-weight: 700; display: block; }
+        .stat-badge-box strong { font-size: 18px; color: #38bdf8; font-weight: 800; margin-top: 4px; display: block; }
+
+        .modal-table-wrap {
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            overflow-x: auto;
+            background: #0f172a;
+            margin-bottom: 18px;
+        }
+
+        .modal-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12.5px;
+            text-align: left;
+        }
+
+        .modal-table th {
+            background: #1e3a8a;
+            color: #ffffff;
+            padding: 12px 14px;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
+        .modal-table td {
+            padding: 12px 14px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            color: #cbd5e1;
+            white-space: nowrap;
+        }
+
+        .modal-table tr:hover td {
+            background: rgba(255, 255, 255, 0.03);
         }
 
         .reveal {
@@ -765,16 +869,16 @@
         </div>
     </section>
 
-    <!-- 3. ULTRA HD APP DASHBOARD SHOWCASE (REPLACED 5 SAREE PHOTOS) -->
+    <!-- 3. ULTRA HD APP DASHBOARD SHOWCASE -->
     <section class="portal-preview-section">
         <div class="reveal" style="text-align: center; margin-bottom: 24px;">
             <span style="color:var(--accent-gold); font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.1em;">Live Karkhana Interface</span>
             <h3 style="font-size: clamp(1.8rem, 3.5vw, 2.8rem); font-weight:800; letter-spacing:-0.025em; margin-top:6px;">Seedha Aapke Screen Par Kaam</h3>
-            <p style="color:var(--text-secondary); font-size:14px; margin-top:4px;">Asli karkhana software ka live Ultra-HD snapshot. Kisi bhi feature par click karke portal dekhein.</p>
+            <p style="color:var(--text-secondary); font-size:14px; margin-top:4px;">Asli karkhana software ka live Ultra-HD snapshot. Kisi bhi tile par click karke direct live preview dekhein (Bina Password).</p>
         </div>
 
         <!-- MAC-STYLE WINDOW MOCKUP -->
-        <div class="portal-window reveal" onclick="openAppZoom()">
+        <div class="portal-window reveal">
             <div class="window-bar">
                 <div class="window-dots">
                     <span class="window-dot" style="background:#ef4444;"></span>
@@ -784,77 +888,77 @@
                 <div class="window-title">
                     <span>⚡ simplicity-erp.app • Main Factory Portal</span>
                 </div>
-                <div style="font-size: 11px; color:#64748b; font-weight: 600;">🔍 Click To Enlarge Ultra-HD</div>
+                <div style="font-size: 11px; color:#64748b; font-weight: 600;">✨ Interactive Live Tiles</div>
             </div>
 
             <div class="portal-body" id="erpScreenContent">
                 <!-- 8 DASHBOARD TILES -->
                 <div class="erp-tiles-grid">
                     <!-- 1. Kariger Master -->
-                    <div class="erp-tile" style="border-top-color:#0284c7;">
+                    <div class="erp-tile" style="border-top-color:#0284c7;" onclick="openDirectModule('kariger')">
                         <span class="icon-box">🧵</span>
                         <span class="tile-title">1. Kariger Master</span>
-                        <span class="tile-badge">Total: 2</span>
+                        <span class="tile-badge">Total: 2 Active</span>
                     </div>
 
                     <!-- 2. Info Ledger -->
-                    <div class="erp-tile" style="border-top-color:#6366f1;">
+                    <div class="erp-tile" style="border-top-color:#6366f1;" onclick="openDirectModule('info')">
                         <span class="icon-box">📋</span>
                         <span class="tile-title">2. Info Ledger</span>
-                        <span class="tile-badge" style="background:#eef2ff; color:#4f46e5; border-color:#c7d2fe;">Total: 0</span>
+                        <span class="tile-badge" style="background:#eef2ff; color:#4f46e5; border-color:#c7d2fe;">Design Master</span>
                     </div>
 
                     <!-- 3. Bana Stock -->
-                    <div class="erp-tile" style="border-top-color:#10b981;">
+                    <div class="erp-tile" style="border-top-color:#10b981;" onclick="openDirectModule('bana')">
                         <span class="icon-box">🧶</span>
                         <span class="tile-title">3. Bana Stock</span>
                         <span class="tile-badge">Bacha: 89.00 Kg</span>
                     </div>
 
                     <!-- 4. Zari Stock -->
-                    <div class="erp-tile" style="border-top-color:#f59e0b;">
+                    <div class="erp-tile" style="border-top-color:#f59e0b;" onclick="openDirectModule('zari')">
                         <span class="icon-box">✨</span>
                         <span class="tile-title">4. Zari Stock</span>
                         <span class="tile-badge" style="background:#fef3c7; color:#d97706; border-color:#fde68a;">Bacha: 99.00 Kg</span>
                     </div>
 
                     <!-- 5. Saree Stock -->
-                    <div class="erp-tile" style="border-top-color:#3b82f6;">
+                    <div class="erp-tile" style="border-top-color:#3b82f6;" onclick="openDirectModule('saree')">
                         <span class="icon-box">🥻</span>
                         <span class="tile-title">5. Saree Stock</span>
                         <span class="tile-badge" style="background:#eff6ff; color:#2563eb; border-color:#bfdbfe;">Stock: 10 Pcs</span>
                     </div>
 
                     <!-- 6. Payments -->
-                    <div class="erp-tile" style="border-top-color:#8b5cf6;">
+                    <div class="erp-tile" style="border-top-color:#8b5cf6;" onclick="openDirectModule('payment')">
                         <span class="icon-box">💳</span>
                         <span class="tile-title">6. Payments</span>
                         <span class="tile-badge" style="background:#fdf2f8; color:#db2777; border-color:#fbcfe8;">Diya: ₹ 0 • Baki: ₹ 0</span>
                     </div>
 
                     <!-- 7. Sancha (Tani) -->
-                    <div class="erp-tile" style="border-top-color:#06b6d4;">
+                    <div class="erp-tile" style="border-top-color:#06b6d4;" onclick="openDirectModule('sancha')">
                         <span class="icon-box">⚙️</span>
                         <span class="tile-title">7. Sancha (Tani)</span>
                         <span class="tile-badge" style="background:#ecfeff; color:#0891b2; border-color:#a5f3fc;">🏺 Tani: 82.0 Kg • ⚙️ Chukka: 93.0 Kg</span>
                     </div>
 
                     <!-- 8. Job Work -->
-                    <div class="erp-tile" style="border-top-color:#f97316;">
-                        <span class="icon-box">🧵</span>
+                    <div class="erp-tile" style="border-top-color:#f97316;" onclick="openDirectModule('cutting')">
+                        <span class="icon-box">✂️</span>
                         <span class="tile-title">8. Job Work</span>
-                        <span class="tile-badge">Workers: 0</span>
+                        <span class="tile-badge">Booti & Calender</span>
                     </div>
                 </div>
 
                 <!-- ROZANA DAY-BOOK INTERACTION PREVIEW -->
-                <div class="daybook-preview">
+                <div class="daybook-preview" onclick="openDirectModule('daybook')" style="cursor: pointer;">
                     <div class="daybook-header">
                         <div>
                             <h4 style="font-size:16px; font-weight:800; color:#1e3a8a; display:flex; align-items:center; gap:6px;">
                                 📖 Rozana Day-Book
                             </h4>
-                            <small style="color:#64748b; font-size:11px;">Factory In/Out Register</small>
+                            <small style="color:#64748b; font-size:11px;">Factory In/Out Register (Click to open details)</small>
                         </div>
                         <div style="display:flex; gap:8px;">
                             <input type="text" value="dd-mm-yyyy 📅" readonly style="border:1px solid #cbd5e1; border-radius:6px; padding:4px 10px; font-size:11px; background:#fff; color:#64748b; width:120px;">
@@ -953,12 +1057,12 @@
         </div>
     </section>
 
-    <!-- 5. COMPLETE WORKFLOW SHOWCASE (WITH MATCHING ACTION BUTTONS ON EACH MODULE) -->
+    <!-- 5. WORKFLOW & DIRECT INTERACTIVE BUTTONS (TARIKA 2) -->
     <section class="section-container">
         <div class="section-title-box reveal">
             <span>Complete Karkhana Workflow</span>
             <h3>Loom Se Lekar Dukan Tak Har Kadam Digital</h3>
-            <p>Simplicity ERP me aapke karkhane ka har ek hisab mathematical accuracy ke sath chalta hai. Kisi bhi module ka direct button samne dekhein.</p>
+            <p>Bina kisi password ke direct kisi bhi feature par click karein aur uska Ultra-HD interactive layout dekhein.</p>
         </div>
 
         <div class="workflow-grid reveal">
@@ -967,10 +1071,10 @@
                 <div>
                     <div class="card-top-row">
                         <span class="step-num">STEP 01</span>
-                        <!-- 🎯 Kariger Master Button -->
-                        <a href="index.html" class="btn-card-app">
-                            <span>🧵</span> Open Kariger Master
-                        </a>
+                        <!-- 🎯 Interactive Button (No Password) -->
+                        <button type="button" class="btn-card-app" onclick="openDirectModule('kariger')">
+                            <span>🧵</span> View Kariger Master
+                        </button>
                     </div>
                     <h4>🧵 Kariger Master & Tani Khata</h4>
                     <p>Har kariger ki Tani 1, 2, 3 sheets ka exact hisab. Mazdoori (Bani rate), Saree aur Lott ka automatic calculation.</p>
@@ -987,10 +1091,9 @@
                 <div>
                     <div class="card-top-row">
                         <span class="step-num">STEP 02</span>
-                        <!-- 🎯 Bana & Zari Button -->
-                        <a href="index.html" class="btn-card-app">
-                            <span>🧶</span> Open Bana / Zari Stock
-                        </a>
+                        <button type="button" class="btn-card-app" onclick="openDirectModule('bana')">
+                            <span>🧶</span> View Bana / Zari
+                        </button>
                     </div>
                     <h4>🧶 Tana, Bana & Zari Issue</h4>
                     <p>Kariger ko diye gaye daage ka pakka hisab. Less TP aur Topi ka wazan minus karke exact net issue nikalein.</p>
@@ -1007,10 +1110,9 @@
                 <div>
                     <div class="card-top-row">
                         <span class="step-num">STEP 03</span>
-                        <!-- 🎯 Sancha Button -->
-                        <a href="index.html" class="btn-card-app">
-                            <span>⚙️</span> Open Sancha (Tani)
-                        </a>
+                        <button type="button" class="btn-card-app" onclick="openDirectModule('sancha')">
+                            <span>⚙️</span> View Sancha Stock
+                        </button>
                     </div>
                     <h4>⚙️ Sancha (Tani & Chukka) System</h4>
                     <p>Tani beam aur Chukka ka karkhana-wise alag-alag Kg hisab. Kis kariger ke paas kaun sa sancha hai, live tracking.</p>
@@ -1027,10 +1129,9 @@
                 <div>
                     <div class="card-top-row">
                         <span class="step-num">STEP 04</span>
-                        <!-- 🎯 Saree Stock Button -->
-                        <a href="index.html" class="btn-card-app">
-                            <span>🥻</span> Open Saree Stock
-                        </a>
+                        <button type="button" class="btn-card-app" onclick="openDirectModule('saree')">
+                            <span>🥻</span> View Saree Stock
+                        </button>
                     </div>
                     <h4>🥻 Fresh Saree Inward & Godam</h4>
                     <p>Loom se utari gayi kachhi saree seedha Fresh Register me aati hai. Main Godam, Bahadurganj aur Mubarakpur ka alag hisab.</p>
@@ -1047,10 +1148,9 @@
                 <div>
                     <div class="card-top-row">
                         <span class="step-num">STEP 05</span>
-                        <!-- 🎯 Cutting Button -->
-                        <a href="index.html" class="btn-card-app">
-                            <span>✂️</span> Open Booti Cutting
-                        </a>
+                        <button type="button" class="btn-card-app" onclick="openDirectModule('cutting')">
+                            <span>✂️</span> View Booti Cutting
+                        </button>
                     </div>
                     <h4>✂️ Booti Cutting (Job Work)</h4>
                     <p>Fresh stock se saree cutting ke liye bhejna. Single-line batch entry me sabhi kariger ka maal ek sath chadhayein.</p>
@@ -1067,10 +1167,9 @@
                 <div>
                     <div class="card-top-row">
                         <span class="step-num">STEP 06</span>
-                        <!-- 🎯 Calender Button -->
-                        <a href="index.html" class="btn-card-app">
-                            <span>🎛️</span> Open Calender Finish
-                        </a>
+                        <button type="button" class="btn-card-app" onclick="openDirectModule('calender')">
+                            <span>🎛️</span> View Calender
+                        </button>
                     </div>
                     <h4>🎛️ Calender Machine Finish (Ironing)</h4>
                     <p>Badi-badi steam roller press machine me saree bhejna taaki unki uncreased fall aur silky chamak tayyar ho sake.</p>
@@ -1087,10 +1186,9 @@
                 <div>
                     <div class="card-top-row">
                         <span class="step-num">STEP 07</span>
-                        <!-- 🎯 Dukan Bheja Button -->
-                        <a href="index.html" class="btn-card-app">
-                            <span>🏪</span> Open Dukan Challan
-                        </a>
+                        <button type="button" class="btn-card-app" onclick="openDirectModule('dukan')">
+                            <span>🏪</span> View Dukan Challan
+                        </button>
                     </div>
                     <h4>🏪 Dukan Bheja (Final Out Register)</h4>
                     <p>Karkhane se tayyar saree dukan ya wholesale gaddi par bhejna. Karkhane me kitni bachi aur dukan kitni gayi, live status.</p>
@@ -1107,10 +1205,9 @@
                 <div>
                     <div class="card-top-row">
                         <span class="step-num">STEP 08</span>
-                        <!-- 🎯 Payment Button -->
-                        <a href="index.html" class="btn-card-app">
-                            <span>💳</span> Open Payments Khata
-                        </a>
+                        <button type="button" class="btn-card-app" onclick="openDirectModule('payment')">
+                            <span>💳</span> View Payments
+                        </button>
                     </div>
                     <h4>💳 Payment & Bakaya System</h4>
                     <p>Kariger ko diya gaya advance ya payment turant uske khate me darj karein. Kul Dena Baki aur Diya gaya payment saaf dikhega.</p>
@@ -1127,10 +1224,9 @@
                 <div>
                     <div class="card-top-row">
                         <span class="step-num">STEP 09</span>
-                        <!-- 🎯 Rozana Day-Book & Closing Button -->
-                        <a href="index.html" class="btn-card-app">
-                            <span>📅</span> Open Rozana Day-Book
-                        </a>
+                        <button type="button" class="btn-card-app" onclick="openDirectModule('daybook')">
+                            <span>📅</span> View Rozana Day-Book
+                        </button>
                     </div>
                     <h4>📅 1 April Naya Saal (Year Closing)</h4>
                     <p>2000 Kariger ka pichla bacha hisab naye saal me minton me transfer, naye sire se diary likhne ki koi zaroorat nahi.</p>
@@ -1192,16 +1288,42 @@
         <p>© 2026 <strong>Simplicity ERP</strong> • Software: <span style="color:#ffffff;">Farhan Jawed</span> • Manager: <span style="color:#ffffff;">Mohammad Rehan</span> • All Rights Reserved.</p>
     </footer>
 
-    <!-- INTERACTIVE LIGHTBOX MODAL (ULTRA-HD EXPANSION) -->
-    <div id="imageLightbox" class="lightbox-overlay" onclick="closeLightbox(event)">
-        <div class="lightbox-wrap">
-            <button type="button" class="lightbox-close" onclick="closeLightbox(event)">&times;</button>
-            <div id="lightboxInnerContainer" style="width:100%; max-height:80vh; overflow-y:auto; border-radius:16px;"></div>
-            <p id="lightboxCaption" class="lightbox-caption">✨ Simplicity ERP - Main Factory Live Portal</p>
+    <!-- ====================================================================
+         TARIKA 2: ULTRA-HD INTERACTIVE PREVIEW MODAL (NO PASSWORD NEEDED)
+         ==================================================================== -->
+    <div id="moduleModal" class="lightbox-overlay" onclick="closeModuleModal(event)">
+        <div class="modal-container">
+            <!-- Modal Header -->
+            <div class="modal-header">
+                <h3 id="mTitle">
+                    <span>🧵</span> Kariger Master Live Register
+                </h3>
+                <button type="button" class="modal-close-btn" onclick="forceCloseModuleModal()">&times;</button>
+            </div>
+
+            <!-- Modal Body (Dynamic Layouts injected via JS) -->
+            <div class="modal-body" id="mBody">
+                <!-- Content will load dynamically -->
+            </div>
+
+            <!-- Modal Footer with High Converting CTAs -->
+            <div class="modal-footer">
+                <span style="font-size:12px; color:#94a3b8;">
+                    🔒 Asli portal chalane ke liye manager se login PIN prapt karein.
+                </span>
+                <div style="display:flex; gap:8px;">
+                    <a href="https://wa.me/917985402962?text=Hello%20Rehan%20bhai,%20mujhe%20is%20module%20ka%20live%20demo%20dekhna%20hai." target="_blank" class="btn-apple-green" style="padding:7px 16px; font-size:12px;">
+                        📲 Get Live Demo
+                    </a>
+                    <a href="index.html" class="btn-apple-blue" style="padding:7px 16px; font-size:12px;">
+                        🔑 Login Portal
+                    </a>
+                </div>
+            </div>
         </div>
     </div>
 
-    <!-- JAVASCRIPT: SCROLL REVEAL & LIGHTBOX -->
+    <!-- JAVASCRIPT: SCROLL REVEAL & DIRECT MODAL LOGIC -->
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const reveals = document.querySelectorAll('.reveal');
@@ -1217,21 +1339,224 @@
             reveals.forEach((el) => observer.observe(el));
         });
 
-        // Open Ultra-HD Modal for Dashboard Preview
-        function openAppZoom() {
-            const modal = document.getElementById('imageLightbox');
-            const innerBox = document.getElementById('lightboxInnerContainer');
-            const sourceCard = document.getElementById('erpScreenContent');
+        // ==========================================================
+        // 🚀 TARIKA 2: DIRECT ULTRA-HD INTERACTIVE PREVIEW DATA
+        // ==========================================================
+        const moduleDatabase = {
+            kariger: {
+                title: "🧵 1. Kariger Master & Tani Khata Sheet",
+                stats: [
+                    { label: "Active Karigers", val: "2 Loom Masters" },
+                    { label: "Running Tani", val: "Tani 1, 2, 3" },
+                    { label: "Total Mazdoori Baki", val: "₹ 18,450.00" }
+                ],
+                tableHead: ["Kariger Ka Naam", "Saree Design", "Bani Rate (₹)", "Total Saree", "- Lott", "Net Mazdoori (₹)", "Closing Baki"],
+                rows: [
+                    ["JAWED (Tani 1)", "Katan Buti Jaal", "₹ 450 / Pc", "14 Pcs", "1 Pc", "₹ 5,850.00", "₹ 2,400.00"],
+                    ["SALIM (Tani 2)", "Zari Jangla Meenakari", "₹ 620 / Pc", "10 Pcs", "0 Pc", "₹ 6,200.00", "₹ 1,150.00"],
+                    ["RAFIQ (Tani 3)", "Organza Tissue Border", "₹ 500 / Pc", "12 Pcs", "2 Pcs", "₹ 5,000.00", "₹ 0.00"]
+                ],
+                notes: "💡 Kariger ka sara hisab mathematical accuracy se chalta hai: Net Mazdoori = (Total Saree - Lott) × Bani Rate. Pichla balance naye panno me auto-carry hota hai."
+            },
+            bana: {
+                title: "🧶 3. Bana Stock Register (Kg / Cone Tracking)",
+                stats: [
+                    { label: "Total Bacha Bana", val: "89.00 Kg" },
+                    { label: "Karkhana Issue", val: "142.50 Kg" },
+                    { label: "Net Less TP Cut", val: "-3.20 Kg" }
+                ],
+                tableHead: ["Tareeq", "Bana Quality", "Kariger / Loom", "Gross Diya", "Less TP", "Net Diya (Kg)", "Godam Bacha"],
+                rows: [
+                    ["Today", "Katan Silk (Fine)", "JAWED (Tani 1)", "10.50 Kg", "0.50 Kg", "10.00 Kg", "89.00 Kg"],
+                    ["Yesterday", "Georgette Weft", "SALIM (Tani 2)", "15.00 Kg", "0.75 Kg", "14.25 Kg", "99.00 Kg"],
+                    ["2 Days Ago", "Organza Poly Weft", "Main Godam Inward", "50.00 Kg", "0.00 Kg", "+50.00 Kg", "113.25 Kg"]
+                ],
+                notes: "💡 Less TP (Tare Weight / Cone Weight) ka automatic wazan katne ke baad hi Kariger ke khate me daaga darj hota hai, jisse gram ka bhi ghapla nahi hota."
+            },
+            zari: {
+                title: "✨ 4. Zari Stock Register (0.00g Precision)",
+                stats: [
+                    { label: "Godam Bacha Zari", val: "99.00 Kg" },
+                    { label: "Issue Today", val: "1.00 Kg" },
+                    { label: "Wastage Cut (Topi)", val: "0.00 g Cut" }
+                ],
+                tableHead: ["Tareeq", "Zari Marka / No.", "Loom / Kariger", "Gross Issue", "Topi Cut", "Net Zari Diya", "Current Stock"],
+                rows: [
+                    ["Today", "Real Metallic Gold 30#", "JAWED (Tani 1)", "1.10 Kg", "0.10 Kg", "1.00 Kg", "99.00 Kg"],
+                    ["Yesterday", "Silver Antique 28#", "SALIM (Tani 2)", "2.20 Kg", "0.20 Kg", "2.00 Kg", "100.00 Kg"],
+                    ["3 Days Ago", "Rose Gold Fine Weave", "Godam Purchase", "100.00 Kg", "0.00 Kg", "+100.00 Kg", "102.00 Kg"]
+                ],
+                notes: "💡 Zari me Topi (Plastic Roll) ka wazan software khud nikaalta hai. Har gram metallic zari ka audit real-time hota hai."
+            },
+            saree: {
+                title: "🥻 5. Saree Stock Master (4 Godam Registers)",
+                stats: [
+                    { label: "Total Fresh Stock", val: "10 Pcs" },
+                    { label: "Under Cutting", val: "18 Pcs" },
+                    { label: "Finished Showroom", val: "42 Pcs" }
+                ],
+                tableHead: ["Saree Design Code", "Color / Border", "Loom Source", "Stage / Godam", "Fresh In", "Challan Out", "Balance"],
+                rows: [
+                    ["DSGN-8840 (Katan)", "Crimson Bridal Red", "JAWED (Tani 1)", "Main Fresh Godam", "6 Pcs", "0 Pcs", "6 Pcs"],
+                    ["DSGN-9120 (Jangla)", "Emerald Meenakari", "SALIM (Tani 2)", "Under Booti Cutting", "4 Pcs", "4 Pcs", "0 Pcs"],
+                    ["DSGN-7730 (Tissue)", "Rani Pink Silver", "Main Godam In", "Calender Finished", "10 Pcs", "10 Pcs", "0 Pcs"]
+                ],
+                notes: "💡 4 Registers me saree track hoti hai: Fresh Saree ➔ Booti Cutting ➔ Calender Finish ➔ Dukan Final Out."
+            },
+            cutting: {
+                title: "✂️ 8. Booti Cutting (Job Work Register)",
+                stats: [
+                    { label: "Active Cutters", val: "4 Karigers" },
+                    { label: "Saree Given", val: "24 Pcs" },
+                    { label: "Pending Return", val: "8 Pcs" }
+                ],
+                tableHead: ["Cutter Ka Naam", "Design / Type", "Saree Diya", "Wapas Aaya", "Damage / Kaat", "Rate / Pc", "Baki Mazdoori"],
+                rows: [
+                    ["Rashid Cutting Master", "Katan Buti Jaal", "12 Pcs", "10 Pcs", "0 Damage", "₹ 35 / Pc", "₹ 350.00"],
+                    ["Imran Job Work", "Heavy Zari Jangla", "12 Pcs", "6 Pcs", "1 Cut Fine (-₹100)", "₹ 45 / Pc", "₹ 170.00"]
+                ],
+                notes: "💡 Har saree ke pichhe thread cutting ka record rehta hai. Agar kisi cutter ne saree kaat di toh uska fine/kaat yahi darj ho jati hai."
+            },
+            calender: {
+                title: "🎛️ Calender Machine Finish (Ironing & Gloss)",
+                stats: [
+                    { label: "Under Process", val: "16 Pcs" },
+                    { label: "Ready Finished", val: "45 Pcs" },
+                    { label: "Calender Bill", val: "₹ 1,350.00" }
+                ],
+                tableHead: ["Calender Operator", "Challan No.", "Total Saree", "Steam Finish Ready", "Rate / Saree", "Total Bill", "Status"],
+                rows: [
+                    ["Noor Calender Mill", "CH-4091", "25 Pcs", "25 Pcs", "₹ 30 / Pc", "₹ 750.00", "✅ Ready Showroom"],
+                    ["Al-Madina Calender", "CH-4092", "20 Pcs", "16 Pcs", "₹ 30 / Pc", "₹ 600.00", "⏳ Roller Running"]
+                ],
+                notes: "💡 Steam press aur rolling machine me bheji gayi saree ka date-wise challan banta hai taaki koi saree miss na ho."
+            },
+            sancha: {
+                title: "⚙️ 7. Sancha Master (Tani & Chukka Beam Register)",
+                stats: [
+                    { label: "Tani Beam Weight", val: "82.0 Kg" },
+                    { label: "Chukka Weight", val: "93.0 Kg" },
+                    { label: "Total Running Beams", val: "8 Looms" }
+                ],
+                tableHead: ["Loom / Kariger", "Sancha Type", "Beam Gross (Kg)", "Chukka Gross (Kg)", "Issue Tareeq", "Status"],
+                rows: [
+                    ["JAWED (Loom 1)", "Pure Katan Warp", "41.0 Kg", "46.5 Kg", "01-April", "🟢 Active Weaving"],
+                    ["SALIM (Loom 2)", "Organza Warp 60#", "41.0 Kg", "46.5 Kg", "05-April", "🟢 Active Weaving"]
+                ],
+                notes: "💡 Tani aur Chukka ke alag-alag tabs hain. Beam lagte hi software me wazan darj ho jata hai aur utarne par balance update."
+            },
+            dukan: {
+                title: "🏪 Dukan Bheja (Showroom Final Out Register)",
+                stats: [
+                    { label: "Total Dispatched", val: "152 Pcs" },
+                    { label: "Showroom Received", val: "152 Pcs" },
+                    { label: "In Transit", val: "0 Pcs" }
+                ],
+                tableHead: ["Dispatch Tareeq", "Parcel / Challan", "Destination Showroom", "Total Saree", "Driver / Handover", "Status"],
+                rows: [
+                    ["Today", "BOX-101", "Gaddi Chowk Showroom", "25 Pcs", "Guddu Driver", "✅ Received"],
+                    ["Yesterday", "BOX-102", "Bahadurganj Depot", "30 Pcs", "Self Car", "✅ Received"],
+                    ["3 Days Ago", "PARCEL-88", "Wholesale Mumbai", "50 Pcs", "V-Trans Transport", "✅ In Hand"]
+                ],
+                notes: "💡 Karkhane se tayyar maal dukan bhejte waqt live out-entry hoti hai, jisse maalik ko pata rehta hai showroom me kitni saree pahunchi."
+            },
+            payment: {
+                title: "💳 6. Payments & Kariger Bakaya Register",
+                stats: [
+                    { label: "Kul Diya Payment", val: "₹ 45,000.00" },
+                    { label: "Kul Dena Baki", val: "₹ 18,450.00" },
+                    { label: "Payment Modes", val: "Cash & UPI" }
+                ],
+                tableHead: ["Tareeq", "Kariger Ka Naam", "Payment Mode", "Diya Gaya (₹)", "Pichla Baki", "Naya Bacha Baki (₹)", "Receipt"],
+                rows: [
+                    ["Today", "JAWED (Tani 1)", "UPI (GPay)", "₹ 3,000.00", "₹ 5,400.00", "₹ 2,400.00", "📲 WhatsApp Parchi"],
+                    ["Yesterday", "SALIM (Tani 2)", "Cash Handover", "₹ 2,000.00", "₹ 3,150.00", "₹ 1,150.00", "📲 WhatsApp Parchi"],
+                    ["3 Days Ago", "Rashid Cutter", "Cash Handover", "₹ 1,000.00", "₹ 1,350.00", "₹ 350.00", "📲 WhatsApp Parchi"]
+                ],
+                notes: "💡 Payment darj hote hi '1-Click WhatsApp Parchi' se Kariger ke mobile par turant date-wise receipt chali jaati hai."
+            },
+            daybook: {
+                title: "📖 Rozana Day-Book (Live Factory In/Out Register)",
+                stats: [
+                    { label: "Bana Net Out", val: "-1.00 Kg" },
+                    { label: "Zari Inward", val: "+100.00 Kg" },
+                    { label: "Sancha Out", val: "-3.00 Kg" }
+                ],
+                tableHead: ["Quality / Item", "Kariger / Godam Vivran", "📥 Aaya (In)", "📤 Gaya (Out)", "Live Timing"],
+                rows: [
+                    ["Katan Silk Bana", "JAWED (Tani 1)", "-", "-1.00 Kg", "10:30 AM"],
+                    ["Real Metallic Zari", "Main Godam Inward", "+100.00 Kg", "-", "11:15 AM"],
+                    ["Chukka Sancha", "SALIM (Tani 2)", "-", "-3.00 Kg", "02:40 PM"]
+                ],
+                notes: "💡 Pure karkhane ka live record. Din bhar me kaun sa daaga aaya, kitni saree bani aur kitna payment gaya sab ek hi page par."
+            },
+            info: {
+                title: "📋 2. Info Ledger (Saree Design & Construction Master)",
+                stats: [
+                    { label: "Total Designs", val: "38 Registered" },
+                    { label: "Avg Bani Rate", val: "₹ 520 / Pc" },
+                    { label: "Zari Consumption", val: "240g / Saree" }
+                ],
+                tableHead: ["Design Code", "Design Naam", "Tana Type", "Bana Quality", "Standard Zari", "Bani Rate (₹)"],
+                rows: [
+                    ["DSGN-8840", "Katan Buti Jaal", "Katan Silk 20/22", "Katan Silk Fine", "220g / Pc", "₹ 450.00"],
+                    ["DSGN-9120", "Zari Jangla Meenakari", "Organza Silk", "Georgette Silk", "310g / Pc", "₹ 620.00"]
+                ],
+                notes: "💡 Design master me ek baar saree ka standard wazan aur rate set kar dene par kariger ke khate me bar-bar likhna nahi padta."
+            }
+        };
 
-            if (!modal || !innerBox || !sourceCard) return;
+        // Open Module Function (No Password, Ultra-HD Direct Pop)
+        function openDirectModule(key) {
+            const data = moduleDatabase[key] || moduleDatabase.kariger;
+            const modal = document.getElementById('moduleModal');
+            const titleBox = document.getElementById('mTitle');
+            const bodyBox = document.getElementById('mBody');
 
-            // Clone the clean HD dashboard
-            innerBox.innerHTML = '';
-            const clone = sourceCard.cloneNode(true);
-            clone.style.boxShadow = '0 25px 60px rgba(0,0,0,0.8)';
-            clone.style.border = '2px solid rgba(255,255,255,0.2)';
-            clone.style.borderRadius = '16px';
-            innerBox.appendChild(clone);
+            titleBox.innerHTML = `<span>⚡</span> ${data.title}`;
+
+            // Build Stats Row
+            let statsHtml = `<div class="preview-stat-grid">`;
+            data.stats.forEach(st => {
+                statsHtml += `
+                    <div class="stat-badge-box">
+                        <span>${st.label}</span>
+                        <strong>${st.val}</strong>
+                    </div>
+                `;
+            });
+            statsHtml += `</div>`;
+
+            // Build Table
+            let tableHtml = `
+                <div class="modal-table-wrap">
+                    <table class="modal-table">
+                        <thead>
+                            <tr>
+                                ${data.tableHead.map(th => `<th>${th}</th>`).join('')}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${data.rows.map(row => `
+                                <tr>
+                                    ${row.map((cell, idx) => `
+                                        <td style="${idx === 0 ? 'font-weight:700; color:#ffffff;' : ''}">${cell}</td>
+                                    `).join('')}
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+
+            // Build Notes
+            let noteHtml = `
+                <div style="background:#131c31; border:1px solid #1e293b; border-left:4px solid var(--accent-gold); padding:12px 16px; border-radius:8px; font-size:12.5px; color:#94a3b8; line-height:1.5;">
+                    ${data.notes}
+                </div>
+            `;
+
+            bodyBox.innerHTML = statsHtml + tableHtml + noteHtml;
 
             modal.style.display = 'flex';
             void modal.offsetWidth;
@@ -1239,26 +1564,26 @@
             document.body.style.overflow = 'hidden';
         }
 
-        function closeLightbox(e) {
-            if (e.target.id === 'imageLightbox' || e.target.classList.contains('lightbox-close')) {
-                const modal = document.getElementById('imageLightbox');
-                modal.classList.remove('active');
-                setTimeout(() => {
-                    modal.style.display = 'none';
-                    document.body.style.overflow = '';
-                }, 300);
+        function forceCloseModuleModal() {
+            const modal = document.getElementById('moduleModal');
+            modal.classList.remove('active');
+            setTimeout(() => {
+                modal.style.display = 'none';
+                document.body.style.overflow = '';
+            }, 300);
+        }
+
+        function closeModuleModal(e) {
+            if (e.target.id === 'moduleModal') {
+                forceCloseModuleModal();
             }
         }
 
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
-                const modal = document.getElementById('imageLightbox');
+                const modal = document.getElementById('moduleModal');
                 if (modal && modal.classList.contains('active')) {
-                    modal.classList.remove('active');
-                    setTimeout(() => {
-                        modal.style.display = 'none';
-                        document.body.style.overflow = '';
-                    }, 300);
+                    forceCloseModuleModal();
                 }
             }
         });
