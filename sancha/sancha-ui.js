@@ -1,7 +1,7 @@
 /* ============================================================================
    SIMPLICITY ERP - HIGH-PERFORMANCE SANCHA (TANI & CHUKKA) STOCK & PASSBOOK
    File: sancha/sancha-ui.js • Developed by Farhan Jawed
-   Architecture: Zero-Reflow Virtualized DOM | Atomic Ledger Synchronizer
+   Architecture: 20-Item Virtualized Pagination | Opening Stock Distinction
    Scale: 1,000,000 - 2,000,000 Active Users | Multi-Godam Lock Protection
 ============================================================================ */
 
@@ -9,14 +9,18 @@
     'use strict';
 
     /* ========================================================================
-       1. GLOBAL STATE & MEMOIZED FILTER CONTEXT
+       1. GLOBAL STATE & PAGINATION CONTEXT
        ------------------------------------------------------------------------
     ======================================================================== */
     window.currentSanchaCategory = 'tani'; // 'tani' or 'chukka'
     window.currentSanchaKarkhanaFilter = 'all';
     window.currentPassbookSanchaItem = '';
 
-    // Cached Passbook Search Debounce Timer
+    // 📱 PASSBOOK PAGINATION STATE (Prevents Mobile Freezing)
+    let sanchaPassbookCurrentPage = 1;
+    const SANCHA_PAGE_SIZE = 20;
+    let filteredSanchaPassbookCache = [];
+
     let passbookSearchDebounceTimer = null;
 
     /* ========================================================================
@@ -42,9 +46,6 @@
         }
     };
 
-    /**
-     * Cache Invalidation Bridge: Synchronizes with sancha-calc.js engine
-     */
     const triggerSanchaCacheInvalidation = () => {
         if (typeof window.invalidateSanchaCalcCache === 'function') {
             window.invalidateSanchaCalcCache();
@@ -57,10 +58,6 @@
        3. NAVIGATION & CATEGORY / BRANCH CONTROLLERS
        ------------------------------------------------------------------------
     ======================================================================== */
-
-    /**
-     * Primary entry point: Mounts the Sancha inventory workspace
-     */
     const openSanchaModule = () => {
         setDisplay('dashboard-view', 'none');
         setDisplay('sancha-section', 'block');
@@ -70,10 +67,6 @@
         renderSanchaTable();
     };
 
-    /**
-     * Switches category between Tani (warp beam) and Chukka (heading warp)
-     * @param {'tani'|'chukka'} cat 
-     */
     const switchSanchaCategory = (cat) => {
         window.currentSanchaCategory = String(cat || 'tani').toLowerCase() === 'chukka' ? 'chukka' : 'tani';
 
@@ -91,9 +84,6 @@
         renderSanchaTable();
     };
 
-    /**
-     * Renders branch filter tabs dynamically
-     */
     const renderSanchaKarkhanaTabs = () => {
         const bar = document.getElementById('sancha-karkhana-tabs-bar');
         if (!bar) return;
@@ -121,10 +111,6 @@
         bar.innerHTML = html;
     };
 
-    /**
-     * Switches active godown filter
-     * @param {string} kId - Branch Godown ID
-     */
     const switchSanchaKarkhanaTab = (kId) => {
         window.currentSanchaKarkhanaFilter = kId || 'all';
         renderSanchaKarkhanaTabs();
@@ -136,7 +122,6 @@
        4. INWARD INVENTORY PURCHASE ENGINE (Khareed)
        ------------------------------------------------------------------------
     ======================================================================== */
-
     const toggleAddSanchaForm = () => {
         const f = document.getElementById('add-sancha-item-form');
         if (!f) return;
@@ -194,9 +179,6 @@
         });
     };
 
-    /**
-     * Saves direct inward stock purchase with atomic ledger posting
-     */
     const saveNewSanchaStock = () => {
         const isNew = document.getElementById('sancha-type-new') 
             ? document.getElementById('sancha-type-new').checked 
@@ -223,7 +205,6 @@
         const targetKid = (window.currentSanchaKarkhanaFilter !== 'all') ? window.currentSanchaKarkhanaFilter : 'k_main';
         const list = window.safeArray ? window.safeArray(window.getStore('sancha_items')) : [];
 
-        // 1. Update/Append Inward Stock
         const item = list.find((x) => {
             const cat = x.category || 'tani';
             const matchK = (!x.karkhanaId && targetKid === 'k_main') || String(x.karkhanaId) === String(targetKid);
@@ -254,7 +235,7 @@
             window.setStore('sancha_items', list);
         }
 
-        // 2. Post to History Ledger
+        // Post to History Ledger (Clearly marked as Nayi Khareed)
         const hist = window.safeArray ? window.safeArray(window.getStore('sancha_history')) : [];
         hist.push({
             id: `shist_${Date.now()}`,
@@ -266,6 +247,7 @@
             aaya: qty,
             gaya: 0,
             karkhanaId: targetKid,
+            isOpening: false,
             timestamp: Date.now()
         });
 
@@ -273,7 +255,6 @@
             window.setStore('sancha_history', hist);
         }
 
-        // Wipe Form Inputs
         const newNameEl = document.getElementById('sancha-new-name');
         if (newNameEl) newNameEl.value = '';
         if (qtyInp) qtyInp.value = '';
@@ -293,7 +274,7 @@
     };
 
     /* ========================================================================
-       5. HIGH-SPEED MAIN TABLE RENDERER (SINGLE-PASS STRING BUILDER)
+       5. MAIN TABLE RENDERER
        ------------------------------------------------------------------------
     ======================================================================== */
     const renderSanchaTable = () => {
@@ -360,7 +341,6 @@
                 </tr>`;
             });
 
-            // Single DOM reflow assignment
             tbody.innerHTML = html;
         }
 
@@ -482,11 +462,13 @@
     };
 
     /* ========================================================================
-       7. SANCHA PASSBOOK ENGINE (VIRTUALIZED TABLE & KARIGER LOCK)
+       7. 📱 20-ITEM PAGINATED SANCHA PASSBOOK ENGINE (With Opening Distinction)
        ------------------------------------------------------------------------
     ======================================================================== */
     const openSanchaPassbook = (itemName) => {
         window.currentPassbookSanchaItem = decodeURIComponent(itemName);
+        sanchaPassbookCurrentPage = 1;
+
         const modal = document.getElementById('item-modal');
         if (!modal) return;
 
@@ -499,13 +481,13 @@
             modalBody.innerHTML = `
                 <div style="background:#f8fafc; border:1px solid #cbd5e1; padding:12px; border-radius:10px; margin-bottom:12px; display:flex; flex-wrap:wrap; gap:10px; align-items:center; justify-content:space-between;">
                     <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-                        <div><label style="font-size:12px; font-weight:700;">From Date:</label><br><input type="date" id="sancha-pass-from-date" onchange="renderSanchaPassbookRows()"></div>
-                        <div><label style="font-size:12px; font-weight:700;">To Date:</label><br><input type="date" id="sancha-pass-to-date" onchange="renderSanchaPassbookRows()"></div>
+                        <div><label style="font-size:12px; font-weight:700;">From Date:</label><br><input type="date" id="sancha-pass-from-date" onchange="applySanchaPassbookFilters()"></div>
+                        <div><label style="font-size:12px; font-weight:700;">To Date:</label><br><input type="date" id="sancha-pass-to-date" onchange="applySanchaPassbookFilters()"></div>
                         <div style="align-self:flex-end;"><button type="button" class="quick-btn btn-out" onclick="resetSanchaPassbookFilters()">Reset</button></div>
                     </div>
-                    <div style="flex:1; min-width:200px;">
-                        <label style="font-size:12px; font-weight:700;">🔍 Search Any Column:</label><br>
-                        <input type="text" id="sancha-pass-search-input" class="search-box" placeholder="Search Date, Kariger, Qty..." oninput="debouncedSanchaPassbookSearch()">
+                    <div style="flex:1; min-width:180px;">
+                        <label style="font-size:12px; font-weight:700;">🔍 Search:</label><br>
+                        <input type="text" id="sancha-pass-search-input" class="search-box" placeholder="Search Date, Kariger, Qty..." oninput="applySanchaPassbookFilters()">
                     </div>
                 </div>
                 <div class="table-responsive">
@@ -517,11 +499,12 @@
                         </thead>
                         <tbody id="sancha-passbook-table-body"></tbody>
                     </table>
-                </div>`;
+                </div>
+                <div id="sancha-passbook-pagination-controls" style="display:flex; justify-content:space-between; align-items:center; margin-top:12px; padding:8px 4px; border-top:1px solid #e2e8f0;"></div>`;
         }
 
         modal.style.display = 'flex';
-        renderSanchaPassbookRows();
+        applySanchaPassbookFilters();
     };
 
     const resetSanchaPassbookFilters = () => {
@@ -531,20 +514,11 @@
         if (fDate) fDate.value = '';
         if (tDate) tDate.value = '';
         if (sInp) sInp.value = '';
-        renderSanchaPassbookRows();
+        sanchaPassbookCurrentPage = 1;
+        applySanchaPassbookFilters();
     };
 
-    const debouncedSanchaPassbookSearch = () => {
-        clearTimeout(passbookSearchDebounceTimer);
-        passbookSearchDebounceTimer = setTimeout(() => {
-            renderSanchaPassbookRows();
-        }, 150);
-    };
-
-    const renderSanchaPassbookRows = () => {
-        const tbody = document.getElementById('sancha-passbook-table-body');
-        if (!tbody) return;
-
+    const applySanchaPassbookFilters = () => {
         const targetItemLower = window.currentPassbookSanchaItem.toLowerCase();
         const targetCatLower = window.currentSanchaCategory.toLowerCase();
         const allHist = window.safeArray ? window.safeArray(window.getStore('sancha_history')) : [];
@@ -576,38 +550,97 @@
             });
         }
 
-        if (!hist.length) {
+        // Newest transactions first, Opening Stock highlighted
+        hist.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+
+        filteredSanchaPassbookCache = hist;
+        renderPaginatedSanchaPassbook();
+    };
+
+    const renderPaginatedSanchaPassbook = () => {
+        const tbody = document.getElementById('sancha-passbook-table-body');
+        const pager = document.getElementById('sancha-passbook-pagination-controls');
+        if (!tbody) return;
+        tbody.innerHTML = '';
+
+        const totalEntries = filteredSanchaPassbookCache.length;
+        if (!totalEntries) {
             tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:15px; color:#888;">Koi entry nahi mili.</td></tr>';
+            if (pager) pager.innerHTML = '';
             return;
         }
 
+        const totalPages = Math.ceil(totalEntries / SANCHA_PAGE_SIZE);
+        if (sanchaPassbookCurrentPage > totalPages) sanchaPassbookCurrentPage = totalPages;
+        if (sanchaPassbookCurrentPage < 1) sanchaPassbookCurrentPage = 1;
+
+        const startIndex = (sanchaPassbookCurrentPage - 1) * SANCHA_PAGE_SIZE;
+        const pageRows = filteredSanchaPassbookCache.slice(startIndex, startIndex + SANCHA_PAGE_SIZE);
+
         let html = '';
-        hist.forEach((r) => {
+        pageRows.forEach((r) => {
             const aayaQty = safeNum(r.aaya);
             const gayaQty = safeNum(r.gaya || r.qty);
-            const karigerDisplay = (r.kariger && r.kariger !== '-' && r.kariger !== 'undefined') ? `👤 ${esc(r.kariger)}` : '📦 Factory Inward';
 
-            const actionBtns = `
-                <div style="display:flex; gap:6px; justify-content:center; align-items:center;">
-                    <button type="button" class="sheet-btn" style="background:#3b82f6; color:#ffffff; padding:4px 8px; font-size:11px; font-weight:bold; border-radius:4px; border:none; cursor:pointer;" onclick="openSanchaEditModal('${esc(r.id)}')">✏️ Edit</button>
-                    <button type="button" class="sheet-btn" style="background:#ef4444; color:#ffffff; padding:4px 8px; font-size:11px; font-weight:bold; border-radius:4px; border:none; cursor:pointer;" onclick="deleteSanchaHistoryEntry('${esc(r.id)}')">🗑️ Del</button>
-                </div>`;
+            // ⭐ OPENING STOCK VS FRESH INWARD CLEAR DISTINCTION
+            const isOpening = (r.isOpening === true) || String(r.type || '').includes('Opening') || String(r.kariger || '').includes('Opening');
+            const isKariger = String(r.type || '').includes('Kariger Issue') || String(r.kariger || '').includes('Kariger');
+
+            let typeDisplay = '';
+            let karigerDisplay = '';
+            let actionBtns = '';
+
+            if (isOpening) {
+                typeDisplay = `<span style="background:#fef3c7; color:#b45309; border:1px solid #fde68a; font-size:11px; font-weight:800; padding:2px 8px; border-radius:12px;">📦 Opening Stock (Pichle Saal Se)</span>`;
+                karigerDisplay = `<span style="color:#b45309; font-weight:bold;">📦 Pichla Bacha Stock</span>`;
+                actionBtns = `<span style='color:#64748b; font-size:11px; font-weight:700;'>🔒 Opening Lock</span>`;
+            } else if (isKariger) {
+                typeDisplay = `<strong style="color:#1e3a8a;">${esc(r.type || 'Kariger Issue')}</strong>`;
+                karigerDisplay = `👤 ${esc(r.kariger || '-')}`;
+                actionBtns = `<span style='color:#64748b; font-size:11px; font-weight:700;'>🔒 Kariger Sheet</span>`;
+            } else {
+                typeDisplay = `<span style="background:#ecfdf5; color:#059669; border:1px solid #a7f3d0; font-size:11px; font-weight:800; padding:2px 8px; border-radius:12px;">🏭 Nayi Khareed / Inward</span>`;
+                karigerDisplay = (r.kariger && r.kariger !== '-' && r.kariger !== 'undefined') ? `👤 ${esc(r.kariger)}` : '📦 Factory Inward';
+                actionBtns = `
+                    <div style="display:flex; gap:6px; justify-content:center; align-items:center;">
+                        <button type="button" class="sheet-btn" style="background:#3b82f6; color:#ffffff; padding:4px 8px; font-size:11px; font-weight:bold; border-radius:4px; border:none; cursor:pointer;" onclick="openSanchaEditModal('${esc(r.id)}')">✏️ Edit</button>
+                        <button type="button" class="sheet-btn" style="background:#ef4444; color:#ffffff; padding:4px 8px; font-size:11px; font-weight:bold; border-radius:4px; border:none; cursor:pointer;" onclick="deleteSanchaHistoryEntry('${esc(r.id)}')">🗑️ Del</button>
+                    </div>`;
+            }
 
             html += `<tr>
                 <td>${esc(r.date || '-')}</td>
-                <td><strong>${esc(r.type || 'Godam Entry')}</strong></td>
-                <td style="color:#1e3a8a; font-weight:700;">${karigerDisplay}</td>
-                <td style="color:#059669; font-weight:700;">${aayaQty ? `${aayaQty.toFixed(2)} Kg` : '-'}</td>
+                <td>${typeDisplay}</td>
+                <td>${karigerDisplay}</td>
+                <td style="color:#059669; font-weight:700;">${aayaQty ? `+${aayaQty.toFixed(2)} Kg` : '-'}</td>
                 <td style="color:#ea580c; font-weight:700;">${gayaQty ? `-${gayaQty.toFixed(2)} Kg` : '-'}</td>
                 <td style="text-align:center; white-space:nowrap;">${actionBtns}</td>
             </tr>`;
         });
 
         tbody.innerHTML = html;
+
+        // Render 20-Item Pagination Bar
+        if (pager) {
+            pager.innerHTML = `
+                <div style="font-size:12px; color:#475569; font-weight:600;">
+                    Showing <strong>${startIndex + 1}</strong> - <strong>${Math.min(startIndex + SANCHA_PAGE_SIZE, totalEntries)}</strong> of <strong>${totalEntries}</strong> entries
+                </div>
+                <div style="display:flex; gap:6px;">
+                    <button type="button" class="sheet-btn" style="background:${sanchaPassbookCurrentPage <= 1 ? '#cbd5e1' : '#0284c7'}; color:white; padding:4px 10px; border-radius:4px; border:none; cursor:${sanchaPassbookCurrentPage <= 1 ? 'not-allowed' : 'pointer'};" ${sanchaPassbookCurrentPage <= 1 ? 'disabled' : ''} onclick="changeSanchaPassbookPage(-1)">◀ Prev</button>
+                    <span style="font-size:12px; font-weight:bold; padding:4px 8px; background:#f1f5f9; border-radius:4px;">${sanchaPassbookCurrentPage} / ${totalPages}</span>
+                    <button type="button" class="sheet-btn" style="background:${sanchaPassbookCurrentPage >= totalPages ? '#cbd5e1' : '#0284c7'}; color:white; padding:4px 10px; border-radius:4px; border:none; cursor:${sanchaPassbookCurrentPage >= totalPages ? 'not-allowed' : 'pointer'};" ${sanchaPassbookCurrentPage >= totalPages ? 'disabled' : ''} onclick="changeSanchaPassbookPage(1)">Next ▶</button>
+                </div>`;
+        }
+    };
+
+    const changeSanchaPassbookPage = (delta) => {
+        sanchaPassbookCurrentPage += delta;
+        renderPaginatedSanchaPassbook();
     };
 
     /* ========================================================================
-       8. ATOMIC PASSBOOK DELETE ENGINE
+       8. DELETE & EDIT ENGINES
        ------------------------------------------------------------------------
     ======================================================================== */
     const deleteSanchaHistoryEntry = (id) => {
@@ -620,7 +653,6 @@
         const isPurchase = (String(entry.type || '').includes('Khareed') || String(entry.type || '').includes('Inward'));
         const isTransfer = (entry.refId || String(entry.type || '').includes('Transfer'));
 
-        // 1. Dual Transfer Rollback
         if (isTransfer && entry.refId) {
             hist = hist.filter((x) => x.refId !== entry.refId);
         } else {
@@ -631,7 +663,6 @@
             window.setStore('sancha_history', hist);
         }
 
-        // 2. Direct Inward Purchase Rollback
         if (isPurchase) {
             const qtyToDeduct = safeNum(entry.aaya);
             const list = window.safeArray ? window.safeArray(window.getStore('sancha_items')) : [];
@@ -651,15 +682,11 @@
         }
 
         triggerSanchaCacheInvalidation();
-        renderSanchaPassbookRows();
+        applySanchaPassbookFilters();
         renderSanchaTable();
         alert('✅ Entry safalta-poorvak delete ho gayi!');
     };
 
-    /* ========================================================================
-       9. ATOMIC PASSBOOK EDIT MODAL & SAVE ENGINE
-       ------------------------------------------------------------------------
-    ======================================================================== */
     const openSanchaEditModal = (id) => {
         const hist = window.safeArray ? window.safeArray(window.getStore('sancha_history')) : [];
         const entry = hist.find((x) => x && x.id === id);
@@ -726,7 +753,6 @@
         const isPurchase = (String(entry.type || '').includes('Khareed') || String(entry.type || '').includes('Inward'));
         const isTransfer = (entry.refId || String(entry.type || '').includes('Transfer'));
 
-        // 1. History Metadata Updates
         entry.date = newDate;
         entry.kariger = newPerson || '-';
 
@@ -734,7 +760,6 @@
             const aayaDiff = newQty - oldAaya;
             entry.aaya = newQty;
 
-            // Purchase adjustment on stock record
             if (isPurchase) {
                 const list = window.safeArray ? window.safeArray(window.getStore('sancha_items')) : [];
                 const targetKid = entry.karkhanaId || 'k_main';
@@ -756,7 +781,6 @@
             entry.qty = newQty;
         }
 
-        // 2. Synchronize Paired Transfer Entry
         if (isTransfer && entry.refId) {
             const pair = hist.find((x) => x && x.refId === entry.refId && x.id !== id);
             if (pair) {
@@ -772,14 +796,14 @@
 
         triggerSanchaCacheInvalidation();
         closeSanchaEditModal();
-        renderSanchaPassbookRows();
+        applySanchaPassbookFilters();
         renderSanchaTable();
 
         alert('✅ Sancha entry safalta-poorvak update ho gayi!');
     };
 
     /* ========================================================================
-       10. GLOBAL EXPORT & EVENT LISTENERS
+       9. GLOBAL EXPORT
        ------------------------------------------------------------------------
     ======================================================================== */
     const sanchaUIAPI = {
@@ -798,35 +822,17 @@
         submitSanchaTransferForm,
         openSanchaPassbook,
         resetSanchaPassbookFilters,
-        debouncedSanchaPassbookSearch,
-        renderSanchaPassbookRows,
+        applySanchaPassbookFilters,
+        changeSanchaPassbookPage,
         deleteSanchaHistoryEntry,
         openSanchaEditModal,
         closeSanchaEditModal,
         saveSanchaHistoryEdit
     };
 
-    // Attach to window globally for legacy template handlers
     Object.keys(sanchaUIAPI).forEach((fnName) => {
         window[fnName] = sanchaUIAPI[fnName];
     });
 
-    // Dedicated namespace
     window.SanchaUIEngine = sanchaUIAPI;
-
-    // Attach search debouncer to main sancha filter input
-    document.addEventListener('DOMContentLoaded', () => {
-        const searchInput = document.getElementById('search-sancha-input');
-        if (searchInput) {
-            const debouncedSearch = (typeof window.debounce === 'function')
-                ? window.debounce(filterSancha, 250)
-                : filterSancha;
-            searchInput.addEventListener('input', debouncedSearch);
-        }
-    });
-
-    // Unit test export
-    if (typeof module !== 'undefined' && module.exports) {
-        module.exports = sanchaUIAPI;
-    }
 })();
