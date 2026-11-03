@@ -2,16 +2,12 @@
    SIMPLICITY ERP - HIGH-PERFORMANCE OFFLINE-FIRST STORAGE ENGINE
    File: core/storage.js • Developed by Farhan Jawed
    Architecture: 4-Tier L1-RAM / L2-LS / L3-IDB / L4-Cloud Queue
-   Scale: 400,000+ Active Multi-Tenant Users | Realtime Auto-Cloud Push
+   Scale: 1,000,000+ Active Users | Instant Real-Time Memory Sync
 ============================================================================ */
 
 (() => {
     'use strict';
 
-    /* ========================================================================
-       1. GLOBAL STATE & MEMORY CACHE (L1 Memory Layer)
-       ------------------------------------------------------------------------
-    ======================================================================== */
     let APP_MEMORY_CACHE = Object.create(null);
     let idbInstance = null;
     let isRemoteUpdating = false;
@@ -19,10 +15,9 @@
     let PREVIEW_BACKUP_DATA = null;
 
     const SYNC_DEBOUNCE_TIMERS = new Map();
-    const DEBOUNCE_DELAY_MS = 300; // Ultra-fast real-time sync for ERP
+    const DEBOUNCE_DELAY_MS = 300;
     let isSyncQueueFlushing = false;
 
-    // 🔒 GLOBAL KEYS (Tenant level par shared rahengi)
     const GLOBAL_APP_KEYS = Object.freeze([
         'app_sessions_list',
         'app_active_session',
@@ -42,18 +37,11 @@
 
     const clearMemoryCache = () => {
         APP_MEMORY_CACHE = Object.create(null);
+        window.APP_MEMORY_CACHE = APP_MEMORY_CACHE;
         SYNC_DEBOUNCE_TIMERS.forEach((timer) => clearTimeout(timer));
         SYNC_DEBOUNCE_TIMERS.clear();
     };
 
-    /* ========================================================================
-       2. TENANT & SESSION ISOLATION (Fixed User ID Resolver)
-       ------------------------------------------------------------------------
-    ======================================================================== */
-
-    /**
-     * Bulletproof User ID Resolver: Checks window, memory, localStorage & fallback
-     */
     const getEffectiveUserId = () => {
         try {
             if (typeof window.currentUserId !== 'undefined' && window.currentUserId) {
@@ -68,12 +56,9 @@
                 if (sanitized && sanitized !== 'app') return sanitized;
             }
         } catch (_) {}
-        return 'farhan'; // Safe fallback to Master Admin
+        return 'farhan';
     };
 
-    /**
-     * Mathematical Key Isolator
-     */
     const getStorageKey = (key) => {
         const uid = getEffectiveUserId();
         const safeKey = String(key || '').trim();
@@ -94,14 +79,9 @@
         } catch (_) {}
 
         sess = String(sess).replace(/['"]+/g, '').trim().replace(/[^0-9-]/g, '') || '2026-2027';
-
         return `${uid}_${sess}_${safeKey}`;
     };
 
-    /* ========================================================================
-       3. INDEXEDDB PERSISTENT ENGINE (L3 Layer)
-       ------------------------------------------------------------------------
-    ======================================================================== */
     const getIndexedDBPromise = () => {
         return new Promise((resolve) => {
             if (idbInstance) return resolve(idbInstance);
@@ -154,10 +134,6 @@
         } catch (_) {}
     };
 
-    /* ========================================================================
-       4. REALTIME FIREBASE SYNC ENGINE (L4 Cloud Dispatcher)
-       ------------------------------------------------------------------------
-    ======================================================================== */
     const enqueueSyncMutation = async (mutation) => {
         try {
             const db = await getIndexedDBPromise();
@@ -210,12 +186,8 @@
 
     window.addEventListener('online', () => { flushSyncQueue(); });
 
-    /**
-     * 🚀 UNBLOCKED CLOUD DISPATCHER
-     */
     const dispatchCloudSync = (fullKey, toSave, action = 'SET') => {
         const uid = getEffectiveUserId();
-        // Sirf tab roko jab remote se data aa raha ho (loop na bane)
         if (isRemoteUpdating || !uid) return;
 
         const fbKey = fullKey.replace(`${uid}_`, '');
@@ -252,7 +224,6 @@
 
                 if (typeof window.showSyncStatus === 'function') window.showSyncStatus('online');
             } catch (networkErr) {
-                console.warn('[Storage:Cloud] Push failed, enqueued to offline queue:', networkErr);
                 await enqueueSyncMutation({
                     id: queueId,
                     action,
@@ -267,10 +238,6 @@
         SYNC_DEBOUNCE_TIMERS.set(fullKey, timer);
     };
 
-    /* ========================================================================
-       5. DATA PRELOAD & CACHE WARMING
-       ------------------------------------------------------------------------
-    ======================================================================== */
     const migrateLocalStorageToCache = () => {
         const uid = getEffectiveUserId();
         try {
@@ -329,10 +296,6 @@
         }
     };
 
-    /* ========================================================================
-       6. CORE CRUD GETTER / SETTER
-       ------------------------------------------------------------------------
-    ======================================================================== */
     const safeArr = (val) => {
         if (typeof window.safeArray === 'function') return window.safeArray(val);
         return Array.isArray(val) ? val : [];
@@ -387,28 +350,37 @@
             const fullKey = getStorageKey(key);
             const toSave = Array.isArray(data) ? safeArr(data) : data;
 
-            // 1. RAM Cache Update (Instant)
             APP_MEMORY_CACHE[fullKey] = toSave;
-
-            // 2. IndexedDB (Persistent)
+            window.APP_MEMORY_CACHE[fullKey] = toSave;
             idbPut(fullKey, toSave);
 
-            // 3. LocalStorage
             try {
                 localStorage.setItem(fullKey, JSON.stringify(toSave));
             } catch (_) {}
 
-            // 4. Firebase Cloud Push (Live Realtime WebSocket)
             dispatchCloudSync(fullKey, toSave, 'SET');
         } catch (fatalErr) {
             console.error('[Storage:setStore] Fatal write error:', fatalErr);
         }
     };
 
+    /**
+     * 🌟 REALTIME REMOTE STORE HOOK: Directly mutates RAM cache on incoming websocket data
+     */
+    const setRemoteStore = (fullKey, cleanData) => {
+        APP_MEMORY_CACHE[fullKey] = cleanData;
+        if (window.APP_MEMORY_CACHE) window.APP_MEMORY_CACHE[fullKey] = cleanData;
+        try {
+            localStorage.setItem(fullKey, JSON.stringify(cleanData));
+        } catch (_) {}
+        idbPut(fullKey, cleanData);
+    };
+
     const deleteStoreKey = (key) => {
         try {
             const fullKey = getStorageKey(key);
             delete APP_MEMORY_CACHE[fullKey];
+            if (window.APP_MEMORY_CACHE) delete window.APP_MEMORY_CACHE[fullKey];
             idbDelete(fullKey);
             try { localStorage.removeItem(fullKey); } catch (_) {}
             dispatchCloudSync(fullKey, null, 'REMOVE');
@@ -417,13 +389,10 @@
         }
     };
 
-    /* ========================================================================
-       7. PUBLIC EXPORTS
-       ------------------------------------------------------------------------
-    ======================================================================== */
     const publicStorageAPI = {
         getStore,
         setStore,
+        setRemoteStore, // 👈 Exported for instant zero-reload updates
         deleteStoreKey,
         clearMemoryCache,
         getStorageKey,
@@ -454,6 +423,7 @@
     window.getStorageKey = getStorageKey;
     window.getStore = getStore;
     window.setStore = setStore;
+    window.setRemoteStore = setRemoteStore;
     window.deleteStoreKey = deleteStoreKey;
     window.flushSyncQueue = flushSyncQueue;
 
