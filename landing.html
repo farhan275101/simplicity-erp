@@ -4,38 +4,38 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     
-    <!-- SEO & Social Preview -->
-    <title>Simplicity • The Art of Saree Manufacturing</title>
-    <meta name="description" content="Experience traditional handloom weaving, precision booti cutting, and massive industrial steam calender finishing. Managed with zero-friction digital intelligence.">
+    <!-- 🔍 SEO & SOCIAL LINK PREVIEW -->
+    <title>Simplicity ERP • Saree Manufacturer Karkhana Portal</title>
+    <meta name="description" content="Purani Diary Chhodo, Karkhana Digital Karo! Tana, Bana, Zari, Sancha, Kariger Tani Khata, Booti Cutting, Calender aur Dukan ka 100% pakka hisab.">
     <meta name="theme-color" content="#000000">
 
-    <!-- Fonts: Inter & SF-Pro Fallbacks -->
+    <!-- Fonts: Apple System & Inter -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 
     <style>
         /* ====================================================================
-           1. APPLE DESIGN SYSTEM TOKENS & RESET
+           1. APPLE LUXURY DARK DESIGN SYSTEM
            ==================================================================== */
         :root {
             --bg-canvas: #000000;
             --bg-surface: #0a0a0c;
             --bg-elevated: #121216;
             --border-subtle: rgba(255, 255, 255, 0.08);
-            --border-highlight: rgba(255, 255, 255, 0.18);
+            --border-highlight: rgba(255, 255, 255, 0.2);
             
             --text-primary: #f5f5f7;
             --text-secondary: #86868b;
             --text-tertiary: #515154;
             --accent-gold: #d4af37;
-            --accent-gold-glow: rgba(212, 175, 55, 0.25);
-            --accent-silver: #e2e8f0;
+            --accent-gold-glow: rgba(212, 175, 55, 0.2);
             --accent-blue: #2997ff;
+            --accent-green: #25D366;
 
             --ease-apple: cubic-bezier(0.16, 1, 0.3, 1);
-            --radius-outer: 28px;
-            --radius-inner: 18px;
+            --radius-outer: 24px;
+            --radius-inner: 16px;
         }
 
         * {
@@ -48,9 +48,9 @@
         body {
             background-color: var(--bg-canvas);
             color: var(--text-primary);
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", system-ui, sans-serif;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
             overflow-x: hidden;
-            line-height: 1.47;
+            line-height: 1.5;
             letter-spacing: -0.015em;
         }
 
@@ -62,8 +62,8 @@
             top: 0;
             left: 0;
             width: 100%;
-            height: 52px;
-            background: rgba(0, 0, 0, 0.72);
+            height: 54px;
+            background: rgba(0, 0, 0, 0.75);
             backdrop-filter: saturate(180%) blur(20px);
             -webkit-backdrop-filter: saturate(180%) blur(20px);
             border-bottom: 1px solid var(--border-subtle);
@@ -71,8 +71,7 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 0 max(24px, calc((100vw - 1180px) / 2));
-            transition: background 0.3s ease;
+            padding: 0 max(20px, calc((100vw - 1180px) / 2));
         }
 
         .nav-brand {
@@ -81,413 +80,432 @@
             gap: 8px;
             color: var(--text-primary);
             text-decoration: none;
-            font-weight: 700;
-            font-size: 15px;
-            letter-spacing: -0.02em;
+            font-weight: 800;
+            font-size: 16px;
         }
 
-        .nav-brand .brand-logo-icon {
-            font-size: 17px;
+        .nav-brand span {
             color: var(--accent-gold);
             filter: drop-shadow(0 0 10px var(--accent-gold-glow));
         }
 
-        .nav-links {
+        .nav-actions {
             display: flex;
             align-items: center;
-            gap: 28px;
-            list-style: none;
+            gap: 12px;
         }
 
-        .nav-links a {
+        .btn-nav-call {
             color: var(--text-secondary);
             text-decoration: none;
             font-size: 12px;
-            font-weight: 400;
-            transition: color 0.2s ease;
-        }
-
-        .nav-links a:hover {
-            color: var(--text-primary);
-        }
-
-        .nav-cta-btn {
-            background: rgba(255, 255, 255, 0.92);
-            color: #000000 !important;
-            padding: 5px 14px;
+            font-weight: 600;
+            padding: 6px 12px;
             border-radius: 20px;
-            font-size: 12px !important;
-            font-weight: 600 !important;
-            transition: transform 0.2s ease, background 0.2s ease !important;
+            border: 1px solid var(--border-subtle);
+            transition: all 0.2s;
+        }
+        .btn-nav-call:hover {
+            color: var(--text-primary);
+            border-color: var(--border-highlight);
         }
 
-        .nav-cta-btn:hover {
-            transform: scale(1.03);
+        .btn-nav-launch {
             background: #ffffff;
+            color: #000000;
+            padding: 6px 16px;
+            border-radius: 20px;
+            text-decoration: none;
+            font-size: 12px;
+            font-weight: 700;
+            transition: transform 0.2s;
+        }
+        .btn-nav-launch:hover {
+            transform: scale(1.03);
         }
 
         /* ====================================================================
-           3. HERO STAGE (SHIMMERING GOLD ZARI DRAPE)
+           3. HERO STAGE
            ==================================================================== */
         .hero-stage {
-            min-height: 100vh;
-            padding-top: 130px;
-            padding-bottom: 90px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
+            padding-top: 120px;
+            padding-bottom: 70px;
             text-align: center;
-            position: relative;
-            overflow: hidden;
-            background: radial-gradient(circle at 50% 18%, rgba(212, 175, 55, 0.08) 0%, rgba(0,0,0,0) 65%);
+            background: radial-gradient(circle at 50% 15%, rgba(212, 175, 55, 0.08) 0%, rgba(0,0,0,0) 65%);
         }
 
-        .hero-eyebrow {
-            font-size: 13px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.15em;
+        .badge-pill {
+            background: rgba(212, 175, 55, 0.1);
             color: var(--accent-gold);
-            margin-bottom: 14px;
+            border: 1px solid rgba(212, 175, 55, 0.3);
+            padding: 6px 16px;
+            border-radius: 30px;
+            font-size: 12px;
+            font-weight: 700;
             display: inline-block;
+            margin-bottom: 18px;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
         }
 
         .hero-headline {
-            font-size: clamp(2.8rem, 7vw, 5.5rem);
+            font-size: clamp(2.5rem, 6.5vw, 5.2rem);
             font-weight: 800;
-            line-height: 1.05;
+            line-height: 1.08;
             letter-spacing: -0.035em;
-            max-width: 980px;
-            margin: 0 auto 20px;
-            background: linear-gradient(180deg, #ffffff 30%, rgba(255, 255, 255, 0.6) 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        .hero-subhead {
-            font-size: clamp(1.1rem, 2.2vw, 1.45rem);
-            color: var(--text-secondary);
-            font-weight: 400;
-            max-width: 680px;
-            margin: 0 auto 36px;
-            line-height: 1.45;
-        }
-
-        .hero-actions {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-            margin-bottom: 60px;
-        }
-
-        .btn-apple-primary {
-            background: #0071e3;
-            color: #ffffff;
-            padding: 13px 26px;
-            border-radius: 980px;
-            font-size: 14px;
-            font-weight: 600;
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            transition: all 0.3s var(--ease-apple);
-        }
-
-        .btn-apple-primary:hover {
-            background: #0077ed;
-            transform: scale(1.02);
-            box-shadow: 0 10px 24px rgba(0, 113, 227, 0.35);
-        }
-
-        .btn-apple-ghost {
-            background: transparent;
-            color: var(--text-primary);
-            padding: 13px 22px;
-            border-radius: 980px;
-            font-size: 14px;
-            font-weight: 500;
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            border: 1px solid var(--border-highlight);
-            transition: all 0.3s var(--ease-apple);
-        }
-
-        .btn-apple-ghost:hover {
-            border-color: rgba(255, 255, 255, 0.5);
-            background: rgba(255, 255, 255, 0.05);
-        }
-
-        .hero-visual-frame {
-            width: min(1140px, 92vw);
-            height: clamp(340px, 60vh, 640px);
-            border-radius: var(--radius-outer);
-            position: relative;
-            overflow: hidden;
-            border: 1px solid var(--border-subtle);
-            box-shadow: 0 30px 80px -20px rgba(0, 0, 0, 0.8), 0 0 120px -30px var(--accent-gold-glow);
-            cursor: zoom-in;
-            background: var(--bg-surface);
-        }
-
-        .hero-visual-frame img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            object-position: center 30%;
-            transition: transform 1.2s var(--ease-apple);
-        }
-
-        .hero-visual-frame:hover img {
-            transform: scale(1.03);
-        }
-
-        .visual-caption-glass {
-            position: absolute;
-            bottom: 24px;
-            left: 24px;
-            background: rgba(10, 10, 12, 0.75);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            padding: 8px 18px;
-            border-radius: 30px;
-            border: 1px solid rgba(255, 255, 255, 0.12);
-            font-size: 12px;
-            font-weight: 600;
-            color: var(--text-primary);
-            letter-spacing: 0.02em;
-        }
-
-        /* ====================================================================
-           4. FULL-WIDTH CINEMATIC SECTIONS
-           ==================================================================== */
-        .section-block {
-            padding: 120px max(24px, calc((100vw - 1140px) / 2));
-            position: relative;
-        }
-
-        .apple-grid-two {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 70px;
-            align-items: center;
-        }
-
-        .apple-grid-two.reverse {
-            direction: rtl;
-        }
-
-        .apple-grid-two.reverse .section-content-side {
-            direction: ltr;
-        }
-
-        .section-tag {
-            font-size: 13px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.12em;
-            color: var(--accent-gold);
-            margin-bottom: 12px;
-            display: inline-block;
-        }
-
-        .section-title {
-            font-size: clamp(2.2rem, 4.4vw, 3.8rem);
-            font-weight: 800;
-            line-height: 1.1;
-            letter-spacing: -0.03em;
-            margin-bottom: 20px;
+            max-width: 950px;
+            margin: 0 auto 18px;
             background: linear-gradient(180deg, #ffffff 40%, rgba(255, 255, 255, 0.65) 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
 
-        .section-copy {
-            font-size: clamp(1rem, 1.5vw, 1.15rem);
+        .hero-subhead {
+            font-size: clamp(1.05rem, 2vw, 1.35rem);
             color: var(--text-secondary);
+            max-width: 720px;
+            margin: 0 auto 34px;
+            line-height: 1.5;
             font-weight: 400;
-            line-height: 1.6;
-            margin-bottom: 28px;
-            max-width: 500px;
         }
 
-        .metric-pill-row {
+        .hero-cta-group {
             display: flex;
-            gap: 24px;
-            margin-top: 10px;
-            padding-top: 24px;
+            justify-content: center;
+            gap: 14px;
+            flex-wrap: wrap;
+            margin-bottom: 45px;
+        }
+
+        .btn-apple-green {
+            background: var(--accent-green);
+            color: white;
+            padding: 13px 28px;
+            border-radius: 980px;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 10px 25px rgba(37, 211, 102, 0.25);
+            transition: all 0.2s;
+        }
+        .btn-apple-green:hover { transform: scale(1.02); background: #20ba57; }
+
+        .btn-apple-blue {
+            background: #0071e3;
+            color: white;
+            padding: 13px 26px;
+            border-radius: 980px;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+        }
+        .btn-apple-blue:hover { transform: scale(1.02); background: #0077ed; }
+
+        .stats-ribbon {
+            display: flex;
+            justify-content: center;
+            gap: 36px;
+            flex-wrap: wrap;
+            margin-top: 25px;
+            padding-top: 25px;
             border-top: 1px solid var(--border-subtle);
+            max-width: 900px;
+            margin-left: auto;
+            margin-right: auto;
         }
 
-        .metric-unit h4 {
-            font-size: 26px;
+        .stat-item h4 { font-size: 26px; font-weight: 800; color: var(--accent-gold); }
+        .stat-item p { font-size: 12px; color: var(--text-secondary); text-transform: uppercase; font-weight: 600; }
+
+        /* ====================================================================
+           4. 5-SAREE ULTRA HD SHOWCASE GALLERY (CLICK TO ZOOM LIGHTBOX)
+           ==================================================================== */
+        .gallery-section {
+            padding: 40px max(20px, calc((100vw - 1180px) / 2)) 80px;
+        }
+
+        .gallery-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .gallery-header h3 {
+            font-size: clamp(1.8rem, 3.5vw, 2.8rem);
             font-weight: 800;
-            letter-spacing: -0.02em;
-            color: var(--text-primary);
+            letter-spacing: -0.025em;
+            margin-bottom: 10px;
         }
 
-        .metric-unit p {
-            font-size: 12px;
+        .gallery-header p {
             color: var(--text-secondary);
-            font-weight: 500;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
+            font-size: 14px;
         }
 
-        .cinematic-card {
-            border-radius: var(--radius-outer);
-            overflow: hidden;
-            position: relative;
+        .saree-grid-5 {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: 16px;
+        }
+
+        .saree-card {
             background: var(--bg-surface);
-            border: 1px solid var(--border-subtle);
-            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.6);
-            height: clamp(380px, 52vw, 540px);
-            cursor: zoom-in;
-        }
-
-        .cinematic-card img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            transition: transform 1.2s var(--ease-apple);
-        }
-
-        .cinematic-card:hover img {
-            transform: scale(1.04);
-        }
-
-        /* Calender Industrial Frame */
-        .full-bleed-banner {
-            width: 100%;
-            border-radius: var(--radius-outer);
-            background: var(--bg-surface);
-            border: 1px solid var(--border-subtle);
-            overflow: hidden;
-            position: relative;
-            height: clamp(420px, 68vh, 640px);
-            margin-top: 40px;
-            cursor: zoom-in;
-            box-shadow: 0 35px 80px rgba(0,0,0,0.8);
-        }
-
-        .full-bleed-banner img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            object-position: center;
-            transition: transform 1.2s var(--ease-apple);
-        }
-
-        .full-bleed-banner:hover img {
-            transform: scale(1.03);
-        }
-
-        .banner-overlay-content {
-            position: absolute;
-            bottom: 40px;
-            left: 40px;
-            right: 40px;
-            max-width: 650px;
-            background: rgba(8, 8, 10, 0.78);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            padding: 32px;
             border-radius: var(--radius-inner);
+            overflow: hidden;
+            position: relative;
+            border: 1px solid var(--border-subtle);
+            cursor: zoom-in;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.5);
+            transition: all 0.3s var(--ease-apple);
+        }
+
+        .saree-card:hover {
+            transform: translateY(-4px);
+            border-color: var(--border-highlight);
+        }
+
+        .saree-card img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.8s var(--ease-apple);
+        }
+
+        .saree-card:hover img {
+            transform: scale(1.05);
+        }
+
+        /* 5 Photos Grid Layout */
+        .saree-item-1 { grid-column: span 7; height: 380px; }
+        .saree-item-2 { grid-column: span 5; height: 380px; }
+        .saree-item-3 { grid-column: span 4; height: 300px; }
+        .saree-item-4 { grid-column: span 4; height: 300px; }
+        .saree-item-5 { grid-column: span 4; height: 300px; }
+
+        @media (max-width: 850px) {
+            .saree-item-1, .saree-item-2, .saree-item-3, .saree-item-4, .saree-item-5 {
+                grid-column: span 12;
+                height: 280px;
+            }
+        }
+
+        .saree-badge-tag {
+            position: absolute;
+            bottom: 14px;
+            left: 14px;
+            background: rgba(8, 8, 10, 0.75);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 700;
+            color: #ffffff;
             border: 1px solid rgba(255, 255, 255, 0.12);
         }
 
         /* ====================================================================
-           5. ERP SOFTWARE BRIDGE
+           5. PROBLEMS SOLVED (THE 3 BIGGEST HEADACHES)
            ==================================================================== */
-        .software-stage {
-            background: radial-gradient(circle at 50% 10%, rgba(41, 151, 255, 0.08) 0%, rgba(0,0,0,0) 70%);
-            padding: 130px max(24px, calc((100vw - 1140px) / 2));
-            text-align: center;
-            border-top: 1px solid var(--border-subtle);
+        .section-container {
+            padding: 80px max(20px, calc((100vw - 1180px) / 2));
         }
 
-        .software-header-box {
-            max-width: 780px;
+        .section-title-box {
+            text-align: center;
+            max-width: 720px;
             margin: 0 auto 50px;
         }
 
-        .software-headline {
-            font-size: clamp(2.4rem, 5vw, 4.2rem);
-            font-weight: 800;
-            line-height: 1.08;
-            letter-spacing: -0.03em;
-            margin-bottom: 20px;
+        .section-title-box span {
+            color: var(--accent-gold);
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
         }
 
-        .software-grid-trio {
+        .section-title-box h3 {
+            font-size: clamp(2rem, 4vw, 3rem);
+            font-weight: 800;
+            margin-top: 8px;
+            letter-spacing: -0.025em;
+        }
+
+        .section-title-box p {
+            color: var(--text-secondary);
+            font-size: 14px;
+            margin-top: 8px;
+        }
+
+        .problem-trio-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 22px;
-            text-align: left;
-            margin-bottom: 60px;
+            gap: 20px;
         }
 
-        .apple-feature-tile {
+        @media (max-width: 850px) { .problem-trio-grid { grid-template-columns: 1fr; } }
+
+        .problem-card {
             background: var(--bg-surface);
             border: 1px solid var(--border-subtle);
             border-radius: var(--radius-inner);
-            padding: 34px 28px;
-            transition: all 0.3s ease;
+            padding: 30px;
+            border-top: 3px solid #ef4444;
         }
 
-        .apple-feature-tile:hover {
+        .problem-card h4 { font-size: 18px; font-weight: 700; color: #f87171; margin-bottom: 10px; }
+        .problem-card p { font-size: 13px; color: var(--text-secondary); line-height: 1.6; }
+
+        /* ====================================================================
+           6. FULL STEP-BY-STEP KARKHANA WORKFLOW (9 MODULES)
+           ==================================================================== */
+        .workflow-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+        }
+
+        @media (max-width: 980px) { .workflow-grid { grid-template-columns: repeat(2, 1fr); } }
+        @media (max-width: 640px) { .workflow-grid { grid-template-columns: 1fr; } }
+
+        .step-module-card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-inner);
+            padding: 28px;
+            position: relative;
+            transition: all 0.25s ease;
+        }
+
+        .step-module-card:hover {
             border-color: var(--border-highlight);
             transform: translateY(-4px);
             background: var(--bg-elevated);
         }
 
-        .tile-icon {
-            font-size: 32px;
-            margin-bottom: 18px;
+        .step-num {
+            font-size: 11px;
+            font-weight: 800;
+            padding: 3px 10px;
+            border-radius: 20px;
+            background: rgba(255, 255, 255, 0.08);
+            color: var(--accent-gold);
             display: inline-block;
+            margin-bottom: 14px;
+            letter-spacing: 0.05em;
         }
 
-        .tile-title {
-            font-size: 19px;
+        .step-module-card h4 {
+            font-size: 18px;
             font-weight: 700;
             color: var(--text-primary);
             margin-bottom: 8px;
+            letter-spacing: -0.015em;
         }
 
-        .tile-desc {
+        .step-module-card p {
             font-size: 13px;
             color: var(--text-secondary);
             line-height: 1.6;
         }
 
-        .portal-launch-card {
-            background: linear-gradient(135deg, #0e121d 0%, #06080e 100%);
-            border: 1px solid rgba(41, 151, 255, 0.25);
-            border-radius: var(--radius-outer);
-            padding: 60px 30px;
-            max-width: 900px;
-            margin: 0 auto;
-            box-shadow: 0 30px 90px -20px rgba(0, 113, 227, 0.25);
+        .bullet-list {
+            margin-top: 14px;
+            padding-top: 14px;
+            border-top: 1px dashed var(--border-subtle);
+            list-style: none;
         }
 
-        .portal-launch-card h3 {
-            font-size: 32px;
-            font-weight: 800;
-            margin-bottom: 12px;
-        }
-
-        .portal-launch-card p {
-            color: var(--text-secondary);
-            font-size: 15px;
-            max-width: 580px;
-            margin: 0 auto 30px;
+        .bullet-list li {
+            font-size: 12px;
+            color: #cbd5e1;
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
         }
 
         /* ====================================================================
-           6. LIGHTBOX MODAL
+           7. PWA MOBILE INSTALL & MANAGER CONTACT
            ==================================================================== */
+        .pwa-box {
+            background: linear-gradient(135deg, #0e121d 0%, #06080e 100%);
+            border: 1px solid rgba(41, 151, 255, 0.25);
+            border-radius: var(--radius-outer);
+            padding: 45px 30px;
+            text-align: center;
+            margin-top: 60px;
+        }
+
+        .pwa-box h3 { font-size: 26px; font-weight: 800; margin-bottom: 10px; }
+        .pwa-box p { font-size: 14px; color: var(--text-secondary); max-width: 620px; margin: 0 auto 30px; }
+
+        .pwa-steps {
+            display: flex;
+            justify-content: center;
+            gap: 18px;
+            flex-wrap: wrap;
+        }
+
+        .pwa-step-card {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid var(--border-subtle);
+            border-radius: 12px;
+            padding: 18px;
+            width: 250px;
+            text-align: left;
+        }
+
+        .pwa-step-card span {
+            background: #2563eb;
+            color: white;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 800;
+            margin-bottom: 8px;
+        }
+
+        .pwa-step-card h5 { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+        .pwa-step-card small { font-size: 12px; color: var(--text-secondary); line-height: 1.4; display: block; }
+
+        .founder-box {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-subtle);
+            border-left: 4px solid var(--accent-gold);
+            border-radius: var(--radius-inner);
+            padding: 34px 28px;
+            margin-top: 60px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .founder-info h4 { font-size: 22px; font-weight: 800; }
+        .founder-info p { font-size: 13px; color: var(--text-secondary); margin-top: 4px; }
+
+        .footer {
+            border-top: 1px solid var(--border-subtle);
+            padding: 30px 20px;
+            text-align: center;
+            font-size: 12px;
+            color: var(--text-tertiary);
+        }
+
+        /* LIGHTBOX */
         .lightbox-overlay {
             position: fixed;
             top: 0;
@@ -501,367 +519,377 @@
             display: none;
             align-items: center;
             justify-content: center;
-            padding: 40px;
+            padding: 30px;
             opacity: 0;
-            transition: opacity 0.35s var(--ease-apple);
+            transition: opacity 0.3s ease;
         }
 
-        .lightbox-overlay.active {
-            display: flex;
-            opacity: 1;
-        }
+        .lightbox-overlay.active { display: flex; opacity: 1; }
 
-        .lightbox-content-wrap {
+        .lightbox-wrap {
             position: relative;
-            max-width: 1100px;
+            max-width: 1000px;
             max-height: 85vh;
             display: flex;
             flex-direction: column;
             align-items: center;
-            transform: scale(0.96);
-            transition: transform 0.35s var(--ease-apple);
         }
 
-        .lightbox-overlay.active .lightbox-content-wrap {
-            transform: scale(1);
-        }
-
-        .lightbox-image {
+        .lightbox-img {
             max-width: 100%;
             max-height: 75vh;
             border-radius: var(--radius-inner);
             border: 1px solid rgba(255, 255, 255, 0.15);
-            box-shadow: 0 40px 100px rgba(0, 0, 0, 0.9);
-            object-fit: contain;
+            box-shadow: 0 30px 90px rgba(0, 0, 0, 0.9);
         }
 
         .lightbox-caption {
-            margin-top: 18px;
-            font-size: 14px;
+            margin-top: 14px;
+            font-size: 13px;
             color: var(--text-secondary);
-            text-align: center;
             font-weight: 500;
         }
 
-        .lightbox-close-btn {
+        .lightbox-close {
             position: absolute;
-            top: -46px;
+            top: -42px;
             right: 0;
             background: transparent;
             border: none;
-            color: #ffffff;
-            font-size: 32px;
+            color: white;
+            font-size: 30px;
             cursor: pointer;
-            line-height: 1;
-            padding: 6px;
-            opacity: 0.75;
-            transition: opacity 0.2s;
         }
 
-        .lightbox-close-btn:hover {
-            opacity: 1;
-        }
-
-        /* ====================================================================
-           7. SCROLL-TRIGGERED REVEAL ANIMATIONS
-           ==================================================================== */
         .reveal {
             opacity: 0;
-            transform: translateY(35px);
-            transition: opacity 1s var(--ease-apple), transform 1s var(--ease-apple);
-            will-change: opacity, transform;
+            transform: translateY(30px);
+            transition: opacity 0.8s var(--ease-apple), transform 0.8s var(--ease-apple);
         }
 
         .reveal.active {
             opacity: 1;
             transform: translateY(0);
         }
-
-        /* ====================================================================
-           8. MINIMALIST FOOTER
-           ==================================================================== */
-        .apple-footer {
-            border-top: 1px solid var(--border-subtle);
-            padding: 40px max(24px, calc((100vw - 1140px) / 2));
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            font-size: 12px;
-            color: var(--text-tertiary);
-            flex-wrap: wrap;
-            gap: 16px;
-        }
-
-        .apple-footer a {
-            color: var(--text-secondary);
-            text-decoration: none;
-        }
-
-        .apple-footer a:hover {
-            color: var(--text-primary);
-        }
-
-        @media (max-width: 900px) {
-            .apple-grid-two, .apple-grid-two.reverse {
-                grid-template-columns: 1fr;
-                gap: 40px;
-                direction: ltr;
-            }
-            .apple-grid-two.reverse .section-content-side {
-                direction: ltr;
-            }
-            .software-grid-trio {
-                grid-template-columns: 1fr;
-            }
-            .nav-links {
-                display: none;
-            }
-            .section-block {
-                padding: 70px 20px;
-            }
-            .banner-overlay-content {
-                bottom: 20px;
-                left: 20px;
-                right: 20px;
-                padding: 20px;
-            }
-        }
     </style>
 </head>
 <body>
 
-    <!-- 1. GLASSMORPHIC TOP NAVBAR -->
+    <!-- 1. GLASS NAVBAR -->
     <header class="glass-nav">
         <a href="index.html" class="nav-brand">
-            <span class="brand-logo-icon">✨</span>
-            <span>Simplicity</span>
+            <span>✨</span>
+            <div>Simplicity ERP</div>
         </a>
-
-        <ul class="nav-links">
-            <li><a href="#saree-drape">The Drape</a></li>
-            <li><a href="#the-loom">Master Weaver</a></li>
-            <li><a href="#booti-cutting">Precision Cutting</a></li>
-            <li><a href="#calender-finish">Steam Calender Iron</a></li>
-            <li><a href="#technology">ERP Platform</a></li>
-        </ul>
-
-        <div style="display:flex; align-items:center; gap:12px;">
-            <a href="tel:+917985402962" style="font-size:12px; color:var(--text-secondary); text-decoration:none;">📞 7985402962</a>
-            <a href="index.html" class="nav-cta-btn">Karkhana Portal →</a>
+        <div class="nav-actions">
+            <!-- 📞 Manager Mohammad Rehan Call -->
+            <a href="tel:+917985402962" class="btn-nav-call">📞 Rehan: 7985402962</a>
+            <a href="index.html" class="btn-nav-launch">Launch Portal →</a>
         </div>
     </header>
 
-    <!-- ====================================================================
-         SECTION 1: HERO SAREE DRAPE (SHIMMERING ZARI)
-         ==================================================================== -->
-    <section class="hero-stage" id="saree-drape">
+    <!-- 2. HERO SECTION -->
+    <section class="hero-stage">
         <div class="reveal">
-            <span class="hero-eyebrow">The Heritage of Banaras</span>
-            <h1 class="hero-headline">Woven in Heritage.<br>Perfected by Precision.</h1>
-            <p class="hero-subhead">From the rhythmic click of the wooden shuttle to the gleaming heat of industrial calender rolls — the complete journey of luxury handloom perfection.</p>
+            <span class="badge-pill">🇮🇳 Saree Manufacturers Ka Apna Digital Portal</span>
+            <h1 class="hero-headline">Purani Diary Chhodo,<br>Apna Karkhana Digital Karo!</h1>
+            <p class="hero-subhead">Loom se lekar Dukan tak — 1-1 Saree, 1-1 Gram Zari, Tana, Bana, Sancha aur Kariger ki Mazdoori ka 100% pakka hisab mobile me.</p>
             
-            <div class="hero-actions">
-                <a href="index.html" class="btn-apple-primary">Launch Karkhana Portal</a>
-                <a href="#the-loom" class="btn-apple-ghost">Explore Craftsmanship ↓</a>
+            <div class="hero-cta-group">
+                <!-- 📲 Manager WhatsApp -->
+                <a href="https://wa.me/917985402962?text=Hello%20Rehan%20bhai,%20mujhe%20Simplicity%20ERP%20ke%20bare%20me%20janna%20hai." target="_blank" class="btn-apple-green">
+                    📲 WhatsApp Par Demo Maangein
+                </a>
+                <a href="index.html" class="btn-apple-blue">
+                    🚀 Karkhana Portal Kholein
+                </a>
             </div>
-        </div>
 
-        <div class="hero-visual-frame reveal" onclick="openLightbox(this)">
-            <img src="https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=1600&q=85" 
-                 alt="High-resolution macro shot of shimmering golden Banarasi zari saree drape"
-                 loading="eager">
-            <div class="visual-caption-glass">✨ Shimmering Zari & Pure Katan Silk • Macro Drape</div>
-        </div>
-    </section>
-
-    <!-- ====================================================================
-         SECTION 2: THE WEAVER AT THE LOOM (BINAI & SATTAL)
-         [Exact Prompt 1 Scene: Master Weaver, Wooden Loom, Gold Zari, Dust in Light]
-         ==================================================================== -->
-    <section class="section-block" id="the-loom">
-        <div class="apple-grid-two">
-            <div class="section-content-side reveal">
-                <span class="section-tag">01 • The Handloom Shuttle (Sattal)</span>
-                <h2 class="section-title">Where Zari Meets the Silk.</h2>
-                <p class="section-copy">Deep inside the traditional karkhana, dramatic side spotlighting cuts through the ambient darkness, illuminating the flying shuttle (sattal) and floating dust particles in the air. A master weaver binds pure metallic zari into deep maroon silk with lifelong mastery.</p>
-                <div class="metric-pill-row">
-                    <div class="metric-unit">
-                        <h4>10,000+</h4>
-                        <p>Warp Threads</p>
-                    </div>
-                    <div class="metric-unit">
-                        <h4>Pure Zari</h4>
-                        <p>Metallic Shimmer</p>
-                    </div>
-                    <div class="metric-unit">
-                        <h4>0.00 Grams</h4>
-                        <p>Material Leakage</p>
-                    </div>
+            <div class="stats-ribbon">
+                <div class="stat-item">
+                    <h4>2000+</h4>
+                    <p>Karigers Capacity</p>
+                </div>
+                <div class="stat-item">
+                    <h4>100%</h4>
+                    <p>Zari & Bana Safe</p>
+                </div>
+                <div class="stat-item">
+                    <h4>Minto Me</h4>
+                    <p>1 April Naya Saal</p>
+                </div>
+                <div class="stat-item">
+                    <h4>1-Click</h4>
+                    <p>WhatsApp Parchi</p>
                 </div>
             </div>
+        </div>
+    </section>
 
-            <div class="cinematic-card reveal" onclick="openLightbox(this)">
-                <img src="https://images.unsplash.com/photo-1606760227091-3dd870d97f1d?auto=format&fit=crop&w=1600&q=85" 
-                     alt="Cinematic low-angle shot of master weaver operating wooden loom and shuttle with golden zari threads"
-                     loading="lazy">
-                <div class="visual-caption-glass">🧵 Master Weaver at Loom • Shuttle & Shimmering Gold Zari</div>
+    <!-- 3. 5-SAREE ULTRA HD LUXURY SHOWCASE -->
+    <section class="gallery-section">
+        <div class="gallery-header reveal">
+            <span style="color:var(--accent-gold); font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.1em;">Showroom Gallery</span>
+            <h3>Virasat Saree Ki, Hisab Digital</h3>
+            <p>Banarasi, Katan, Zari aur Brocade ka har taan digital suraksha me. Kisi bhi photo par click karke zoom karein.</p>
+        </div>
+
+        <div class="saree-grid-5 reveal">
+            <!-- Saree 1 -->
+            <div class="saree-card saree-item-1" onclick="openLightbox(this)">
+                <img src="https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=1400&q=85" alt="Royal Banarasi Bridal Crimson Drape with Heavy Gold Zari Weave">
+                <div class="saree-badge-tag">👑 Royal Banarasi • Gold Zari Weave</div>
+            </div>
+            <!-- Saree 2 -->
+            <div class="saree-card saree-item-2" onclick="openLightbox(this)">
+                <img src="https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?auto=format&fit=crop&w=1200&q=85" alt="Pure Katan Silk Intricate Pallu Detail">
+                <div class="saree-badge-tag">✨ Pure Katan Silk • Fine Brocade</div>
+            </div>
+            <!-- Saree 3 -->
+            <div class="saree-card saree-item-3" onclick="openLightbox(this)">
+                <img src="https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?auto=format&fit=crop&w=1000&q=85" alt="Festive Rani Pink with Silver Antique Zari Booti">
+                <div class="saree-badge-tag">🌸 Rani Pink • Silver Zari Booti</div>
+            </div>
+            <!-- Saree 4 -->
+            <div class="saree-card saree-item-4" onclick="openLightbox(this)">
+                <img src="https://images.unsplash.com/photo-1610030469668-93510cb67655?auto=format&fit=crop&w=1000&q=85" alt="Emerald Green Heritage Meenakari Border Saree">
+                <div class="saree-badge-tag">🌿 Emerald Green • Meenakari Border</div>
+            </div>
+            <!-- Saree 5 -->
+            <div class="saree-card saree-item-5" onclick="openLightbox(this)">
+                <img src="https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&w=1000&q=85" alt="Macro Texture of Shimmering Real Metallic Gold Threads">
+                <div class="saree-badge-tag">🧵 Zari Shimmer • 0.00g Waste Tracking</div>
             </div>
         </div>
     </section>
 
-    <!-- ====================================================================
-         SECTION 3: CRAFTSMANSHIP & PRECISION (BOOTI CUTTING)
-         [Exact Prompt 2 Scene: Indian Lady Hands, Bangles, Sharp Tailor Scissors, Jute Mat]
-         ==================================================================== -->
-    <section class="section-block" id="booti-cutting" style="background: radial-gradient(circle at 80% 50%, rgba(212, 175, 55, 0.05) 0%, rgba(0,0,0,0) 60%);">
-        <div class="apple-grid-two reverse">
-            <div class="section-content-side reveal">
-                <span class="section-tag">02 • Bariki Aur Mehnat</span>
-                <h2 class="section-title">The Razor-Sharp Art of Booti Cutting.</h2>
-                <p class="section-copy">Seated gracefully on a traditional woven jute mat (chatai), an Indian woman’s experienced hands adorned with simple bangles hold razor-sharp tailor scissors. In soft directional daylight, she carefully snips excess brocade threads from floral and paisley bootis without grazing a single silk strand.</p>
-                <div class="metric-pill-row">
-                    <div class="metric-unit">
-                        <h4>100%</h4>
-                        <p>Hand-Snipped Motifs</p>
-                    </div>
-                    <div class="metric-unit">
-                        <h4>Zero Pull</h4>
-                        <p>Tension Integrity</p>
-                    </div>
+    <!-- 4. PAIN POINTS / PROBLEMS SOLVED -->
+    <section class="section-container" style="background:var(--bg-surface); border-top:1px solid var(--border-subtle); border-bottom:1px solid var(--border-subtle);">
+        <div class="section-title-box reveal">
+            <span>Traditional Diary Ki Musibatein</span>
+            <h3>Diary Me Kaam Karne Se Kahan Nuksan Hota Hai?</h3>
+            <p>Copy-pen ke hisab me har mahine kilon Zari aur hazaron rupaye ka ghaata bina pata chale ho jata hai.</p>
+        </div>
+
+        <div class="problem-trio-grid reveal">
+            <div class="problem-card">
+                <h4>🧶 Zari & Bana Ka Ghapla</h4>
+                <p>Diary me Less TP ya Topi ka hisab saaf na hone se mahine me kilon raw material bina pata chale idhar-udhar ho jata hai.</p>
+            </div>
+            <div class="problem-card" style="border-top-color:#f97316;">
+                <h4>✂️ Cutting & Calender me Saree Gayab</h4>
+                <p>Karkhane se Booti Cutting aur Calender ke raste me kitni saree kharab hui ya gayab hui, iska koi pakka record nahi rehta.</p>
+            </div>
+            <div class="problem-card" style="border-top-color:#8b5cf6;">
+                <h4>📖 Panne Fatne Ya Khone Ka Dar</h4>
+                <p>Purani diary kho jaane ya panna fatne par hisab ruk jata hai. Maalik ko apne karkhane ka live stock mobile par nahi mil pata.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- 5. COMPLETE WORKFLOW SHOWCASE (ALL 9 MODULES) -->
+    <section class="section-container">
+        <div class="section-title-box reveal">
+            <span>Complete Karkhana Workflow</span>
+            <h3>Loom Se Lekar Dukan Tak Har Kadam Digital</h3>
+            <p>Simplicity ERP me aapke karkhane ka har ek hisab mathematical accuracy ke sath chalta hai.</p>
+        </div>
+
+        <div class="workflow-grid reveal">
+            <!-- 1. KARIGER & TANI KHATA -->
+            <div class="step-module-card">
+                <span class="step-num">STEP 01</span>
+                <h4>🧵 Kariger Master & Tani Khata</h4>
+                <p>Har kariger ki Tani 1, 2, 3 sheets ka exact hisab. Mazdoori (Bani rate), Saree aur Lott ka automatic calculation.</p>
+                <ul class="bullet-list">
+                    <li>✔️ Net Mazdoori = Net Saree × Rate</li>
+                    <li>✔️ Pichli mazdoori naye khate me auto-carry</li>
+                    <li>✔️ 15/30 din se absent kariger ka alert</li>
+                </ul>
+            </div>
+
+            <!-- 2. TANA, BANA & ZARI -->
+            <div class="step-module-card">
+                <span class="step-num">STEP 02</span>
+                <h4>🧶 Tana, Bana & Zari Issue</h4>
+                <p>Kariger ko diye gaye daage ka pakka hisab. Less TP aur Topi ka wazan minus karke exact net issue nikalein.</p>
+                <ul class="bullet-list">
+                    <li>✔️ Net Bana = Cone - Less TP</li>
+                    <li>✔️ Net Zari = Qty - Topi (Wastage cut)</li>
+                    <li>✔️ Kariger return maal foran godam me jama</li>
+                </ul>
+            </div>
+
+            <!-- 3. SANCHA (TANI & CHUKKA) -->
+            <div class="step-module-card">
+                <span class="step-num">STEP 03</span>
+                <h4>⚙️ Sancha (Tani & Chukka) System</h4>
+                <p>Tani beam aur Chukka ka karkhana-wise alag-alag Kg hisab. Kis kariger ke paas kaun sa sancha hai, live tracking.</p>
+                <ul class="bullet-list">
+                    <li>✔️ Tani aur Chukka ke 2 alag-alag tabs</li>
+                    <li>✔️ Person-wise wazan ka hisab</li>
+                    <li>✔️ Godam se sancha issue hone par auto-minus</li>
+                </ul>
+            </div>
+
+            <!-- 4. FRESH SAREE INWARD -->
+            <div class="step-module-card">
+                <span class="step-num">STEP 04</span>
+                <h4>🥻 Fresh Saree Inward & Godam</h4>
+                <p>Loom se utari gayi kachhi saree seedha Fresh Register me aati hai. Main Godam, Bahadurganj aur Mubarakpur ka alag hisab.</p>
+                <ul class="bullet-list">
+                    <li>✔️ Kariger sheet se nikal kar stock me aana</li>
+                    <li>✔️ Fresh, Cutting, Finished & Lott 4 registers</li>
+                    <li>✔️ 1 Godam se doosre godam transfer challan</li>
+                </ul>
+            </div>
+
+            <!-- 5. BOOTI CUTTING -->
+            <div class="step-module-card">
+                <span class="step-num">STEP 05</span>
+                <h4>✂️ Booti Cutting (Job Work)</h4>
+                <p>Fresh stock se saree cutting ke liye bhejna. Single-line batch entry me sabhi kariger ka maal ek sath chadhayein.</p>
+                <ul class="bullet-list">
+                    <li>✔️ Kisko kitni saree di aur kab wapas aayi</li>
+                    <li>✔️ Damage saree aur cutting fine / kaat darj karein</li>
+                    <li>✔️ Cutting wale kariger ka monthly khata</li>
+                </ul>
+            </div>
+
+            <!-- 6. CALENDER FINISH -->
+            <div class="step-module-card">
+                <span class="step-num">STEP 06</span>
+                <h4>🎛️ Calender Machine Finish (Ironing)</h4>
+                <p>Badi-badi steam roller press machine me saree bhejna taaki unki uncreased fall aur silky chamak tayyar ho sake.</p>
+                <ul class="bullet-list">
+                    <li>✔️ Cutting se ya Fresh se Calender bhejna</li>
+                    <li>✔️ Calender Finished hote hi final stock ready</li>
+                    <li>✔️ Calender bills & payment voucher</li>
+                </ul>
+            </div>
+
+            <!-- 7. DUKAN BHEJA (FINAL OUT) -->
+            <div class="step-module-card">
+                <span class="step-num">STEP 07</span>
+                <h4>🏪 Dukan Bheja (Final Out Register)</h4>
+                <p>Karkhane se tayyar saree dukan ya wholesale gaddi par bhejna. Karkhane me kitni bachi aur dukan kitni gayi, live status.</p>
+                <ul class="bullet-list">
+                    <li>✔️ Date-wise parcel challan & driver note</li>
+                    <li>✔️ Karkhane se final minus hokar out hona</li>
+                    <li>✔️ Pure saal me dukan par kitni saree gayi summary</li>
+                </ul>
+            </div>
+
+            <!-- 8. PAYMENTS & BAKAYA -->
+            <div class="step-module-card">
+                <span class="step-num">STEP 08</span>
+                <h4>💳 Payment & Bakaya System</h4>
+                <p>Kariger ko diya gaya advance ya payment turant uske khate me darj karein. Kul Dena Baki aur Diya gaya payment saaf dikhega.</p>
+                <ul class="bullet-list">
+                    <li>✔️ Cash, Online UPI ya Bank payment modes</li>
+                    <li>✔️ 1-Click WhatsApp par Digital Parchi bhejein</li>
+                    <li>✔️ Kariger aur Maalik dono ke mobile me same hisab</li>
+                </ul>
+            </div>
+
+            <!-- 9. 1 APRIL NAYA SAAL -->
+            <div class="step-module-card">
+                <span class="step-num">STEP 09</span>
+                <h4>📅 1 April Naya Saal (Year Closing)</h4>
+                <p>2000 Kariger ka pichla bacha hisab naye saal me minton me transfer, naye sire se diary likhne ki koi zaroorat nahi.</p>
+                <ul class="bullet-list">
+                    <li>✔️ Har godam ka bacha maal ➔ Naya Opening Stock</li>
+                    <li>✔️ Kariger baki mazdoori ➔ Tani 1 me carry-forward</li>
+                    <li>✔️ Purane saal me kabhi bhi switch karke dekhne ki azaadi</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- 6. PWA INSTALL GUIDE -->
+        <div class="pwa-box reveal">
+            <h3>📱 Apne Mobile Me App Kaise Chalayein?</h3>
+            <p>Simplicity ERP chalane ke liye kisi heavy PlayStore download ki zaroorat nahi hai. Google Chrome se 5 second me aapke phone screen par lag jata hai.</p>
+
+            <div class="pwa-steps">
+                <div class="pwa-step-card">
+                    <span>1</span>
+                    <h5>Link Kholein</h5>
+                    <small>Upar diye gaye <strong>"Launch Portal"</strong> button par click karke apna portal kholein.</small>
+                </div>
+                <div class="pwa-step-card">
+                    <span>2</span>
+                    <h5>Install Karein</h5>
+                    <small>Chrome browser ke 3 dots (⋮) par click karke <strong>"Add to Home screen"</strong> ya Install chunein.</small>
+                </div>
+                <div class="pwa-step-card">
+                    <span>3</span>
+                    <h5>1-Click Login</h5>
+                    <small>Aapke mobile home screen par app icon ban jayega. 1 click me daily hisab shuru karein.</small>
                 </div>
             </div>
+        </div>
 
-            <div class="cinematic-card reveal" onclick="openLightbox(this)">
-                <img src="https://images.unsplash.com/photo-1598300042247-d088f8ab3a91?auto=format&fit=crop&w=1600&q=85" 
-                     alt="Extreme macro closeup of Indian woman's hands cutting floral bootis from silk saree using tailor scissors"
-                     loading="lazy">
-                <div class="visual-caption-glass">✂️ Precision Booti Cutting • Artisan Hands on Jute Mat</div>
+        <!-- 7. LEADERSHIP & CONTACT CARD -->
+        <div class="founder-box reveal">
+            <div class="founder-info">
+                <h4>Simplicity ERP • Digital Karkhana</h4>
+                <p>Saree & Textile Karkhana Bhaaiyon ke Kaam ko Aasan Banane ki Ek Chhoti si Koshish.</p>
+                <p style="font-size:13px; color:var(--accent-gold); margin-top:8px;">
+                    <strong>Software Architect:</strong> Farhan Jawed &nbsp;|&nbsp; <strong>Manager:</strong> Mohammad Rehan
+                </p>
+            </div>
+            <div style="display:flex; gap:12px; flex-wrap:wrap;">
+                <a href="tel:+917985402962" class="btn-apple-blue">
+                    📞 Call Rehan (7985402962)
+                </a>
+                <a href="https://wa.me/917985402962?text=Hello%20Rehan%20bhai,%20mujhe%20apne%20karkhane%20me%20Simplicity%20ERP%20lagwana%20hai." target="_blank" class="btn-apple-green">
+                    💬 WhatsApp Chat
+                </a>
             </div>
         </div>
     </section>
 
-    <!-- ====================================================================
-         SECTION 4: CALENDER MACHINE & STEAM IRON FINISH
-         [Industrial Giant Heated Steel Cylinders, High-Pressure Press, Polished Sheen]
-         ==================================================================== -->
-    <section class="section-block" id="calender-finish">
-        <div class="reveal" style="text-align: center; max-width: 760px; margin: 0 auto 30px;">
-            <span class="section-tag">03 • Industrial Steam Iron & Finish</span>
-            <h2 class="section-title">The Mirror Glaze of Heavy Calender Rolls.</h2>
-            <p class="section-copy" style="max-width: 640px; margin: 0 auto;">Inside the finishing unit stands the massive calender machine. Heavy, heated mirror-polished chrome and steel cylinders rotate with unstoppable pressure, steam-ironing long lengths of saree to bestow an unbelievable liquid-glass lustre.</p>
-        </div>
+    <!-- FOOTER -->
+    <footer class="footer">
+        <p>© 2026 <strong>Simplicity ERP</strong> • Software: <span style="color:#ffffff;">Farhan Jawed</span> • Manager: <span style="color:#ffffff;">Mohammad Rehan</span> • All Rights Reserved.</p>
+    </footer>
 
-        <div class="full-bleed-banner reveal" onclick="openLightbox(this)">
-            <img src="https://images.unsplash.com/photo-1504917599217-d4dc5ebe6122?auto=format&fit=crop&w=1800&q=85" 
-                 alt="Massive industrial saree calender ironing machine with heavy heated steel cylinders and steam press"
-                 loading="lazy">
-            <div class="banner-overlay-content">
-                <h3 style="font-size:22px; font-weight:800; color:#ffffff; margin-bottom:8px;">🔥 Industrial Calender Press Machine</h3>
-                <p style="font-size:13px; color:var(--text-secondary); line-height:1.6;">High-pressure steam-iron cylinders compact every woven thread, permanently eliminating creases and creating the iconic radiant shine demanded by luxury bridal showrooms.</p>
-            </div>
-        </div>
-    </section>
-
-    <!-- ====================================================================
-         SECTION 5: SIMPLICITY ERP - THE TECHNOLOGY BEHIND THE ART
-         ==================================================================== -->
-    <section class="software-stage" id="technology">
-        <div class="software-header-box reveal">
-            <span class="hero-eyebrow">Enterprise Intelligence</span>
-            <h2 class="software-headline">The Art of Handloom.<br>The Power of Zero-Defect Code.</h2>
-            <p class="hero-subhead" style="margin-bottom:0;">Behind the loom, the cutting mat, and the heavy calender press operates Simplicity ERP — tracking every single gram of zari, weaver wages, and multi-godown stock movements with zero discrepancy.</p>
-        </div>
-
-        <div class="software-grid-trio reveal">
-            <div class="apple-feature-tile">
-                <span class="tile-icon">🧶</span>
-                <h3 class="tile-title">Atomic Zari Ledger</h3>
-                <p class="tile-desc">Less TP, Topi, and cone wastage calculations. Every gram of gold and silver zari is accounted for with zero material drift.</p>
-            </div>
-            <div class="apple-feature-tile">
-                <span class="tile-icon">✂️</span>
-                <h3 class="tile-title">Batch Job Work Hub</h3>
-                <p class="tile-desc">Track sarees sent for booti cutting and calender ironing in single-line batch registers with real-time damage fines.</p>
-            </div>
-            <div class="apple-feature-tile">
-                <span class="tile-icon">🏢</span>
-                <h3 class="tile-title">Multi-Godam Isolation</h3>
-                <p class="tile-desc">Main Godown, Bahadurganj, and Mubarakpur branches maintain segregated inventory with automatic live cloud sync.</p>
-            </div>
-        </div>
-
-        <div class="portal-launch-card reveal">
-            <h3>Karkhana Business Management Portal</h3>
-            <p>Access your live production workspace, passbooks, and real-time karkhana synchronization.</p>
-            <div style="display:flex; justify-content:center; gap:16px; flex-wrap:wrap;">
-                <a href="index.html" class="btn-apple-primary" style="padding:15px 34px; font-size:15px;">Launch Simplicity ERP →</a>
-                <a href="https://wa.me/917985402962?text=Hello%20Farhan%20bhai,%20mujhe%20Simplicity%20ERP%20ke%20bare%20me%20janna%20hai." target="_blank" class="btn-apple-ghost" style="padding:15px 30px; font-size:15px;">Contact Architecture Team</a>
-            </div>
-        </div>
-    </section>
-
-    <!-- ====================================================================
-         6. INTERACTIVE CINEMATIC IMAGE LIGHTBOX MODAL
-         ==================================================================== -->
+    <!-- INTERACTIVE LIGHTBOX MODAL -->
     <div id="imageLightbox" class="lightbox-overlay" onclick="closeLightbox(event)">
-        <div class="lightbox-content-wrap">
-            <button type="button" class="lightbox-close-btn" onclick="closeLightbox(event)" aria-label="Close Preview">&times;</button>
-            <img id="lightboxImg" class="lightbox-image" src="" alt="Fullscreen View">
+        <div class="lightbox-wrap">
+            <button type="button" class="lightbox-close" onclick="closeLightbox(event)">&times;</button>
+            <img id="lightboxImg" class="lightbox-img" src="" alt="Fullscreen View">
             <p id="lightboxCaption" class="lightbox-caption"></p>
         </div>
     </div>
 
-    <!-- ====================================================================
-         7. MINIMALIST FOOTER
-         ==================================================================== -->
-    <footer class="apple-footer">
-        <div>
-            Copyright © 2026 <strong>Simplicity ERP</strong> • Architecture by <strong>Farhan Jawed</strong>. All rights reserved.
-        </div>
-        <div style="display:flex; gap:20px;">
-            <a href="index.html">Karkhana Portal</a>
-            <a href="tel:+917985402962">Direct Line: +91 7985402962</a>
-            <a href="#saree-drape">Back to Top ↑</a>
-        </div>
-    </footer>
-
-    <!-- ====================================================================
-         8. JAVASCRIPT: SCROLL REVEAL & INTERACTIVE LIGHTBOX
-         ==================================================================== -->
+    <!-- JAVASCRIPT: SCROLL REVEAL & LIGHTBOX -->
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const reveals = document.querySelectorAll('.reveal');
-            
-            const revealObserver = new IntersectionObserver((entries, observer) => {
+            const observer = new IntersectionObserver((entries, obs) => {
                 entries.forEach((entry) => {
                     if (entry.isIntersecting) {
                         entry.target.classList.add('active');
-                        observer.unobserve(entry.target);
+                        obs.unobserve(entry.target);
                     }
                 });
-            }, {
-                root: null,
-                threshold: 0.12,
-                rootMargin: '0px 0px -40px 0px'
-            });
+            }, { threshold: 0.1 });
 
-            reveals.forEach((el) => revealObserver.observe(el));
+            reveals.forEach((el) => observer.observe(el));
         });
 
-        function openLightbox(container) {
-            const img = container.querySelector('img');
-            const captionBadge = container.querySelector('.visual-caption-glass') || 
-                                 container.querySelector('.banner-overlay-content h3');
-            
+        function openLightbox(card) {
+            const img = card.querySelector('img');
+            const badge = card.querySelector('.saree-badge-tag');
             if (!img) return;
 
             const modal = document.getElementById('imageLightbox');
             const modalImg = document.getElementById('lightboxImg');
-            const modalCaption = document.getElementById('lightboxCaption');
+            const modalCap = document.getElementById('lightboxCaption');
 
             modalImg.src = img.src;
-            modalImg.alt = img.alt || 'Cinematic View';
-            modalCaption.textContent = captionBadge ? captionBadge.textContent : (img.alt || '');
+            modalCap.textContent = badge ? badge.textContent : img.alt;
 
             modal.style.display = 'flex';
             void modal.offsetWidth;
@@ -870,13 +898,13 @@
         }
 
         function closeLightbox(e) {
-            if (e.target.id === 'imageLightbox' || e.target.classList.contains('lightbox-close-btn')) {
+            if (e.target.id === 'imageLightbox' || e.target.classList.contains('lightbox-close')) {
                 const modal = document.getElementById('imageLightbox');
                 modal.classList.remove('active');
                 setTimeout(() => {
                     modal.style.display = 'none';
                     document.body.style.overflow = '';
-                }, 350);
+                }, 300);
             }
         }
 
@@ -888,7 +916,7 @@
                     setTimeout(() => {
                         modal.style.display = 'none';
                         document.body.style.overflow = '';
-                    }, 350);
+                    }, 300);
                 }
             }
         });
