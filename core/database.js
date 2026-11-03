@@ -2,16 +2,12 @@
    SIMPLICITY ERP - ENTERPRISE FIREBASE CLOUD & REALTIME SYNC ENGINE
    File: core/database.js • Developed by Farhan Jawed
    Architecture: Realtime WebSocket Streaming | Bi-Directional Auto-Sync
-   Scale: 1,000,000+ Concurrent Active Users | Live Kariger Sheet Streaming
+   Scale: 1,000,000+ Concurrent Active Users | Live Instant Screen Redraw
 ============================================================================ */
 
 (() => {
     'use strict';
 
-    /* ========================================================================
-       1. FIREBASE CONFIGURATION & INITIALIZATION
-       ------------------------------------------------------------------------
-    ======================================================================== */
     const firebaseConfig = Object.freeze({
         apiKey: "AIzaSyDkLlLPFnZexLWxtvqg3UiE9XG_IclaSAk",
         authDomain: "simplicity-erp.firebaseapp.com",
@@ -61,10 +57,6 @@
         return 'farhan';
     };
 
-    /* ========================================================================
-       2. REAL-TIME CONNECTION MONITORING (.info/connected)
-       ------------------------------------------------------------------------
-    ======================================================================== */
     const showSyncStatus = (status) => {
         const badge = document.getElementById('cloud-status-badge');
         if (!badge) return;
@@ -132,24 +124,26 @@
 
     if (db) initConnectionWatcher();
 
-    /* ========================================================================
-       3. SMART REAL-TIME SCREEN REPAINTER
-       ------------------------------------------------------------------------
-    ======================================================================== */
+    /**
+     * ⚡ ULTRA-FAST SCREEN REPAINTER (Directly triggers DOM update in 30ms)
+     */
     const triggerSmartUIRepaint = () => {
         if (renderDebounceTimer) clearTimeout(renderDebounceTimer);
         renderDebounceTimer = setTimeout(() => {
-            // 1. Kariger Section or Sheet open
+            // 1. Kariger Sheet Section open
+            const shSec = document.getElementById('kariger-sheet-section');
+            if (shSec && shSec.style.display !== 'none') {
+                if (typeof window.renderSheetTabs === 'function') window.renderSheetTabs();
+                if (typeof window.loadCurrentSheetData === 'function') window.loadCurrentSheetData();
+            }
+
+            // 2. Kariger Directory Section open
             const kSec = document.getElementById('kariger-section');
             if (kSec && kSec.style.display !== 'none') {
                 if (typeof window.renderKarigerTable === 'function') window.renderKarigerTable();
             }
-            const shSec = document.getElementById('kariger-sheet-section');
-            if (shSec && shSec.style.display !== 'none') {
-                if (typeof window.loadCurrentSheetData === 'function') window.loadCurrentSheetData();
-            }
 
-            // 2. Bana Section
+            // 3. Bana Section
             const bSec = document.getElementById('bana-section');
             if (bSec && bSec.style.display !== 'none') {
                 if (typeof window.renderBanaTable === 'function') window.renderBanaTable();
@@ -157,7 +151,7 @@
                 else if (typeof window.renderBanaPassbookRows === 'function') window.renderBanaPassbookRows();
             }
 
-            // 3. Zari Section
+            // 4. Zari Section
             const zSec = document.getElementById('zari-section');
             if (zSec && zSec.style.display !== 'none') {
                 if (typeof window.renderZariTable === 'function') window.renderZariTable();
@@ -165,33 +159,28 @@
                 else if (typeof window.renderZariPassbookRows === 'function') window.renderZariPassbookRows();
             }
 
-            // 4. Saree Section
+            // 5. Saree Section
             const sSec = document.getElementById('saree-section');
             if (sSec && sSec.style.display !== 'none') {
                 if (typeof window.renderSareeTable === 'function') window.renderSareeTable();
                 if (typeof window.applySareePassbookFilters === 'function') window.applySareePassbookFilters();
             }
 
-            // 5. Admin Section
-            const admSec = document.getElementById('admin-section');
-            if (admSec && admSec.style.display !== 'none') {
-                if (typeof window.renderAdminUsersTable === 'function') window.renderAdminUsersTable();
+            // 6. Rozana Daybook View on Dashboard
+            if (typeof window.renderDashboardDayBook === 'function') {
+                window.renderDashboardDayBook();
             }
 
-            // 6. Global Dashboard Badges
+            // 7. Global Dashboard Badges
             if (typeof window.updateDashboardBadgeTotals === 'function') {
                 window.updateDashboardBadgeTotals();
             }
             if (typeof window.triggerActiveSectionRefresh === 'function') {
                 window.triggerActiveSectionRefresh();
             }
-        }, 60);
+        }, 30);
     };
 
-    /* ========================================================================
-       4. BI-DIRECTIONAL REAL-TIME CLOUD LISTENER ENGINE
-       ------------------------------------------------------------------------
-    ======================================================================== */
     const detachFirebaseLiveListeners = () => {
         try {
             ACTIVE_LISTENERS_MAP.forEach(({ ref, handler }) => {
@@ -228,18 +217,18 @@
                         ? window.safeArray(remoteVal)
                         : remoteVal;
 
-                    if (window.APP_MEMORY_CACHE) {
-                        window.APP_MEMORY_CACHE[fullCacheKey] = cleanData;
+                    // 🌟 Update RAM Cache, LocalStorage & IndexedDB simultaneously
+                    if (window.StorageEngine && typeof window.StorageEngine.setRemoteStore === 'function') {
+                        window.StorageEngine.setRemoteStore(fullCacheKey, cleanData);
+                    } else if (typeof window.setRemoteStore === 'function') {
+                        window.setRemoteStore(fullCacheKey, cleanData);
+                    } else {
+                        if (window.APP_MEMORY_CACHE) window.APP_MEMORY_CACHE[fullCacheKey] = cleanData;
+                        try { localStorage.setItem(fullCacheKey, JSON.stringify(cleanData)); } catch (_) {}
+                        if (typeof window.idbPut === 'function') window.idbPut(fullCacheKey, cleanData);
                     }
 
-                    if (typeof window.idbPut === 'function') {
-                        window.idbPut(fullCacheKey, cleanData);
-                    }
-
-                    try {
-                        localStorage.setItem(fullCacheKey, JSON.stringify(cleanData));
-                    } catch (_) {}
-
+                    // 🚀 Redraw screen immediately (No page reload needed!)
                     triggerSmartUIRepaint();
                     showSyncStatus('online');
                 } catch (dataErr) {
@@ -260,9 +249,6 @@
         }
     };
 
-    /**
-     * 🌟 DYNAMIC LIVE SYNC FOR A SPECIFIC KARIGER'S SHEET
-     */
     const syncKarigerSheetLive = (kId) => {
         if (!db || !kId) return;
         const uid = getSafeUserId();
@@ -299,7 +285,6 @@
 
         console.log(`📡 [CloudEngine] Live Sync Active for: [${uid}] | Session: [${session}]`);
 
-        // Global Tenant Keys
         const globalKeys = [
             'app_sessions_list',
             'app_active_session',
@@ -315,7 +300,6 @@
             attachTargetedListener(cacheKey, key);
         });
 
-        // Full Session-Scoped Collections
         const sessionKeys = [
             'kariger_list',
             'bana_stock',
@@ -344,7 +328,6 @@
             attachTargetedListener(cacheKey, cloudPath);
         });
 
-        // Agar koi sheet active hai toh uska bhi listener lagao
         if (typeof window.activeKarigerId !== 'undefined' && window.activeKarigerId) {
             syncKarigerSheetLive(window.activeKarigerId);
         }
@@ -372,10 +355,6 @@
         }
     };
 
-    /* ========================================================================
-       5. PUBLIC EXPORTS & AUTOMATIC STARTUP
-       ------------------------------------------------------------------------
-    ======================================================================== */
     const publicCloudAPI = {
         get db() { return db; },
         get isConnectedToCloud() { return isConnectedToCloud; },
