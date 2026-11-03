@@ -1,25 +1,25 @@
 /* ========================================================
-   SIMPLICITY ERP - ADMIN CONTROL & APPROVAL ENGINE
+   SIMPLICITY ERP - ENTERPRISE ADMIN CONTROL & APPROVAL ENGINE
    File: admin/admin.js • Developed by Farhan Jawed
-   (Instant Realtime Sync + Approval System + Cloud Delete)
+   (Live Cloud Sync + Top Approval Banner + Master Protection)
 ======================================================== */
 
 var fbUsersListenerAttached = false;
 
-// 👑 ADMIN PANEL OPEN (Live Cloud Fetch & Sync)
+// 👑 ADMIN PANEL OPEN (Live Cloud Realtime Listener)
 function openAdminModule() {
     var uid = (typeof currentUserId !== "undefined" ? String(currentUserId).trim().toLowerCase() : "");
     var role = (typeof currentUserRole !== "undefined" ? String(currentUserRole).trim().toLowerCase() : "");
 
     // Master Admin 'farhan' ya role 'admin' dono access kar sakte hain
     if (role !== "admin" && uid !== "farhan") {
-        return alert("Sirf Admin is panel ko access kar sakte hain!");
+        return alert("⛔ Security Alert: Sirf Master Admin (Farhan) is panel ko access kar sakte hain!");
     }
 
     if (typeof hideAllSections === "function") hideAllSections();
     setDisplay("admin-section", "block");
 
-    // 1. Local Cache se turant dikhao taaki screen blank na lage
+    // 1. Local Cache se turant render karo taaki screen blank na dikhe
     renderAdminUsersTable();
 
     // 2. Firebase Cloud Se Live Realtime Connection (.on listener)
@@ -27,53 +27,99 @@ function openAdminModule() {
         fbUsersListenerAttached = true;
         db.ref("app_users").on("value", function(snap) {
             var v = snap.val();
-            if (v) {
-                var arr = [];
+            var arr = [];
+
+            if (Array.isArray(v)) {
+                arr = v.filter(Boolean);
+            } else if (v && typeof v === "object") {
                 for (var k in v) { 
-                    if (v[k]) {
+                    if (v[k] && typeof v[k] === "object") {
                         var uItem = v[k];
                         if (!uItem.id) uItem.id = k;
                         arr.push(uItem);
                     }
                 }
-
-                // Guarantee Master Admin presence
-                if (!arr.some(function(u) { return String(u.id).toLowerCase() === "farhan"; })) {
-                    arr.push({ 
-                        id: "farhan", 
-                        name: "Farhan jawed", 
-                        pass: "97438090641154", 
-                        role: "admin", 
-                        status: "active", 
-                        date: "2026-01-01" 
-                    });
-                }
-
-                // Multi-Tier Caches Update
-                localStorage.setItem("app_users", JSON.stringify(arr));
-                if (typeof APP_MEMORY_CACHE !== "undefined") APP_MEMORY_CACHE["app_users"] = arr;
-                if (typeof idbPut === "function") idbPut("app_users", arr);
-                if (typeof setStore === "function") setStore("app_users", arr);
-
-                renderAdminUsersTable();
             }
+
+            // Master Admin 'farhan' ko hamesha list me barkarar rakho
+            if (!arr.some(function(u) { return String(u.id).toLowerCase() === "farhan"; })) {
+                arr.push({ 
+                    id: "farhan", 
+                    name: "Farhan jawed", 
+                    mobile: "7065572191",
+                    pass: "97438090641154", 
+                    role: "admin", 
+                    status: "active", 
+                    date: "2026-01-01" 
+                });
+            }
+
+            commitAdminUsersRegistry(arr);
+            renderAdminUsersTable();
         });
     }
 }
 
-// 👑 ADMIN TABLE RENDER (Pending Detection + Highlighted Banner + Approve Button)
-function renderAdminUsersTable() {
-    // 1. Safe Users Retrieval (Original Code 3 Standard)
-    var users = [];
-    if (typeof getUsersList === "function") {
-        users = getUsersList();
+// 📦 MULTI-TIER SAVE (Har storage me save karega taaki mismatch na ho)
+function commitAdminUsersRegistry(users) {
+    var uid = (typeof currentUserId !== "undefined" ? String(currentUserId).trim().toLowerCase() : "farhan");
+
+    try {
+        localStorage.setItem("app_users", JSON.stringify(users));
+        localStorage.setItem(uid + "_app_users", JSON.stringify(users));
+    } catch (_) {}
+
+    if (typeof APP_MEMORY_CACHE !== "undefined") {
+        APP_MEMORY_CACHE["app_users"] = users;
+        APP_MEMORY_CACHE[uid + "_app_users"] = users;
     }
-    if (!users || !users.length) {
+
+    if (typeof idbPut === "function") {
+        idbPut("app_users", users);
+        idbPut(uid + "_app_users", users);
+    }
+
+    if (typeof setStore === "function") {
+        setStore("app_users", users);
+    }
+}
+
+// 👑 ADMIN TABLE RENDER (Full IDs List + Top Approval Banner)
+function renderAdminUsersTable() {
+    var uid = (typeof currentUserId !== "undefined" ? String(currentUserId).trim().toLowerCase() : "farhan");
+    var users = [];
+
+    // Sabhi sources se dhoondo taaki koi bhi user miss na ho
+    if (typeof getUsersList === "function") {
+        var gList = getUsersList();
+        if (Array.isArray(gList) && gList.length > 0) users = gList;
+    }
+
+    if (!users.length && typeof getStore === "function") {
+        var sList = getStore("app_users");
+        if (Array.isArray(sList) && sList.length > 0) users = sList;
+    }
+
+    if (!users.length) {
         try {
-            users = JSON.parse(localStorage.getItem("app_users")) || [];
-        } catch (e) {
+            users = JSON.parse(localStorage.getItem("app_users")) || 
+                    JSON.parse(localStorage.getItem(uid + "_app_users")) || [];
+        } catch (_) {
             users = [];
         }
+    }
+
+    // Default Master Admin fallback
+    if (!users.length) {
+        users = [{
+            id: "farhan",
+            name: "Farhan jawed",
+            mobile: "7065572191",
+            pass: "97438090641154",
+            role: "admin",
+            status: "active",
+            date: "2026-01-01"
+        }];
     }
 
     var tbody = document.getElementById("admin-users-table-body");
@@ -100,16 +146,16 @@ function renderAdminUsersTable() {
             act++;
         }
 
-        var stBadge = isA ? "<span class='badge-green'>👑 Owner</span>" : 
-                     (isP ? "<span style='background:#fef3c7; color:#b45309; border:1px solid #fde68a; padding:4px 8px; border-radius:20px; font-weight:700; font-size:11px;'>⏳ Approval Pending</span>" : 
-                     (isB ? "<span class='badge-red'>⛔ Blocked</span>" : 
-                     (isE ? "<span class='badge-red'>⌛ Expired</span>" : "<span class='badge-green'>Active</span>")));
+        var stBadge = isA ? "<span class='badge-green' style='background:#10b981; color:#fff; padding:3px 8px; border-radius:12px; font-weight:700;'>👑 Owner</span>" : 
+                     (isP ? "<span style='background:#fef3c7; color:#b45309; border:1px solid #fde68a; padding:3px 8px; border-radius:12px; font-weight:700; font-size:11px;'>⏳ Approval Pending</span>" : 
+                     (isB ? "<span class='badge-red' style='background:#ef4444; color:#fff; padding:3px 8px; border-radius:12px; font-weight:700;'>⛔ Blocked</span>" : 
+                     (isE ? "<span class='badge-red' style='background:#f97316; color:#fff; padding:3px 8px; border-radius:12px; font-weight:700;'>⌛ Expired</span>" : "<span class='badge-green' style='background:#10b981; color:#fff; padding:3px 8px; border-radius:12px; font-weight:700;'>Active</span>")));
 
-        // Action Buttons: Pending ke liye APPROVE, active ke liye BLOCK
+        // Action Buttons
         var actionBtns = "";
         if (isP) {
             actionBtns = "<button type='button' class='quick-btn' style='background:#059669; color:white; font-weight:bold; padding:6px 12px; border-radius:6px; cursor:pointer;' onclick='approveUserByAdmin(\"" + u.id + "\")'>✅ Approve</button> " +
-                         "<button type='button' class='delete-btn' onclick='deleteUserByAdmin(\"" + u.id + "\")'>🗑️ Reject</button>";
+                         "<button type='button' class='delete-btn' style='padding:6px 10px;' onclick='deleteUserByAdmin(\"" + u.id + "\")'>🗑️ Reject</button>";
         } else if (!isA) {
             actionBtns = "<button type='button' class='quick-btn " + (isB ? "btn-in" : "btn-out") + "' onclick='toggleUserBlockStatus(\"" + u.id + "\")'>" + (isB ? "Unblock" : "Block") + "</button> " +
                          "<button type='button' class='edit-btn' onclick='resetUserPasswordByAdmin(\"" + u.id + "\")'>🔑 Pass</button> " +
@@ -118,7 +164,7 @@ function renderAdminUsersTable() {
             actionBtns = "<span style='color:#059669; font-weight:bold; font-size:12px;'>👑 Full Control</span>";
         }
 
-        var expiryDisplay = isA ? "Lifetime" : 
+        var expiryDisplay = isA ? "<strong style='color:#059669;'>Lifetime</strong>" : 
                             (isP ? "<span style='color:#b45309; font-weight:bold;'>Approval Ka Intezar</span>" : 
                             ("<input type='date' value='" + (u.expiryDate || "") + "' onchange='updateUserExpiryDate(\"" + u.id + "\", this.value)' style='padding:2px 4px;font-size:11px;border-radius:4px;border:1px solid #cbd5e1;'> " + (typeof formatDateDisplay === "function" ? formatDateDisplay(u.expiryDate) : (u.expiryDate || "-")) + " <button type='button' onclick='extendValidity(\"" + u.id + "\", 30)' style='padding:2px 6px;font-size:10px;border-radius:4px;border:none;background:#2563eb;color:white;cursor:pointer;'>+30D</button>"));
 
@@ -135,10 +181,9 @@ function renderAdminUsersTable() {
         "</tr>";
     });
 
-    // Single Reflow Render
     tbody.innerHTML = tableRowsHtml;
 
-    // 🔔 TOP PENDING CARD: Table Ke Upar Bada Card
+    // 🔔 TOP PENDING CARD: Approval Request Banner
     var adminSec = document.getElementById("admin-section");
     var pendingBanner = document.getElementById("admin-pending-approval-banner");
     if (!pendingBanner && adminSec) {
@@ -175,6 +220,7 @@ function renderAdminUsersTable() {
         }
     }
 
+    // Counters Update
     var elTot = document.getElementById("admin-total-users");
     var elAct = document.getElementById("admin-active-users");
     var elBlk = document.getElementById("admin-blocked-users");
@@ -183,17 +229,9 @@ function renderAdminUsersTable() {
     if (elBlk) elBlk.textContent = blk;
 }
 
-// Helper: Save across all storage engines
-function commitUsersRegistry(users) {
-    localStorage.setItem("app_users", JSON.stringify(users));
-    if (typeof APP_MEMORY_CACHE !== "undefined") APP_MEMORY_CACHE["app_users"] = users;
-    if (typeof idbPut === "function") idbPut("app_users", users);
-    if (typeof setStore === "function") setStore("app_users", users);
-}
-
-// ✅ ADMIN APPROVE ENGINE (1-Click Instant Approval)
+// ✅ ADMIN APPROVE ENGINE (Instant 30 Days Validity)
 function approveUserByAdmin(uid) {
-    var users = (typeof getUsersList === "function") ? getUsersList() : JSON.parse(localStorage.getItem("app_users") || "[]");
+    var users = getAdminUsersListCurrent();
     var u = users.find(function(x) { return String(x.id) === String(uid); });
     if (!u) return alert("User record nahi mila!");
 
@@ -204,9 +242,8 @@ function approveUserByAdmin(uid) {
     u.status = "active";
     u.expiryDate = formattedExp;
 
-    commitUsersRegistry(users);
+    commitAdminUsersRegistry(users);
     
-    // Direct Cloud Update (Safe Child Path)
     if (typeof db !== "undefined" && db) {
         try {
             db.ref("app_users/" + uid + "/status").set("active");
@@ -221,12 +258,12 @@ function approveUserByAdmin(uid) {
 }
 
 function updateUserExpiryDate(uid, dateVal) {
-    var users = (typeof getUsersList === "function") ? getUsersList() : JSON.parse(localStorage.getItem("app_users") || "[]");
+    var users = getAdminUsersListCurrent();
     var u = users.find(function(x) { return String(x.id) === String(uid); });
     if (!u) return;
 
     u.expiryDate = dateVal;
-    commitUsersRegistry(users);
+    commitAdminUsersRegistry(users);
 
     if (typeof db !== "undefined" && db) {
         try { db.ref("app_users/" + uid + "/expiryDate").set(dateVal); } catch (e) {}
@@ -235,7 +272,7 @@ function updateUserExpiryDate(uid, dateVal) {
 }
 
 function extendValidity(uid, days) {
-    var users = (typeof getUsersList === "function") ? getUsersList() : JSON.parse(localStorage.getItem("app_users") || "[]");
+    var users = getAdminUsersListCurrent();
     var u = users.find(function(x) { return String(x.id) === String(uid); });
     if (!u) return;
 
@@ -246,7 +283,7 @@ function extendValidity(uid, days) {
     u.expiryDate = formatted;
     if (u.status === "blocked" || u.status === "pending") u.status = "active";
 
-    commitUsersRegistry(users);
+    commitAdminUsersRegistry(users);
 
     if (typeof db !== "undefined" && db) {
         try {
@@ -259,7 +296,7 @@ function extendValidity(uid, days) {
 }
 
 function resetUserPasswordByAdmin(uid) {
-    var users = (typeof getUsersList === "function") ? getUsersList() : JSON.parse(localStorage.getItem("app_users") || "[]");
+    var users = getAdminUsersListCurrent();
     var u = users.find(function(x) { return String(x.id) === String(uid); });
     if (!u) return;
 
@@ -267,7 +304,7 @@ function resetUserPasswordByAdmin(uid) {
     if (!newPass || !newPass.trim()) return;
 
     u.pass = newPass.trim();
-    commitUsersRegistry(users);
+    commitAdminUsersRegistry(users);
 
     if (typeof db !== "undefined" && db) {
         try { db.ref("app_users/" + uid + "/pass").set(u.pass); } catch (e) {}
@@ -279,12 +316,12 @@ function resetUserPasswordByAdmin(uid) {
 function toggleUserBlockStatus(uid) {
     if (String(uid).toLowerCase() === "farhan") return alert("⛔ Master Admin ko block nahi kiya ja sakta!");
 
-    var users = (typeof getUsersList === "function") ? getUsersList() : JSON.parse(localStorage.getItem("app_users") || "[]");
+    var users = getAdminUsersListCurrent();
     var u = users.find(function(x) { return String(x.id) === String(uid); });
     if (!u) return;
 
     u.status = (u.status === "blocked" ? "active" : "blocked");
-    commitUsersRegistry(users);
+    commitAdminUsersRegistry(users);
 
     if (typeof db !== "undefined" && db) {
         try { db.ref("app_users/" + uid + "/status").set(u.status); } catch (e) {}
@@ -292,32 +329,41 @@ function toggleUserBlockStatus(uid) {
     renderAdminUsersTable();
 }
 
-// 🗑️ USER DELETE / REJECT ENGINE (Permanent Cloud + Local Purge)
 function deleteUserByAdmin(uid) {
     if (String(uid).toLowerCase() === "farhan") return alert("⛔ Master Admin ko delete nahi kiya ja sakta!");
-    if (!confirm("Kya aap sach me is User aur iska SARRA DATA delete/reject karna chahte hain?\nYeh action undo nahi ho sakta.")) return;
+    if (!confirm("Kya aap sach me is User aur iska SARRA DATA delete/reject karna chahte hain?")) return;
     
     if (typeof purgeUserDataPermanently === "function") {
         purgeUserDataPermanently(uid);
     }
 
-    // 1. Local Cache Se Hatao
-    var users = ((typeof getUsersList === "function") ? getUsersList() : JSON.parse(localStorage.getItem("app_users") || "[]"))
-        .filter(function(x) { return String(x.id) !== String(uid); });
-
-    commitUsersRegistry(users);
+    var users = getAdminUsersListCurrent().filter(function(x) { return String(x.id) !== String(uid); });
+    commitAdminUsersRegistry(users);
     
-    // 2. Firebase Cloud Se Bhi Permanently Hatao (Taaki refresh par wapas na aaye)
     if (typeof db !== "undefined" && db) {
         try {
             db.ref("app_users/" + uid).remove();
         } catch (e) {
-            console.error("Firebase remove error:", e);
+            console.error(e);
         }
     }
     
     renderAdminUsersTable();
-    alert("🗑️ User permanently delete ho gaya!");
+    alert("🗑️ User delete ho gaya!");
+}
+
+function getAdminUsersListCurrent() {
+    var uid = (typeof currentUserId !== "undefined" ? String(currentUserId).trim().toLowerCase() : "farhan");
+    if (typeof getUsersList === "function") {
+        var l = getUsersList();
+        if (Array.isArray(l) && l.length > 0) return l;
+    }
+    try {
+        return JSON.parse(localStorage.getItem("app_users")) || 
+               JSON.parse(localStorage.getItem(uid + "_app_users")) || [];
+    } catch (_) {
+        return [];
+    }
 }
 
 function refreshAdminUsersList() {
@@ -333,7 +379,7 @@ function refreshAdminUsersList() {
                         arr.push(it);
                     }
                 }
-                commitUsersRegistry(arr);
+                commitAdminUsersRegistry(arr);
                 renderAdminUsersTable();
                 alert("✅ Admin Users List Refresh ho gayi!");
             }
