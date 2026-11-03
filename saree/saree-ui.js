@@ -1,8 +1,8 @@
 /* ============================================================================
    SIMPLICITY ERP - HIGH-PERFORMANCE SAREE STOCK & 4-TAB PIPELINE UI
    File: saree/saree-ui.js • Developed by Farhan Jawed
-   Architecture: Zero-Reflow Virtualized DOM | 4-Stage Pipeline Synchronizer
-   Scale: 1,000,000 - 2,000,000 Active Users | Atomic Stage Transitions
+   Architecture: 20-Item Virtualized Pagination | Opening Stock Distinction
+   Scale: 1,000,000 - 2,000,000 Active Users | Multi-Godam Synchronization
 ============================================================================ */
 
 (() => {
@@ -17,7 +17,11 @@
     window.currentPassbookSareeKey = '';
     window.currentPassbookSareeTitle = '';
 
-    // Debounce timers for search filtering
+    // 📱 PASSBOOK PAGINATION STATE (Prevents Mobile Freezing)
+    let sareePassbookCurrentPage = 1;
+    const SAREE_PAGE_SIZE = 20;
+    let filteredSareePassbookCache = [];
+
     let sareeSearchDebounceTimer = null;
     let passbookSearchDebounceTimer = null;
 
@@ -71,9 +75,6 @@
         return (!clean || clean === 'k_main') ? 'k_main' : clean;
     };
 
-    /**
-     * Cache Invalidation Bridge: Synchronizes with saree-calc.js
-     */
     const triggerSareeCacheInvalidation = () => {
         if (typeof window.invalidateSareeCalcCache === 'function') {
             window.invalidateSareeCalcCache();
@@ -86,7 +87,6 @@
        3. NAVIGATION & 4-TAB PIPELINE CONTROLLER
        ------------------------------------------------------------------------
     ======================================================================== */
-
     const openSareeModule = () => {
         const dView = document.getElementById('dashboard-view');
         if (dView) dView.style.display = 'none';
@@ -97,10 +97,6 @@
         switchSareeStockTab(window.currentSareeTab || 'fresh');
     };
 
-    /**
-     * Switches between the 4 primary manufacturing pipeline stages
-     * @param {'fresh'|'cutting'|'finished'|'lott'} tabName 
-     */
     const switchSareeStockTab = (tabName) => {
         window.currentSareeTab = String(tabName || 'fresh').toLowerCase();
 
@@ -157,7 +153,6 @@
        4. DIRECT MANUAL INWARD ENGINE
        ------------------------------------------------------------------------
     ======================================================================== */
-
     const toggleSareeForm = () => {
         const f = document.getElementById('add-saree-form');
         if (!f) return;
@@ -194,6 +189,7 @@
             aai: pcs,
             gai: 0,
             isOut: false,
+            isOpening: false,
             note: 'Direct Entry',
             timestamp: Date.now()
         });
@@ -222,7 +218,7 @@
     };
 
     /* ========================================================================
-       5. HIGH-SPEED MAIN TABLE RENDERER (SINGLE-PASS STRING BUILDER)
+       5. MAIN TABLE RENDERER
        ------------------------------------------------------------------------
     ======================================================================== */
     const renderSareeTable = () => {
@@ -250,13 +246,11 @@
 
         const history = window.safeArray ? window.safeArray(window.getStore('saree_history')) : [];
 
-        // Pipeline grouping from saree-calc.js
         let rows = [];
         if (typeof window.groupSareeStockByTab === 'function') {
             rows = window.groupSareeStockByTab(history, window.currentSareeTab, window.currentSareeKarkhanaFilter);
         }
 
-        // Universal Search Filter
         const searchInput = document.getElementById('search-saree-input');
         const searchText = searchInput ? searchInput.value : '';
         if (typeof window.searchSareeData === 'function') {
@@ -287,7 +281,7 @@
                 <td>🏭 ${esc(row.godamName)}</td>
                 <td style="color:#059669; font-weight:800; font-size:14px;">+${safeInt(row.aai)}</td>
                 <td style="color:#dc2626; font-weight:800; font-size:14px;">${safeInt(row.gai) > 0 ? `-${safeInt(row.gai)}` : '0'}</td>
-                <td style="color:#2563eb; font-weight:800; font-size:15px; background:#eff6ff;">${bachi}</td>
+                <td style="color:#2563eb; font-weight:800; font-size:15px; background:#eff6ff;">${bachi} Pcs</td>
                 <td style="text-align:center; white-space:nowrap;">
                     <button type="button" class="sheet-btn" style="background:${headerBg}; padding:4px 10px; font-weight:bold; border-radius:4px; border:none; color:white; cursor:pointer;" onclick="openSareePassbook('${safeSaree}', '${safeKariger}', '${safeKid}')">📖 Passbook</button>
                     ${transferBtn}
@@ -466,10 +460,9 @@
     };
 
     /* ========================================================================
-       7. SAREE PASSBOOK SYSTEM
+       7. 📱 20-ITEM PAGINATED SAREE PASSBOOK (With Opening Distinction)
        ------------------------------------------------------------------------
     ======================================================================== */
-
     const openSareePassbook = (safeSaree, safeKariger, safeKid) => {
         const sName = decodeURIComponent(safeSaree);
         const kName = decodeURIComponent(safeKariger);
@@ -477,6 +470,7 @@
 
         window.currentPassbookSareeKey = `${normText(sName)}___${normText(kName)}___${normGodownId(kId)}`.toLowerCase();
         window.currentPassbookSareeTitle = `${sName} (${kName})`;
+        sareePassbookCurrentPage = 1;
 
         const modal = document.getElementById('item-modal');
         if (!modal) return;
@@ -496,29 +490,30 @@
             modalBody.innerHTML = `
                 <div style="background:#f8fafc; border:1px solid #cbd5e1; padding:12px; border-radius:10px; margin-bottom:12px; display:flex; flex-wrap:wrap; gap:10px; align-items:center; justify-content:space-between;">
                     <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-                        <div><label style="font-size:12px; font-weight:700;">From Date:</label><br><input type="date" id="saree-pass-from-date" onchange="renderSareePassbookRows()"></div>
-                        <div><label style="font-size:12px; font-weight:700;">To Date:</label><br><input type="date" id="saree-pass-to-date" onchange="renderSareePassbookRows()"></div>
+                        <div><label style="font-size:12px; font-weight:700;">From Date:</label><br><input type="date" id="saree-pass-from-date" onchange="applySareePassbookFilters()"></div>
+                        <div><label style="font-size:12px; font-weight:700;">To Date:</label><br><input type="date" id="saree-pass-to-date" onchange="applySareePassbookFilters()"></div>
                         <div style="align-self:flex-end;"><button type="button" class="quick-btn btn-out" onclick="resetSareePassbookFilters()">Reset</button></div>
                     </div>
-                    <div style="flex:1; min-width:200px;">
-                        <label style="font-size:12px; font-weight:700;">🔍 Search in Passbook:</label><br>
-                        <input type="text" id="saree-pass-search-input" class="search-box" placeholder="Search Date, Worker, Detail, Qty..." oninput="debouncedPassbookSearch()">
+                    <div style="flex:1; min-width:180px;">
+                        <label style="font-size:12px; font-weight:700;">🔍 Search:</label><br>
+                        <input type="text" id="saree-pass-search-input" class="search-box" placeholder="Search Date, Detail, Qty..." oninput="applySareePassbookFilters()">
                     </div>
                 </div>
                 <div class="table-responsive">
                     <table>
                         <thead>
                             <tr style="background:#1e3a8a; color:white; font-size:12px;">
-                                <th>TARIKH</th><th>DETAIL (VIVRAN)</th><th>BUNNE WALA (MAKER)</th><th>AAI (+)</th><th>GAYI (-)</th><th>ACTION</th>
+                                <th>TARIKH</th><th>DETAIL (VIVRAN)</th><th>BUNNE WALA (MAKER)</th><th>AAI (+)</th><th>GAYI (-)</th><th style="text-align:center;">ACTION</th>
                             </tr>
                         </thead>
                         <tbody id="saree-passbook-table-body"></tbody>
                     </table>
-                </div>`;
+                </div>
+                <div id="saree-passbook-pagination-controls" style="display:flex; justify-content:space-between; align-items:center; margin-top:12px; padding:8px 4px; border-top:1px solid #e2e8f0;"></div>`;
         }
 
         modal.style.display = 'flex';
-        renderSareePassbookRows();
+        applySareePassbookFilters();
     };
 
     const resetSareePassbookFilters = () => {
@@ -528,23 +523,13 @@
         if (fDate) fDate.value = '';
         if (tDate) tDate.value = '';
         if (sInp) sInp.value = '';
-        renderSareePassbookRows();
+        sareePassbookCurrentPage = 1;
+        applySareePassbookFilters();
     };
 
-    const debouncedPassbookSearch = () => {
-        clearTimeout(passbookSearchDebounceTimer);
-        passbookSearchDebounceTimer = setTimeout(() => {
-            renderSareePassbookRows();
-        }, 150);
-    };
-
-    const renderSareePassbookRows = () => {
-        const tbody = document.getElementById('saree-passbook-table-body');
-        if (!tbody) return;
-
+    const applySareePassbookFilters = () => {
         const history = window.safeArray ? window.safeArray(window.getStore('saree_history')) : [];
 
-        // Filter by item key and current pipeline stage
         let list = history.filter((r) => {
             if (!r) return false;
             const sName = normText(r.sareeName || r.name, 'GENERAL SAREE');
@@ -558,32 +543,76 @@
 
         const fDate = document.getElementById('saree-pass-from-date')?.value || '';
         const tDate = document.getElementById('saree-pass-to-date')?.value || '';
-        const sTxt = document.getElementById('saree-pass-search-input')?.value || '';
+        const sTxt = (document.getElementById('saree-pass-search-input')?.value || '').toLowerCase().trim();
 
-        if (typeof window.filterPassbookHistory === 'function') {
-            list = window.filterPassbookHistory(list, fDate, tDate, sTxt);
+        if (fDate) list = list.filter((item) => item.date >= fDate);
+        if (tDate) list = list.filter((item) => item.date <= tDate);
+
+        if (sTxt) {
+            list = list.filter((item) => {
+                const fullText = `${item.date || ''} ${item.sareeName || ''} ${item.karigerName || ''} ${item.typeLabel || ''} ${item.aai || ''} ${item.gai || ''}`.toLowerCase();
+                return fullText.includes(sTxt);
+            });
         }
 
-        if (!list.length) {
+        list.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+
+        filteredSareePassbookCache = list;
+        renderPaginatedSareePassbook();
+    };
+
+    const renderPaginatedSareePassbook = () => {
+        const tbody = document.getElementById('saree-passbook-table-body');
+        const pager = document.getElementById('saree-passbook-pagination-controls');
+        if (!tbody) return;
+        tbody.innerHTML = '';
+
+        const totalEntries = filteredSareePassbookCache.length;
+        if (!totalEntries) {
             tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:15px; color:#888;">Is Saree par koi transaction record nahi hai.</td></tr>';
+            if (pager) pager.innerHTML = '';
             return;
         }
 
+        const totalPages = Math.ceil(totalEntries / SAREE_PAGE_SIZE);
+        if (sareePassbookCurrentPage > totalPages) sareePassbookCurrentPage = totalPages;
+        if (sareePassbookCurrentPage < 1) sareePassbookCurrentPage = 1;
+
+        const startIndex = (sareePassbookCurrentPage - 1) * SAREE_PAGE_SIZE;
+        const pageRows = filteredSareePassbookCache.slice(startIndex, startIndex + SAREE_PAGE_SIZE);
+
         let html = '';
-        list.forEach((r) => {
+        pageRows.forEach((r) => {
             const isGai = (r.isOut === true) || (safeNum(r.gai) > 0) || String(r.type || '').includes('Out');
             const inQty = isGai ? 0 : safeInt(r.aai !== undefined ? r.aai : r.pcs);
             const outQty = isGai ? safeInt(r.gai !== undefined ? r.gai : r.pcs) : 0;
 
-            const isAutoLinked = Boolean(r.refId);
-            const actBtn = isAutoLinked
-                ? "<span style='color:#64748b; font-size:11px; font-weight:700;'>🔒 Auto Logged</span>"
-                : `<button type="button" class="delete-btn" onclick="deleteManualSareeEntry('${esc(r.id)}')">🗑️ Delete</button>`;
+            // ⭐ OPENING STOCK VS FRESH INWARD CLEAR BADGES
+            const isOpening = (r.isOpening === true) || String(r.typeLabel || '').includes('Opening') || String(r.karigerName || '').includes('Opening');
+            const isKariger = Boolean(r.refId && !isOpening);
+
+            let typeDisplay = '';
+            let karigerDisplay = '';
+            let actBtn = '';
+
+            if (isOpening) {
+                typeDisplay = `<span style="background:#fef3c7; color:#b45309; border:1px solid #fde68a; font-size:11px; font-weight:800; padding:2px 8px; border-radius:12px;">📦 Opening Stock (Pichle Saal Ka)</span>`;
+                karigerDisplay = `<span style="color:#b45309; font-weight:bold;">📦 Pichla Bacha Stock</span>`;
+                actBtn = `<span style='color:#64748b; font-size:11px; font-weight:700;'>🔒 Opening Lock</span>`;
+            } else if (isKariger) {
+                typeDisplay = `<span style="background:#ecfdf5; color:#059669; border:1px solid #a7f3d0; font-size:11px; font-weight:800; padding:2px 8px; border-radius:12px;">🌱 Kariger Sheet Se Aai</span>`;
+                karigerDisplay = `👤 ${esc(r.karigerName || r.kariger || '-')}`;
+                actBtn = `<span style='color:#64748b; font-size:11px; font-weight:700;'>🔒 Kariger Sheet</span>`;
+            } else {
+                typeDisplay = `<strong style="color:#1e3a8a;">${esc(r.typeLabel || r.note || 'Saree Movement')}</strong>`;
+                karigerDisplay = `👤 ${esc(r.karigerName || r.kariger || '-')}`;
+                actBtn = `<button type="button" class="delete-btn" onclick="deleteManualSareeEntry('${esc(r.id)}')">🗑️ Delete</button>`;
+            }
 
             html += `<tr>
                 <td>${formatDisplay(r.date)}</td>
-                <td><strong style="color:#1e3a8a;">${esc(r.typeLabel || r.note || 'Saree Movement')}</strong></td>
-                <td>👤 ${esc(r.karigerName || r.kariger || '-')}</td>
+                <td>${typeDisplay}</td>
+                <td>${karigerDisplay}</td>
                 <td style="color:#059669; font-weight:800;">${inQty > 0 ? `+${inQty} Pcs` : '-'}</td>
                 <td style="color:#dc2626; font-weight:800;">${outQty > 0 ? `-${outQty} Pcs` : '-'}</td>
                 <td style="text-align:center;">${actBtn}</td>
@@ -591,6 +620,24 @@
         });
 
         tbody.innerHTML = html;
+
+        // Render 20-Item Pagination Controls Bar
+        if (pager) {
+            pager.innerHTML = `
+                <div style="font-size:12px; color:#475569; font-weight:600;">
+                    Showing <strong>${startIndex + 1}</strong> - <strong>${Math.min(startIndex + SAREE_PAGE_SIZE, totalEntries)}</strong> of <strong>${totalEntries}</strong> entries
+                </div>
+                <div style="display:flex; gap:6px;">
+                    <button type="button" class="sheet-btn" style="background:${sareePassbookCurrentPage <= 1 ? '#cbd5e1' : '#1e3a8a'}; color:white; padding:4px 10px; border-radius:4px; border:none; cursor:${sareePassbookCurrentPage <= 1 ? 'not-allowed' : 'pointer'};" ${sareePassbookCurrentPage <= 1 ? 'disabled' : ''} onclick="changeSareePassbookPage(-1)">◀ Prev</button>
+                    <span style="font-size:12px; font-weight:bold; padding:4px 8px; background:#f1f5f9; border-radius:4px;">${sareePassbookCurrentPage} / ${totalPages}</span>
+                    <button type="button" class="sheet-btn" style="background:${sareePassbookCurrentPage >= totalPages ? '#cbd5e1' : '#1e3a8a'}; color:white; padding:4px 10px; border-radius:4px; border:none; cursor:${sareePassbookCurrentPage >= totalPages ? 'not-allowed' : 'pointer'};" ${sareePassbookCurrentPage >= totalPages ? 'disabled' : ''} onclick="changeSareePassbookPage(1)">Next ▶</button>
+                </div>`;
+        }
+    };
+
+    const changeSareePassbookPage = (delta) => {
+        sareePassbookCurrentPage += delta;
+        renderPaginatedSareePassbook();
     };
 
     const deleteManualSareeEntry = (id) => {
@@ -604,7 +651,7 @@
         }
 
         triggerSareeCacheInvalidation();
-        renderSareePassbookRows();
+        applySareePassbookFilters();
         renderSareeTable();
 
         if (typeof window.updateDashboardBadgeTotals === 'function') {
@@ -633,20 +680,17 @@
         submitSareeTransferForm,
         openSareePassbook,
         resetSareePassbookFilters,
-        debouncedPassbookSearch,
-        renderSareePassbookRows,
+        applySareePassbookFilters,
+        changeSareePassbookPage,
         deleteManualSareeEntry
     };
 
-    // Attach to global window object for legacy callers and HTML attributes
     Object.keys(sareeUIAPI).forEach((fnName) => {
         window[fnName] = sareeUIAPI[fnName];
     });
 
-    // Dedicated namespace
     window.SareeUIEngine = sareeUIAPI;
 
-    // Attach debounced event listener to main saree search
     document.addEventListener('DOMContentLoaded', () => {
         const searchInput = document.getElementById('search-saree-input');
         if (searchInput) {
@@ -659,7 +703,6 @@
         }
     });
 
-    // Unit test export
     if (typeof module !== 'undefined' && module.exports) {
         module.exports = sareeUIAPI;
     }
