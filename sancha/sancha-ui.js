@@ -1,7 +1,7 @@
 /* ============================================================================
-   SIMPLICITY ERP - HIGH-PERFORMANCE SANCHA (TANI & CHUKKA) STOCK & PASSBOOK (WITH A6 PRINT)
+   SIMPLICITY ERP - HIGH-PERFORMANCE SANCHA (TANI & CHUKKA) STOCK & PASSBOOK (WITH LIVE SEARCH & A6 PRINT)
    File: sancha/sancha-ui.js • Developed by Farhan Jawed
-   Architecture: Virtualized Pagination | Opening Stock Distinction | A6 Thermal Print
+   Architecture: Virtualized Pagination | Opening Stock Distinction | Live Search | A6 Thermal Print
    Scale: 1,000,000 - 2,000,000 Active Users | Multi-Godam Lock Protection
 ============================================================================ */
 
@@ -68,6 +68,7 @@
         renderSanchaKarkhanaTabs();
         populateSanchaExistingDropdown();
         renderSanchaTable();
+        bindSanchaSearchInput();
     };
 
     const switchSanchaCategory = (cat) => {
@@ -120,6 +121,23 @@
         sanchaStockCurrentPage = 1;
         renderSanchaKarkhanaTabs();
         populateSanchaExistingDropdown();
+        renderSanchaTable();
+    };
+
+    // 🔍 LIVE SEARCH BINDER (Instant search on typing)
+    const bindSanchaSearchInput = () => {
+        const searchInp = document.getElementById('search-sancha-input');
+        if (searchInp && !searchInp.dataset.bound) {
+            searchInp.dataset.bound = 'true';
+            searchInp.addEventListener('input', () => {
+                sanchaStockCurrentPage = 1;
+                renderSanchaTable();
+            });
+        }
+    };
+
+    const filterSancha = () => {
+        sanchaStockCurrentPage = 1;
         renderSanchaTable();
     };
 
@@ -273,16 +291,13 @@
         alert(`✅ Sancha (${category === 'tani' ? 'Tani' : 'Chukka'}) Stock me jama ho gaya!`);
     };
 
-    const filterSancha = () => {
-        sanchaStockCurrentPage = 1;
-        renderSanchaTable();
-    };
-
     /* ========================================================================
-       5. MAIN TABLE RENDERER (WITH PAGINATION & PRINT)
+       5. MAIN TABLE RENDERER (WITH LIVE SEARCH, PAGINATION & PRINT)
        ------------------------------------------------------------------------
     ======================================================================== */
     const renderSanchaTable = () => {
+        bindSanchaSearchInput();
+
         const tbody = document.getElementById('sancha-table-body');
         if (!tbody) return;
 
@@ -309,13 +324,14 @@
         const searchInp = document.getElementById('search-sancha-input');
         const txt = searchInp ? searchInp.value.toLowerCase().trim() : '';
 
+        // Universal Search: Name, Person, Date, Category, Bacha
         const filteredRows = txt 
-            ? rows.filter((s) => `${s.name || ''} ${s.person || ''} ${s.date || ''}`.toLowerCase().includes(txt)) 
+            ? rows.filter((s) => `${s.name || ''} ${s.person || ''} ${s.date || ''} ${s.category || ''} ${s.bacha || ''}`.toLowerCase().includes(txt)) 
             : rows;
 
         currentSanchaFilteredRowsCache = filteredRows;
 
-        // Auto-inject A6 Print Button next to search input if not present
+        // Auto-inject A6 Print Button next to search input
         if (searchInp && searchInp.parentElement && !document.getElementById('sancha-stock-print-btn')) {
             const printBtn = document.createElement('button');
             printBtn.id = 'sancha-stock-print-btn';
@@ -613,7 +629,6 @@
             });
         }
 
-        // Newest transactions first, Opening Stock highlighted
         hist.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
 
         filteredSanchaPassbookCache = hist;
@@ -722,7 +737,7 @@
         return kId;
     };
 
-    // 1. Main Sancha Stock Report Print (Current Category & Filters)
+    // 1. Main Sancha Stock Report Print
     const printSanchaStockReport = () => {
         const rows = currentSanchaFilteredRowsCache;
         if (!rows || !rows.length) {
@@ -826,7 +841,7 @@
         printWindow.document.close();
     };
 
-    // 2. Filtered Sancha Passbook Statement Print (Date Filter Supported)
+    // 2. Filtered Sancha Passbook Statement Print
     const printSanchaPassbookFiltered = () => {
         const rows = filteredSanchaPassbookCache;
         if (!rows || !rows.length) {
@@ -933,7 +948,7 @@
         printWindow.document.close();
     };
 
-    // 3. Single Entry Slip Print (Thermal Parchi)
+    // 3. Single Entry Slip Print
     const printSingleSanchaPassbookEntry = (id) => {
         const hist = window.safeArray ? window.safeArray(window.getStore('sancha_history')) : [];
         const entry = hist.find((x) => x && x.id === id);
@@ -1175,6 +1190,7 @@
         toggleSanchaFormOptions,
         populateSanchaExistingDropdown,
         saveNewSanchaStock,
+        bindSanchaSearchInput,
         filterSancha,
         renderSanchaTable,
         changeSanchaStockPage,
