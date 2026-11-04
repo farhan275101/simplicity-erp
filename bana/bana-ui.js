@@ -1,7 +1,7 @@
 /* ============================================================================
-   SIMPLICITY ERP - BANA STOCK & PAGINATED PASSBOOK ENGINE (WITH A6 PRINT)
+   SIMPLICITY ERP - BANA STOCK & PAGINATED PASSBOOK ENGINE (WITH LIVE SEARCH & A6 PRINT)
    File: bana/bana-ui.js • Developed by Farhan Jawed
-   (Multi-Godam Stock, Edit/Delete, Kariger Lock, Fast Mobile Pagination & A6 Print)
+   (Multi-Godam Stock, Edit/Delete, Kariger Lock, Fast Mobile Pagination, Live Search & A6 Print)
 ============================================================================ */
 
 (() => {
@@ -46,6 +46,7 @@
         renderBanaKarkhanaTabs();
         populateBanaExistingDropdown();
         renderBanaTable();
+        bindBanaSearchInput();
     };
 
     const renderBanaKarkhanaTabs = () => {
@@ -197,16 +198,30 @@
         alert(`✅ ${qty.toFixed(2)} Kg Bana Stock me jama ho gaya!`);
     };
 
+    // 🔍 LIVE SEARCH BINDER (Auto-binds without depending on HTML oninput)
+    const bindBanaSearchInput = () => {
+        const searchInp = document.getElementById('search-bana-input');
+        if (searchInp && !searchInp.dataset.bound) {
+            searchInp.dataset.bound = 'true';
+            searchInp.addEventListener('input', () => {
+                banaStockCurrentPage = 1;
+                renderBanaTable();
+            });
+        }
+    };
+
     const filterBana = () => {
         banaStockCurrentPage = 1;
         renderBanaTable();
     };
 
     /* ========================================================================
-       3. MAIN BANA TABLE RENDERER (WITH PAGINATION & PRINT)
+       3. MAIN BANA TABLE RENDERER (WITH LIVE SEARCH, PAGINATION & PRINT)
        ------------------------------------------------------------------------
     ======================================================================== */
     const renderBanaTable = () => {
+        bindBanaSearchInput();
+
         const tbody = document.getElementById('bana-table-body');
         if (!tbody) return;
         tbody.innerHTML = '';
@@ -235,13 +250,14 @@
         const searchInp = document.getElementById('search-bana-input');
         const txt = searchInp ? searchInp.value.toLowerCase().trim() : '';
 
+        // Universal Search: Name, Date, Aaya, Gaya, Bacha
         const filteredRows = txt 
-            ? rows.filter(r => `${r.name || ''} ${r.date || ''}`.toLowerCase().includes(txt)) 
+            ? rows.filter(r => `${r.name || ''} ${r.date || ''} ${r.aaya || ''} ${r.gaya || ''} ${r.bacha || ''}`.toLowerCase().includes(txt)) 
             : rows;
 
         currentBanaFilteredRowsCache = filteredRows;
 
-        // Auto-inject A6 Print Button next to search box if not already present
+        // Auto-inject A6 Print Button next to search box
         if (searchInp && searchInp.parentElement && !document.getElementById('bana-stock-print-btn')) {
             const printBtn = document.createElement('button');
             printBtn.id = 'bana-stock-print-btn';
@@ -518,7 +534,6 @@
             });
         }
 
-        // Newest entries on top
         hist.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
 
         filteredPassbookCache = hist;
@@ -558,7 +573,6 @@
                 ? '📦 31st March Closing (Opening)' 
                 : ((r.kariger && r.kariger !== '-' && r.kariger !== 'undefined') ? `👤 ${esc(r.kariger)}` : '📦 Factory Inward');
 
-            // Print slip button for every entry
             const singlePrintBtn = `<button type="button" title="A6 Slip Print" class="sheet-btn" style="background:#0284c7; color:#ffffff; padding:4px 7px; font-size:11px; font-weight:bold; border-radius:4px; border:none; cursor:pointer;" onclick="printSingleBanaPassbookEntry('${esc(r.id)}')">🖨️</button>`;
 
             let actBtn = '';
@@ -624,7 +638,7 @@
         return kId;
     };
 
-    // 1. Main Bana Stock Report Print (Filters ke hisab se)
+    // 1. Main Bana Stock Report Print
     const printBanaStockReport = () => {
         const rows = currentBanaFilteredRowsCache;
         if (!rows || !rows.length) {
@@ -726,7 +740,7 @@
         printWindow.document.close();
     };
 
-    // 2. Filtered Bana Passbook Statement Print (Date Filter Supported)
+    // 2. Filtered Bana Passbook Statement Print
     const printBanaPassbookFiltered = () => {
         const rows = filteredPassbookCache;
         if (!rows || !rows.length) {
@@ -832,7 +846,7 @@
         printWindow.document.close();
     };
 
-    // 3. Single Entry Slip Print (Thermal Parchi)
+    // 3. Single Entry Slip Print
     const printSingleBanaPassbookEntry = (id) => {
         const hist = window.safeArray ? window.safeArray(window.getStore('bana_history')) : [];
         const entry = hist.find(x => x && String(x.id) === String(id));
@@ -1079,6 +1093,7 @@
         toggleBanaItemType,
         populateBanaExistingDropdown,
         saveNewBana,
+        bindBanaSearchInput,
         filterBana,
         renderBanaTable,
         changeBanaStockPage,
