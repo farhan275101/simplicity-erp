@@ -1,7 +1,7 @@
 /* ========================================================
-   SIMPLICITY ERP - ZARI STOCK & PAGINATED PASSBOOK ENGINE (WITH A6 PRINT)
+   SIMPLICITY ERP - ZARI STOCK & PAGINATED PASSBOOK ENGINE (WITH LIVE SEARCH & A6 PRINT)
    File: zari/zari-ui.js • Developed by Farhan Jawed
-   (Multi-Godam Stock, Edit/Delete, Kariger Lock, Fast Mobile Pagination & A6 Print)
+   (Multi-Godam Stock, Edit/Delete, Kariger Lock, Fast Mobile Pagination, Live Search & A6 Print)
 ======================================================== */
 
 (() => {
@@ -46,6 +46,7 @@
         renderZariKarkhanaTabs();
         populateZariExistingDropdown();
         renderZariTable();
+        bindZariSearchInput();
     };
 
     const renderZariKarkhanaTabs = () => {
@@ -199,16 +200,30 @@
         alert(`✅ ${qty.toFixed(2)} Kg Zari Stock me jama ho gayi!`);
     };
 
+    // 🔍 LIVE SEARCH BINDER (Instant search on typing)
+    const bindZariSearchInput = () => {
+        const searchInp = document.getElementById('search-zari-input');
+        if (searchInp && !searchInp.dataset.bound) {
+            searchInp.dataset.bound = 'true';
+            searchInp.addEventListener('input', () => {
+                zariStockCurrentPage = 1;
+                renderZariTable();
+            });
+        }
+    };
+
     const filterZari = () => {
         zariStockCurrentPage = 1;
         renderZariTable();
     };
 
     /* ========================================================================
-       3. MAIN ZARI TABLE RENDERER (WITH PAGINATION & PRINT)
+       3. MAIN ZARI TABLE RENDERER (WITH LIVE SEARCH, PAGINATION & PRINT)
        ------------------------------------------------------------------------
     ======================================================================== */
     const renderZariTable = () => {
+        bindZariSearchInput();
+
         const tbody = document.getElementById('zari-table-body');
         if (!tbody) return;
         tbody.innerHTML = '';
@@ -237,8 +252,9 @@
         const searchInp = document.getElementById('search-zari-input');
         const txt = searchInp ? searchInp.value.toLowerCase().trim() : '';
 
+        // Universal Search: Name, Date, Aaya, Gaya, Bacha
         const filteredRows = txt 
-            ? rows.filter(r => `${r.name || ''} ${r.date || ''}`.toLowerCase().includes(txt)) 
+            ? rows.filter(r => `${r.name || ''} ${r.date || ''} ${r.aaya || ''} ${r.gaya || ''} ${r.bacha || ''}`.toLowerCase().includes(txt)) 
             : rows;
 
         currentZariFilteredRowsCache = filteredRows;
@@ -520,7 +536,6 @@
             });
         }
 
-        // Newest entries on top
         hist.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
 
         filteredZariPassbookCache = hist;
@@ -560,7 +575,6 @@
                 ? '📦 31st March Closing (Opening)' 
                 : ((r.kariger && r.kariger !== '-' && r.kariger !== 'undefined') ? `👤 ${esc(r.kariger)}` : '📦 Factory Inward');
 
-            // Print slip button for every entry
             const singlePrintBtn = `<button type="button" title="A6 Slip Print" class="sheet-btn" style="background:#0284c7; color:#ffffff; padding:4px 7px; font-size:11px; font-weight:bold; border-radius:4px; border:none; cursor:pointer;" onclick="printSingleZariPassbookEntry('${esc(r.id)}')">🖨️</button>`;
 
             let actBtn = '';
@@ -626,7 +640,7 @@
         return kId;
     };
 
-    // 1. Main Zari Stock Report Print (Filters ke hisab se)
+    // 1. Main Zari Stock Report Print
     const printZariStockReport = () => {
         const rows = currentZariFilteredRowsCache;
         if (!rows || !rows.length) {
@@ -728,7 +742,7 @@
         printWindow.document.close();
     };
 
-    // 2. Filtered Zari Passbook Statement Print (Date Filter Supported)
+    // 2. Filtered Zari Passbook Statement Print
     const printZariPassbookFiltered = () => {
         const rows = filteredZariPassbookCache;
         if (!rows || !rows.length) {
@@ -834,7 +848,7 @@
         printWindow.document.close();
     };
 
-    // 3. Single Entry Slip Print (Thermal Parchi)
+    // 3. Single Entry Slip Print
     const printSingleZariPassbookEntry = (id) => {
         const hist = window.safeArray ? window.safeArray(window.getStore('zari_history')) : [];
         const entry = hist.find(x => x && String(x.id) === String(id));
@@ -1081,6 +1095,7 @@
         toggleZariItemType,
         populateZariExistingDropdown,
         saveNewZari,
+        bindZariSearchInput,
         filterZari,
         renderZariTable,
         changeZariStockPage,
