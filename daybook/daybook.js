@@ -1,8 +1,7 @@
 /* ============================================================================
-   SIMPLICITY ERP - HIGH-PERFORMANCE ROZANA DAY-BOOK & DASHBOARD ENGINE (WITH UNIVERSAL SEARCH, PAGINATION & A6 PRINT)
+   SIMPLICITY ERP - HIGH-PERFORMANCE ROZANA DAY-BOOK & DASHBOARD ENGINE
    File: daybook/daybook.js • Developed by Farhan Jawed
-   Architecture: Zero-Reflow Virtualized DOM | Universal Filter | A6 Print
-   Scale: 1,000,000 - 2,000,000 Active Users | Epsilon Accurate Auditing
+   (With ⚡ Top Dashboard STOCK EXPRESS, Universal Search, Pagination & A6 Print)
 ============================================================================ */
 
 (() => {
@@ -78,9 +77,6 @@
             : new Date().toISOString().split('T')[0];
     };
 
-    /**
-     * Mathematical Godown / Branch Matching Rule (Zero Leakage)
-     */
     const matchesGodown = (itemKid, targetKid) => {
         if (!targetKid || targetKid === 'all') return true;
         const cleanTarget = (!targetKid || targetKid === 'k_main') ? 'k_main' : String(targetKid).trim();
@@ -89,7 +85,7 @@
     };
 
     /* ========================================================================
-       3. NAVIGATION & DAYBOOK CONTROLS
+       3. NAVIGATION & DASHBOARD CONTROLS (WITH ⚡ STOCK EXPRESS ON TOP)
        ------------------------------------------------------------------------
     ======================================================================== */
 
@@ -128,9 +124,12 @@
         }
 
         const isAllActive = (window.currentDashboardKarkhanaFilter === 'all') ? ' active' : '';
+
+        // 🌟 DASHBOARD TOP BAR: Tabs on Left + Bada ⚡ STOCK EXPRESS Button on Right
         let html = `
-            <div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center; margin-bottom:12px;">
-                <button type="button" class="sheet-tab${isAllActive}" onclick="switchDashboardKarkhanaTab('all')">👥 Sabhi Karkhane</button>`;
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:12px;">
+                <div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center;">
+                    <button type="button" class="sheet-tab${isAllActive}" onclick="switchDashboardKarkhanaTab('all')">👥 Sabhi Karkhane</button>`;
 
         karkhanas.forEach((k) => {
             const isMain = (k.id === 'k_main' || k.isDefault);
@@ -139,7 +138,15 @@
             html += `<button type="button" class="sheet-tab${isActive}" onclick="switchDashboardKarkhanaTab('${esc(k.id)}')">${icon}${esc(k.name)}</button>`;
         });
 
-        html += '</div>';
+        html += `
+                </div>
+                <div>
+                    <button type="button" onclick="if(window.openStockExpressModal) window.openStockExpressModal(); else if(window.openBanaStockExpressModal) window.openBanaStockExpressModal(); else alert('Stock Express load ho raha hai...');" style="background:#10b981; color:#ffffff; font-weight:bold; font-size:13px; padding:8px 16px; border-radius:8px; border:none; cursor:pointer; box-shadow:0 3px 6px rgba(16,185,129,0.3); display:inline-flex; align-items:center; gap:6px;">
+                        ⚡ STOCK EXPRESS (कच्चा माल आवक)
+                    </button>
+                </div>
+            </div>`;
+
         bar.innerHTML = html;
     };
 
@@ -160,7 +167,7 @@
     };
 
     /* ========================================================================
-       4. HIGH-SPEED MULTI-GODAM DAY-BOOK RENDER ENGINE (SEARCH + PAGINATED)
+       4. HIGH-SPEED MULTI-GODAM DAY-BOOK RENDER ENGINE
        ------------------------------------------------------------------------
     ======================================================================== */
     const renderDashboardDayBook = () => {
@@ -173,7 +180,6 @@
         const targetKid = window.currentDashboardKarkhanaFilter;
         const isAll = (targetKid === 'all');
 
-        // Auto-inject Universal Search Box & A6 Print Button above table if not already in DOM
         const tableEl = thead.closest('table');
         if (tableEl && tableEl.parentElement && !document.getElementById('dash-daybook-controls-bar')) {
             const ctrlBar = document.createElement('div');
@@ -198,7 +204,6 @@
         const bStock = window.safeArray ? window.safeArray(window.getStore('bana_stock')) : [];
         const zStock = window.safeArray ? window.safeArray(window.getStore('zari_stock')) : [];
 
-        // 1. Direct Godown Purchases / Opening
         bStock.forEach((b) => {
             if (b?.date === d && matchesGodown(b.karkhanaId, targetKid)) {
                 bIn += safeNum(b.aaya);
@@ -211,7 +216,6 @@
             }
         });
 
-        // 2. Kariger Sheet Row Consumptions & Wages
         const karList = (typeof window.sanitizeKarigerList === 'function') 
             ? window.sanitizeKarigerList() 
             : (window.safeArray ? window.safeArray(window.getStore('kariger_list')) : []);
@@ -243,7 +247,6 @@
             });
         });
 
-        // 3. Inter-Godown Raw Material Transfers
         const transfers = (window.safeArray ? window.safeArray(window.getStore('material_transfers')) : [])
             .filter((t) => t?.date === d);
 
@@ -261,7 +264,6 @@
             }
         });
 
-        // 4. Daybook Entries (Receipts & Payments)
         const dbEntries = (window.safeArray ? window.safeArray(window.getStore('daybook_entries')) : [])
             .filter((x) => x?.date === d);
 
@@ -276,7 +278,6 @@
             }
         });
 
-        // 5. Saree Movements
         const rawSareeHistory = window.safeArray ? window.safeArray(window.getStore('saree_history')) : [];
         const sH = [];
 
@@ -327,7 +328,6 @@
             sOut += safeInt(h.gai);
         });
 
-        // 6. Sancha History
         const sanchaHist = (window.safeArray ? window.safeArray(window.getStore('sancha_history')) : [])
             .filter((h) => h?.date === d && matchesGodown(h.karkhanaId, targetKid));
 
@@ -337,14 +337,12 @@
             sanchaOut += safeNum(h.gaya);
         });
 
-        // Sub-title Badges Update
         setElementText('sub-day-bana', `In: +${bIn.toFixed(1)} | Out: -${bOut.toFixed(1)}`);
         setElementText('sub-day-zari', `In: +${zIn.toFixed(1)} | Out: -${zOut.toFixed(1)}`);
         setElementText('sub-day-saree', `In: +${sIn} | Out: -${sOut}`);
         setElementText('sub-day-payment', `${pIn > 0 ? `In: +₹${pIn.toFixed(0)} | ` : ''}Diya: ₹${pOut.toFixed(0)}`);
         setElementText('sub-day-sancha', `In: +${sanchaIn.toFixed(1)} | Out: -${sanchaOut.toFixed(1)}`);
 
-        // Pager Container setup
         let pager = document.getElementById('dash-daybook-pagination-controls');
         if (!pager && tableEl && tableEl.parentElement) {
             pager = document.createElement('div');
@@ -405,7 +403,6 @@
                 }
             });
 
-            // Universal Search Filtering
             if (searchTxt) {
                 bRows = bRows.filter((r) => `${r.name || ''} ${r.desc || ''} ${r.inQty} ${r.outQty} In Out Aaya Gaya`.toLowerCase().includes(searchTxt));
             }
@@ -476,7 +473,6 @@
                 }
             });
 
-            // Universal Search Filtering
             if (searchTxt) {
                 zRows = zRows.filter((r) => `${r.name || ''} ${r.desc || ''} ${r.inQty} ${r.outQty} In Out Aayi Gayi`.toLowerCase().includes(searchTxt));
             }
@@ -500,7 +496,6 @@
             thead.innerHTML = "<tr style='background:#2563eb; color:white;'><th>Saree Ka Naam</th><th>Kariger / Vivran</th><th>📥 Aayi (In)</th><th>📤 Gayi (Out)</th><th>Detail</th></tr>";
             let sRows = sH;
 
-            // Universal Search Filtering
             if (searchTxt) {
                 sRows = sRows.filter((h) => `${h.sareeName || ''} ${h.karigerName || ''} ${h.detail || ''} ${h.aai} ${h.gai} In Out Aai Gai`.toLowerCase().includes(searchTxt));
             }
@@ -512,8 +507,8 @@
                 return `<tr>
                     <td><strong>${esc(h.sareeName)}</strong></td>
                     <td>👤 ${esc(h.karigerName)}</td>
-                    <td style='color:#059669; font-weight:700;'>${inQ > 0 ? `+${inQ} Pcs` : '-'}</td>
-                    <td style='color:#dc2626; font-weight:700;'>${outQ > 0 ? `-${outQ} Pcs` : '-'}</td>
+                    <td style='color:#059669; font-weight:700;'>${inQ > 0 ? `+${inQ}` : '-'}</td>
+                    <td style='color:#dc2626; font-weight:700;'>${outQ > 0 ? `-${outQ}` : '-'}</td>
                     <td>${outQ > 0 ? `<span style='color:#dc2626; font-weight:bold;'>${esc(h.detail)}</span>` : esc(h.detail)}</td>
                 </tr>`;
             }, 'Is tarikh / filter me Saree ki koi entry nahi hai.', 5);
@@ -557,7 +552,6 @@
                 }
             });
 
-            // Universal Search Filtering
             if (searchTxt) {
                 pRows = pRows.filter((dp) => `${dp.party || ''} ${dp.desc || ''} ${dp.inAmt} ${dp.outAmt} In Out Aamad Diya`.toLowerCase().includes(searchTxt));
             }
@@ -581,7 +575,6 @@
             thead.innerHTML = "<tr style='background:#0284c7; color:white;'><th>Item (Category)</th><th>Kariger / Vivran</th><th>📥 Aaya (In)</th><th>📤 Gaya (Out)</th></tr>";
             let sRows = sanchaHist;
 
-            // Universal Search Filtering
             if (searchTxt) {
                 sRows = sRows.filter((h) => `${h.name || ''} ${h.category || ''} ${h.kariger || ''} ${h.type || ''} ${h.aaya || h.qty || ''} ${h.gaya || ''} Tani Chukka In Out`.toLowerCase().includes(searchTxt));
             }
@@ -608,9 +601,6 @@
         }
     };
 
-    /**
-     * Reusable Daybook Paginated Rows Renderer
-     */
     const renderPaginatedDaybookRows = (rows, tbody, pager, themeColor, rowTemplateFn, emptyMsg, colSpan) => {
         const totalEntries = rows.length;
 
@@ -633,7 +623,6 @@
         });
         tbody.innerHTML = html;
 
-        // Render Pagination Controls
         if (pager) {
             pager.innerHTML = `
                 <div style="font-size:12px; color:#475569; font-weight:600;">
@@ -854,7 +843,6 @@
         const infoLen = window.safeArray ? window.safeArray(window.getStore('info_ledger')).length : 0;
         setElementText('btn-total-info', `Total: ${infoLen}`);
 
-        // Saree Stock Badge
         let ts = 0;
         const sH = (window.safeArray ? window.safeArray(window.getStore('saree_history')) : [])
             .filter((x) => (x.type || 'fresh') === 'fresh' && matchesGodown(x.karkhanaId, targetKid));
@@ -868,11 +856,9 @@
         }
         setElementText('btn-total-saree', `Stock: ${Math.max(0, ts)} Pcs`);
 
-        // Debounced Batch Aggregation for Material & Wages
         if (window.badgeCalculationTimer) clearTimeout(window.badgeCalculationTimer);
 
         window.badgeCalculationTimer = setTimeout(() => {
-            // 1. Bana Live Available Badge
             let tb = 0;
             const uniqueBana = new Set();
             const bStock = window.safeArray ? window.safeArray(window.getStore('bana_stock')) : [];
@@ -890,7 +876,6 @@
             });
             setElementText('btn-total-bana', `Bacha: ${roundWeight(tb).toFixed(2)} Kg`);
 
-            // 2. Zari Live Available Badge
             let tz = 0;
             const uniqueZari = new Set();
             const zStock = window.safeArray ? window.safeArray(window.getStore('zari_stock')) : [];
@@ -908,7 +893,6 @@
             });
             setElementText('btn-total-zari', `Bacha: ${roundWeight(tz).toFixed(2)} Kg`);
 
-            // 3. Kariger Wages (Payments & Bakaya) Badge
             let totalBakiAll = 0;
             let totalDiyaAll = 0;
 
@@ -931,7 +915,6 @@
 
             setElementHTML('btn-total-payment', `<span style='color:#059669; font-weight:bold;'>Diya: ₹ ${roundCurrency(totalDiyaAll).toFixed(0)}</span> • <span style='color:#dc2626; font-weight:bold;'>Baki: ₹ ${roundCurrency(totalBakiAll).toFixed(0)}</span>`);
 
-            // 4. Sancha Items Stock Badge
             let totTani = 0, totChukka = 0;
             const sanchaList = window.safeArray ? window.safeArray(window.getStore('sancha_items')) : [];
 
