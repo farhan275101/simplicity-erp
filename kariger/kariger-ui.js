@@ -1,7 +1,7 @@
 /* ============================================================================
-   SIMPLICITY ERP - WEAVER (KARIGER) UI & SHEET CONTROLLER (WITH A6 PRINT ENGINE)
+   SIMPLICITY ERP - WEAVER (KARIGER) UI & SHEET CONTROLLER (WITH LIVE SEARCH & A6 PRINT)
    File: kariger/kariger-ui.js • Developed by Farhan Jawed
-   (Live Realtime Sheet Sync + Auto-Godam Stock + Zero Overwrite + A6 Thermal Print)
+   (Live Realtime Sheet Sync + Auto-Godam Stock + Zero Overwrite + Live Search + A6 Print)
 ============================================================================ */
 
 (() => {
@@ -77,6 +77,7 @@
         renderKarigerKarkhanaTabs();
         populateKarigerKarkhanaDropdown();
         renderKarigerTable();
+        bindKarigerSearchInput();
     };
 
     const backToDashboard = () => {
@@ -124,12 +125,26 @@
         renderKarigerTable();
     };
 
+    // 🔍 LIVE SEARCH BINDER (Instant search on typing)
+    const bindKarigerSearchInput = () => {
+        const searchInput = document.getElementById('search-kariger-input');
+        if (searchInput && !searchInput.dataset.bound) {
+            searchInput.dataset.bound = 'true';
+            searchInput.addEventListener('input', () => {
+                window.currentKarigerPage = 1;
+                renderKarigerTable();
+            });
+        }
+    };
+
     const filterKariger = () => {
         window.currentKarigerPage = 1;
         renderKarigerTable();
     };
 
     const renderKarigerTable = () => {
+        bindKarigerSearchInput();
+
         const tbody = document.getElementById('kariger-table-body');
         if (!tbody) return;
 
@@ -144,10 +159,13 @@
 
         const searchInput = document.getElementById('search-kariger-input');
         const txt = searchInput ? searchInput.value.toLowerCase().trim() : '';
+
+        // Universal Search: Name, Saree Design, Mobile, Karkhana Name, Date
         if (txt) {
-            list = list.filter((k) => 
-                `${k.name || ''} ${k.saree || ''} ${k.mobile || ''}`.toLowerCase().includes(txt)
-            );
+            list = list.filter((k) => {
+                const kName = k.karkhanaName || ((typeof window.getKarkhanaNameById === 'function') ? window.getKarkhanaNameById(k.karkhanaId) : '');
+                return `${k.name || ''} ${k.saree || ''} ${k.mobile || ''} ${kName || ''} ${k.date || ''}`.toLowerCase().includes(txt);
+            });
         }
 
         const absentFilterEl = document.getElementById('kariger-absent-filter');
@@ -895,7 +913,6 @@
         renderSheetRows(sh);
         updateLiveStockDisplay();
 
-        // 🌟 QUICK PRINT CONFIRMATION: Turant Le-Den Parchi print karne ka prompt
         if (confirm('✅ Line jud gayi!\n\nKya aap is le-den ki A6 Thermal Parchi print karna chahte hain?')) {
             printSingleKarigerRowSlip(savedIndex);
         }
@@ -1355,6 +1372,7 @@
         backToDashboard,
         renderKarigerKarkhanaTabs,
         switchKarigerKarkhanaTab,
+        bindKarigerSearchInput,
         filterKariger,
         renderKarigerTable,
         nextKarigerPage,
