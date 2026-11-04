@@ -1,7 +1,7 @@
 /* ============================================================================
-   SIMPLICITY ERP - HIGH-PERFORMANCE SAREE STOCK & 4-TAB PIPELINE UI
+   SIMPLICITY ERP - HIGH-PERFORMANCE SAREE STOCK & 4-TAB PIPELINE UI (WITH A6 PRINT)
    File: saree/saree-ui.js • Developed by Farhan Jawed
-   Architecture: 20-Item Virtualized Pagination | Opening Stock Distinction
+   Architecture: Virtualized Pagination | Opening Stock Distinction | A6 Thermal Print
    Scale: 1,000,000 - 2,000,000 Active Users | Multi-Godam Synchronization
 ============================================================================ */
 
@@ -17,13 +17,17 @@
     window.currentPassbookSareeKey = '';
     window.currentPassbookSareeTitle = '';
 
-    // 📱 PASSBOOK PAGINATION STATE (Prevents Mobile Freezing)
+    // 📱 PASSBOOK PAGINATION STATE
     let sareePassbookCurrentPage = 1;
     const SAREE_PAGE_SIZE = 20;
     let filteredSareePassbookCache = [];
 
+    // Main Saree Stock Table Pagination State
+    let sareeStockCurrentPage = 1;
+    const SAREE_STOCK_PAGE_SIZE = 15;
+    let currentSareeFilteredRowsCache = [];
+
     let sareeSearchDebounceTimer = null;
-    let passbookSearchDebounceTimer = null;
 
     /* ========================================================================
        2. SAFE DOM & DATA SANITIZATION UTILITIES
@@ -99,6 +103,7 @@
 
     const switchSareeStockTab = (tabName) => {
         window.currentSareeTab = String(tabName || 'fresh').toLowerCase();
+        sareeStockCurrentPage = 1;
 
         const tabs = ['fresh', 'cutting', 'finished', 'lott'];
         tabs.forEach((t) => {
@@ -141,11 +146,13 @@
 
     const switchSareeKarkhanaTab = (kId) => {
         window.currentSareeKarkhanaFilter = kId || 'all';
+        sareeStockCurrentPage = 1;
         renderSareeKarkhanaTabs();
         renderSareeTable();
     };
 
     const filterSaree = () => {
+        sareeStockCurrentPage = 1;
         renderSareeTable();
     };
 
@@ -218,7 +225,7 @@
     };
 
     /* ========================================================================
-       5. MAIN TABLE RENDERER
+       5. MAIN TABLE RENDERER (WITH PAGINATION & PRINT)
        ------------------------------------------------------------------------
     ======================================================================== */
     const renderSareeTable = () => {
@@ -257,13 +264,51 @@
             rows = window.searchSareeData(rows, searchText);
         }
 
-        if (!rows.length) {
+        currentSareeFilteredRowsCache = rows;
+
+        // Auto-inject A6 Print Button next to search input if not present
+        if (searchInput && searchInput.parentElement && !document.getElementById('saree-stock-print-btn')) {
+            const printBtn = document.createElement('button');
+            printBtn.id = 'saree-stock-print-btn';
+            printBtn.type = 'button';
+            printBtn.className = 'sheet-btn';
+            printBtn.style.cssText = `background:${headerBg}; color:#ffffff; padding:6px 12px; font-weight:bold; border-radius:6px; border:none; cursor:pointer; margin-left:8px; display:inline-flex; align-items:center; gap:4px;`;
+            printBtn.innerHTML = '🖨️ A6 Print';
+            printBtn.onclick = () => printSareeStockReport();
+            if (searchInput.nextSibling) {
+                searchInput.parentElement.insertBefore(printBtn, searchInput.nextSibling);
+            } else {
+                searchInput.parentElement.appendChild(printBtn);
+            }
+        }
+
+        const totalEntries = rows.length;
+        let pager = document.getElementById('saree-stock-pagination-controls');
+        if (!pager) {
+            const tbl = tbody.closest('table') || tbody.parentElement;
+            if (tbl && tbl.parentElement) {
+                pager = document.createElement('div');
+                pager.id = 'saree-stock-pagination-controls';
+                pager.style.cssText = 'display:flex; justify-content:space-between; align-items:center; margin-top:12px; padding:8px 4px; border-top:1px solid #e2e8f0; flex-wrap:wrap; gap:8px;';
+                tbl.parentElement.appendChild(pager);
+            }
+        }
+
+        if (!totalEntries) {
             tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding:25px; color:#888;">Koi ${tabTitle} Stock nahi mila.</td></tr>`;
+            if (pager) pager.innerHTML = '';
             return;
         }
 
+        const totalPages = Math.ceil(totalEntries / SAREE_STOCK_PAGE_SIZE) || 1;
+        if (sareeStockCurrentPage > totalPages) sareeStockCurrentPage = totalPages;
+        if (sareeStockCurrentPage < 1) sareeStockCurrentPage = 1;
+
+        const startIndex = (sareeStockCurrentPage - 1) * SAREE_STOCK_PAGE_SIZE;
+        const pageRows = rows.slice(startIndex, startIndex + SAREE_STOCK_PAGE_SIZE);
+
         let html = '';
-        rows.forEach((row) => {
+        pageRows.forEach((row) => {
             const safeSaree = encodeURIComponent(row.sareeName);
             const safeKariger = encodeURIComponent(row.karigerName);
             const safeKid = encodeURIComponent(row.karkhanaId);
@@ -290,6 +335,24 @@
         });
 
         tbody.innerHTML = html;
+
+        // Render Saree Stock Pagination Controls
+        if (pager) {
+            pager.innerHTML = `
+                <div style="font-size:12px; color:#475569; font-weight:600;">
+                    Showing <strong>${startIndex + 1}</strong> - <strong>${Math.min(startIndex + SAREE_STOCK_PAGE_SIZE, totalEntries)}</strong> of <strong>${totalEntries}</strong> Items
+                </div>
+                <div style="display:flex; gap:6px;">
+                    <button type="button" class="sheet-btn" style="background:${sareeStockCurrentPage <= 1 ? '#cbd5e1' : headerBg}; color:white; padding:4px 10px; border-radius:4px; border:none; cursor:${sareeStockCurrentPage <= 1 ? 'not-allowed' : 'pointer'};" ${sareeStockCurrentPage <= 1 ? 'disabled' : ''} onclick="changeSareeStockPage(-1)">◀ Prev</button>
+                    <span style="font-size:12px; font-weight:bold; padding:4px 8px; background:#f1f5f9; border-radius:4px;">${sareeStockCurrentPage} / ${totalPages}</span>
+                    <button type="button" class="sheet-btn" style="background:${sareeStockCurrentPage >= totalPages ? '#cbd5e1' : headerBg}; color:white; padding:4px 10px; border-radius:4px; border:none; cursor:${sareeStockCurrentPage >= totalPages ? 'not-allowed' : 'pointer'};" ${sareeStockCurrentPage >= totalPages ? 'disabled' : ''} onclick="changeSareeStockPage(1)">Next ▶</button>
+                </div>`;
+        }
+    };
+
+    const changeSareeStockPage = (delta) => {
+        sareeStockCurrentPage += delta;
+        renderSareeTable();
     };
 
     /* ========================================================================
@@ -460,7 +523,7 @@
     };
 
     /* ========================================================================
-       7. 📱 20-ITEM PAGINATED SAREE PASSBOOK (With Opening Distinction)
+       7. 📱 20-ITEM PAGINATED SAREE PASSBOOK (WITH A6 PRINT)
        ------------------------------------------------------------------------
     ======================================================================== */
     const openSareePassbook = (safeSaree, safeKariger, safeKid) => {
@@ -492,7 +555,10 @@
                     <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
                         <div><label style="font-size:12px; font-weight:700;">From Date:</label><br><input type="date" id="saree-pass-from-date" onchange="applySareePassbookFilters()"></div>
                         <div><label style="font-size:12px; font-weight:700;">To Date:</label><br><input type="date" id="saree-pass-to-date" onchange="applySareePassbookFilters()"></div>
-                        <div style="align-self:flex-end;"><button type="button" class="quick-btn btn-out" onclick="resetSareePassbookFilters()">Reset</button></div>
+                        <div style="align-self:flex-end; display:flex; gap:6px;">
+                            <button type="button" class="quick-btn btn-out" onclick="resetSareePassbookFilters()">Reset</button>
+                            <button type="button" class="sheet-btn" style="background:#1e3a8a; color:#ffffff; padding:6px 12px; font-weight:bold; border-radius:6px; border:none; cursor:pointer;" onclick="printSareePassbookFiltered()">🖨️ A6 Print</button>
+                        </div>
                     </div>
                     <div style="flex:1; min-width:180px;">
                         <label style="font-size:12px; font-weight:700;">🔍 Search:</label><br>
@@ -509,7 +575,7 @@
                         <tbody id="saree-passbook-table-body"></tbody>
                     </table>
                 </div>
-                <div id="saree-passbook-pagination-controls" style="display:flex; justify-content:space-between; align-items:center; margin-top:12px; padding:8px 4px; border-top:1px solid #e2e8f0;"></div>`;
+                <div id="saree-passbook-pagination-controls" style="display:flex; justify-content:space-between; align-items:center; margin-top:12px; padding:8px 4px; border-top:1px solid #e2e8f0; flex-wrap:wrap; gap:8px;"></div>`;
         }
 
         modal.style.display = 'flex';
@@ -587,9 +653,10 @@
             const inQty = isGai ? 0 : safeInt(r.aai !== undefined ? r.aai : r.pcs);
             const outQty = isGai ? safeInt(r.gai !== undefined ? r.gai : r.pcs) : 0;
 
-            // ⭐ OPENING STOCK VS FRESH INWARD CLEAR BADGES
             const isOpening = (r.isOpening === true) || String(r.typeLabel || '').includes('Opening') || String(r.karigerName || '').includes('Opening');
             const isKariger = Boolean(r.refId && !isOpening);
+
+            const singlePrintBtn = `<button type="button" title="A6 Slip Print" class="sheet-btn" style="background:#0284c7; color:#ffffff; padding:4px 7px; font-size:11px; font-weight:bold; border-radius:4px; border:none; cursor:pointer;" onclick="printSingleSareePassbookEntry('${esc(r.id)}')">🖨️</button>`;
 
             let typeDisplay = '';
             let karigerDisplay = '';
@@ -598,15 +665,24 @@
             if (isOpening) {
                 typeDisplay = `<span style="background:#fef3c7; color:#b45309; border:1px solid #fde68a; font-size:11px; font-weight:800; padding:2px 8px; border-radius:12px;">📦 Opening Stock (Pichle Saal Ka)</span>`;
                 karigerDisplay = `<span style="color:#b45309; font-weight:bold;">📦 Pichla Bacha Stock</span>`;
-                actBtn = `<span style='color:#64748b; font-size:11px; font-weight:700;'>🔒 Opening Lock</span>`;
+                actBtn = `<div style="display:flex; gap:6px; justify-content:center; align-items:center;">
+                    <span style='color:#64748b; font-size:11px; font-weight:700;'>🔒 Opening Lock</span>
+                    ${singlePrintBtn}
+                </div>`;
             } else if (isKariger) {
                 typeDisplay = `<span style="background:#ecfdf5; color:#059669; border:1px solid #a7f3d0; font-size:11px; font-weight:800; padding:2px 8px; border-radius:12px;">🌱 Kariger Sheet Se Aai</span>`;
                 karigerDisplay = `👤 ${esc(r.karigerName || r.kariger || '-')}`;
-                actBtn = `<span style='color:#64748b; font-size:11px; font-weight:700;'>🔒 Kariger Sheet</span>`;
+                actBtn = `<div style="display:flex; gap:6px; justify-content:center; align-items:center;">
+                    <span style='color:#64748b; font-size:11px; font-weight:700;'>🔒 Kariger Sheet</span>
+                    ${singlePrintBtn}
+                </div>`;
             } else {
                 typeDisplay = `<strong style="color:#1e3a8a;">${esc(r.typeLabel || r.note || 'Saree Movement')}</strong>`;
                 karigerDisplay = `👤 ${esc(r.karigerName || r.kariger || '-')}`;
-                actBtn = `<button type="button" class="delete-btn" onclick="deleteManualSareeEntry('${esc(r.id)}')">🗑️ Delete</button>`;
+                actBtn = `<div style="display:flex; gap:6px; justify-content:center; align-items:center;">
+                    <button type="button" class="delete-btn" onclick="deleteManualSareeEntry('${esc(r.id)}')">🗑️ Delete</button>
+                    ${singlePrintBtn}
+                </div>`;
             }
 
             html += `<tr>
@@ -621,7 +697,7 @@
 
         tbody.innerHTML = html;
 
-        // Render 20-Item Pagination Controls Bar
+        // Render Pagination Controls Bar
         if (pager) {
             pager.innerHTML = `
                 <div style="font-size:12px; color:#475569; font-weight:600;">
@@ -662,7 +738,294 @@
     };
 
     /* ========================================================================
-       8. GLOBAL EXPORT & EVENT LISTENERS
+       8. A6 PAPER & THERMAL PRINTER PRINT ENGINES
+       ------------------------------------------------------------------------
+    ======================================================================== */
+    const getSareeKarkhanaPrintName = (kId) => {
+        if (!kId || kId === 'all') return 'Sabhi Godam (All Units)';
+        if (typeof window.getKarkhanaNameById === 'function') {
+            return window.getKarkhanaNameById(kId);
+        }
+        return kId;
+    };
+
+    // 1. Main Saree Stock Report Print (Current Tab & Filtered rows)
+    const printSareeStockReport = () => {
+        const rows = currentSareeFilteredRowsCache;
+        if (!rows || !rows.length) {
+            return alert('Print karne ke liye koi saree stock nahi mila!');
+        }
+
+        const kName = getSareeKarkhanaPrintName(window.currentSareeKarkhanaFilter);
+        const stageName = (window.currentSareeTab || 'fresh').toUpperCase() + ' SAREE';
+        const today = new Date().toLocaleDateString('hi-IN');
+
+        let totalAai = 0;
+        let totalGai = 0;
+        let totalBachi = 0;
+
+        let rowsHtml = '';
+        rows.forEach((r, idx) => {
+            const aai = safeInt(r.aai);
+            const gai = safeInt(r.gai);
+            const bachi = safeInt(r.bachi);
+
+            totalAai += aai;
+            totalGai += gai;
+            totalBachi += bachi;
+
+            rowsHtml += `
+                <tr style="border-bottom:1px dashed #ccc;">
+                    <td style="padding:4px 2px;">${idx + 1}</td>
+                    <td style="padding:4px 2px; font-weight:bold;">${esc(r.sareeName)}</td>
+                    <td style="padding:4px 2px;">${esc(r.karigerName || '-')}</td>
+                    <td style="padding:4px 2px; text-align:right;">+${aai}</td>
+                    <td style="padding:4px 2px; text-align:right;">-${gai}</td>
+                    <td style="padding:4px 2px; text-align:right; font-weight:bold;">${bachi}</td>
+                </tr>`;
+        });
+
+        const printWindow = window.open('', '', 'width=450,height=650');
+        if (!printWindow) return alert('Popup block hai! Kripya browser me popup allow karein.');
+
+        printWindow.document.write(`
+            <html>
+            <head>
+                <title>Saree Stock Report - A6</title>
+                <style>
+                    @page { size: A6 portrait; margin: 4mm; }
+                    body { font-family: monospace, sans-serif; font-size: 11px; margin: 0; padding: 4mm; color: #000; }
+                    .ticket { width: 100%; max-width: 96mm; margin: 0 auto; }
+                    .header { text-align: center; border-bottom: 2px dashed #000; padding-bottom: 6px; margin-bottom: 6px; }
+                    .header h2 { margin: 0; font-size: 15px; text-transform: uppercase; }
+                    .header p { margin: 2px 0 0; font-size: 10px; }
+                    .meta { font-size: 10px; margin-bottom: 6px; border-bottom: 1px dashed #666; padding-bottom: 4px; }
+                    table { width: 100%; border-collapse: collapse; font-size: 10px; }
+                    th { border-top: 1px solid #000; border-bottom: 1px solid #000; text-align: left; padding: 3px 2px; }
+                    .total-box { margin-top: 8px; border-top: 2px dashed #000; padding-top: 4px; font-size: 11px; font-weight: bold; }
+                    .footer { text-align: center; margin-top: 20px; font-size: 10px; border-top: 1px dashed #aaa; padding-top: 6px; }
+                </style>
+            </head>
+            <body>
+                <div class="ticket">
+                    <div class="header">
+                        <h2>SIMPLICITY ERP</h2>
+                        <p><strong>${stageName} STOCK REPORT</strong></p>
+                    </div>
+                    <div class="meta">
+                        <div><strong>Godam:</strong> ${esc(kName)}</div>
+                        <div><strong>Print Tarikh:</strong> ${today}</div>
+                        <div><strong>Total Saree Types:</strong> ${rows.length}</div>
+                    </div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>#</th><th>SAREE</th><th>MAKER</th><th style="text-align:right;">AAI</th><th style="text-align:right;">GAI</th><th style="text-align:right;">BACHI</th>
+                            </tr>
+                        </thead>
+                        <tbody>${rowsHtml}</tbody>
+                    </table>
+                    <div class="total-box">
+                        <div style="display:flex; justify-content:space-between; margin-bottom:2px;">
+                            <span>Kul Aai Saree:</span> <span>+${totalAai} Pcs</span>
+                        </div>
+                        <div style="display:flex; justify-content:space-between; margin-bottom:2px;">
+                            <span>Kul Gai Saree:</span> <span>-${totalGai} Pcs</span>
+                        </div>
+                        <div style="display:flex; justify-content:space-between; font-size:12px; border-top:1px dashed #000; padding-top:3px;">
+                            <span>NET BACHI SAREE:</span> <span>${totalBachi} Pcs</span>
+                        </div>
+                    </div>
+                    <div class="footer">
+                        <p>हस्ताक्षर / मुंशी: ____________________</p>
+                    </div>
+                </div>
+                <script>
+                    window.onload = function() {
+                        window.focus();
+                        window.print();
+                        setTimeout(() => window.close(), 600);
+                    };
+                <\/script>
+            </body>
+            </html>
+        `);
+        printWindow.document.close();
+    };
+
+    // 2. Filtered Saree Passbook Statement Print (Date Filter Supported)
+    const printSareePassbookFiltered = () => {
+        const rows = filteredSareePassbookCache;
+        if (!rows || !rows.length) {
+            return alert('Print karne ke liye koi passbook entry nahi mili!');
+        }
+
+        const title = window.currentPassbookSareeTitle || 'Saree Passbook';
+        const tabStage = (window.currentSareeTab || 'fresh').toUpperCase();
+        const fDate = document.getElementById('saree-pass-from-date')?.value || '';
+        const tDate = document.getElementById('saree-pass-to-date')?.value || '';
+        const dateRangeTxt = (fDate && tDate) ? `${fDate} se ${tDate}` : (fDate ? `${fDate} ke baad` : (tDate ? `${tDate} tak` : 'Sabhi Tarikh'));
+
+        let totalAai = 0;
+        let totalGai = 0;
+
+        let rowsHtml = '';
+        rows.forEach((r) => {
+            const isGai = (r.isOut === true) || (safeNum(r.gai) > 0) || String(r.type || '').includes('Out');
+            const inQty = isGai ? 0 : safeInt(r.aai !== undefined ? r.aai : r.pcs);
+            const outQty = isGai ? safeInt(r.gai !== undefined ? r.gai : r.pcs) : 0;
+
+            totalAai += inQty;
+            totalGai += outQty;
+
+            const vivran = r.typeLabel || r.note || r.karigerName || 'Movement';
+
+            rowsHtml += `
+                <tr style="border-bottom:1px dashed #ccc;">
+                    <td style="padding:3px 2px;">${formatDisplay(r.date)}</td>
+                    <td style="padding:3px 2px; font-weight:600;">${esc(vivran)}</td>
+                    <td style="padding:3px 2px; text-align:right;">${inQty > 0 ? `+${inQty}` : '-'}</td>
+                    <td style="padding:3px 2px; text-align:right;">${outQty > 0 ? `-${outQty}` : '-'}</td>
+                </tr>`;
+        });
+
+        const netBalance = totalAai - totalGai;
+
+        const printWindow = window.open('', '', 'width=450,height=650');
+        if (!printWindow) return alert('Popup block hai! Kripya browser me popup allow karein.');
+
+        printWindow.document.write(`
+            <html>
+            <head>
+                <title>Saree Passbook - A6</title>
+                <style>
+                    @page { size: A6 portrait; margin: 4mm; }
+                    body { font-family: monospace, sans-serif; font-size: 11px; margin: 0; padding: 4mm; color: #000; }
+                    .ticket { width: 100%; max-width: 96mm; margin: 0 auto; }
+                    .header { text-align: center; border-bottom: 2px dashed #000; padding-bottom: 6px; margin-bottom: 6px; }
+                    .header h2 { margin: 0; font-size: 15px; text-transform: uppercase; }
+                    .header p { margin: 2px 0 0; font-size: 10px; }
+                    .meta { font-size: 10px; margin-bottom: 6px; border-bottom: 1px dashed #666; padding-bottom: 4px; }
+                    table { width: 100%; border-collapse: collapse; font-size: 10px; }
+                    th { border-top: 1px solid #000; border-bottom: 1px solid #000; text-align: left; padding: 3px 2px; }
+                    .total-box { margin-top: 8px; border-top: 2px dashed #000; padding-top: 4px; font-size: 11px; font-weight: bold; }
+                    .footer { text-align: center; margin-top: 20px; font-size: 10px; border-top: 1px dashed #aaa; padding-top: 6px; }
+                </style>
+            </head>
+            <body>
+                <div class="ticket">
+                    <div class="header">
+                        <h2>SIMPLICITY ERP</h2>
+                        <p><strong>SAREE PASSBOOK STATEMENT (${tabStage})</strong></p>
+                    </div>
+                    <div class="meta">
+                        <div><strong>Saree Details:</strong> ${esc(title)}</div>
+                        <div><strong>Filter Avadhi:</strong> ${esc(dateRangeTxt)}</div>
+                        <div><strong>Kul Entries:</strong> ${rows.length}</div>
+                    </div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>TARIKH</th><th>DETAIL (VIVRAN)</th><th style="text-align:right;">AAI</th><th style="text-align:right;">GAI</th>
+                            </tr>
+                        </thead>
+                        <tbody>${rowsHtml}</tbody>
+                    </table>
+                    <div class="total-box">
+                        <div style="display:flex; justify-content:space-between; margin-bottom:2px;">
+                            <span>Kul Aai Saree:</span> <span>+${totalAai} Pcs</span>
+                        </div>
+                        <div style="display:flex; justify-content:space-between; margin-bottom:2px;">
+                            <span>Kul Gai Saree:</span> <span>-${totalGai} Pcs</span>
+                        </div>
+                        <div style="display:flex; justify-content:space-between; font-size:12px; border-top:1px dashed #000; padding-top:3px;">
+                            <span>NET BACHI SAREE:</span> <span>${netBalance} Pcs</span>
+                        </div>
+                    </div>
+                    <div class="footer">
+                        <p>हस्ताक्षर / मुंशी: ____________________</p>
+                    </div>
+                </div>
+                <script>
+                    window.onload = function() {
+                        window.focus();
+                        window.print();
+                        setTimeout(() => window.close(), 600);
+                    };
+                <\/script>
+            </body>
+            </html>
+        `);
+        printWindow.document.close();
+    };
+
+    // 3. Single Saree Slip Print (Thermal Parchi)
+    const printSingleSareePassbookEntry = (id) => {
+        const history = window.safeArray ? window.safeArray(window.getStore('saree_history')) : [];
+        const entry = history.find(x => x && String(x.id) === String(id));
+        if (!entry) return alert('Entry nahi mili!');
+
+        const sName = entry.sareeName || entry.name || 'Saree';
+        const kName = entry.karigerName || entry.kariger || '-';
+        const godamName = getSareeKarkhanaPrintName(entry.karkhanaId);
+        const isGai = (entry.isOut === true) || (safeNum(entry.gai) > 0) || String(entry.type || '').includes('Out');
+        const pcs = isGai ? safeInt(entry.gai !== undefined ? entry.gai : entry.pcs) : safeInt(entry.aai !== undefined ? entry.aai : entry.pcs);
+        const pcsDisplay = isGai ? `-${pcs} Pcs` : `+${pcs} Pcs`;
+
+        const printWindow = window.open('', '', 'width=420,height=550');
+        if (!printWindow) return alert('Popup block hai! Kripya browser me popup allow karein.');
+
+        printWindow.document.write(`
+            <html>
+            <head>
+                <title>Saree Voucher - A6</title>
+                <style>
+                    @page { size: A6 portrait; margin: 4mm; }
+                    body { font-family: monospace, sans-serif; font-size: 11px; margin: 0; padding: 4mm; color: #000; }
+                    .ticket { width: 100%; max-width: 90mm; margin: 0 auto; border: 1px dashed #000; padding: 8px; box-sizing: border-box; }
+                    .header { text-align: center; border-bottom: 1.5px dashed #000; padding-bottom: 6px; margin-bottom: 8px; }
+                    .header h2 { margin: 0; font-size: 15px; }
+                    .header p { margin: 2px 0 0; font-size: 10px; font-weight: bold; }
+                    .row { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 11px; }
+                    .total-highlight { background: #eee; padding: 6px 4px; border: 1px solid #000; font-size: 13px; font-weight: 900; text-align: center; margin: 10px 0; }
+                    .signs { display: flex; justify-content: space-between; margin-top: 25px; font-size: 10px; }
+                </style>
+            </head>
+            <body>
+                <div class="ticket">
+                    <div class="header">
+                        <h2>SIMPLICITY ERP</h2>
+                        <p>SAREE LEN-DEN PARCHI</p>
+                    </div>
+                    <div class="row"><span><strong>Parchi ID:</strong></span><span>#${esc(String(entry.id).slice(-6))}</span></div>
+                    <div class="row"><span><strong>Tarikh:</strong></span><span>${formatDisplay(entry.date)}</span></div>
+                    <div class="row"><span><strong>Godam:</strong></span><span>${esc(godamName)}</span></div>
+                    <div class="row"><span><strong>Saree Name:</strong></span><span>${esc(sName)}</span></div>
+                    <div class="row"><span><strong>Karigar (Maker):</strong></span><span>${esc(kName)}</span></div>
+                    <div class="row"><span><strong>Type / Detail:</strong></span><span>${esc(entry.typeLabel || entry.type || 'Movement')}</span></div>
+                    <div class="total-highlight">
+                        KUL SAREE: ${pcsDisplay}
+                    </div>
+                    <div class="signs">
+                        <div>हस्ताक्षर मुंशी<br><br>________</div>
+                        <div>हस्ताक्षर पाने वाला<br><br>________</div>
+                    </div>
+                </div>
+                <script>
+                    window.onload = function() {
+                        window.focus();
+                        window.print();
+                        setTimeout(() => window.close(), 600);
+                    };
+                <\/script>
+            </body>
+            </html>
+        `);
+        printWindow.document.close();
+    };
+
+    /* ========================================================================
+       9. GLOBAL EXPORT & EVENT LISTENERS
        ------------------------------------------------------------------------
     ======================================================================== */
     const sareeUIAPI = {
@@ -671,6 +1034,8 @@
         renderSareeKarkhanaTabs,
         switchSareeKarkhanaTab,
         filterSaree,
+        changeSareeStockPage,
+        printSareeStockReport,
         toggleSareeForm,
         saveNewSareeStock,
         renderSareeTable,
@@ -682,6 +1047,8 @@
         resetSareePassbookFilters,
         applySareePassbookFilters,
         changeSareePassbookPage,
+        printSareePassbookFiltered,
+        printSingleSareePassbookEntry,
         deleteManualSareeEntry
     };
 
@@ -697,6 +1064,7 @@
             searchInput.addEventListener('input', () => {
                 clearTimeout(sareeSearchDebounceTimer);
                 sareeSearchDebounceTimer = setTimeout(() => {
+                    sareeStockCurrentPage = 1;
                     renderSareeTable();
                 }, 200);
             });
