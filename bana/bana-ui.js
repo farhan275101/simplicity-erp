@@ -20,6 +20,8 @@
     const BANA_STOCK_PAGE_SIZE = 15;
     let currentBanaFilteredRowsCache = [];
 
+    let expressBanaMode = 'purana'; // 'purana' | 'naya'
+
     const esc = (s) => {
         if (typeof window.sanitizeHTML === 'function') return window.sanitizeHTML(s);
         return String(s || '').replace(/[&<>"']/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
@@ -91,7 +93,7 @@
     };
 
     /* ========================================================================
-       2. INWARD PURCHASE ENGINE (LEGACY FORM)
+       2. INWARD PURCHASE ENGINE
        ------------------------------------------------------------------------
     ======================================================================== */
     const toggleBanaForm = () => {
@@ -216,7 +218,7 @@
     };
 
     /* ========================================================================
-       3. MAIN BANA TABLE RENDERER (WITH BANA EXPRESS BUTTON)
+       3. MAIN BANA TABLE RENDERER
        ------------------------------------------------------------------------
     ======================================================================== */
     const renderBanaTable = () => {
@@ -250,23 +252,14 @@
         const searchInp = document.getElementById('search-bana-input');
         const txt = searchInp ? searchInp.value.toLowerCase().trim() : '';
 
-        // Universal Search
         const filteredRows = txt 
             ? rows.filter(r => `${r.name || ''} ${r.date || ''} ${r.aaya || ''} ${r.gaya || ''} ${r.bacha || ''}`.toLowerCase().includes(txt)) 
             : rows;
 
         currentBanaFilteredRowsCache = filteredRows;
 
-        // Auto-inject ⚡ BANA EXPRESS & A6 PRINT BUTTONS next to search box
-        if (searchInp && searchInp.parentElement && !document.getElementById('bana-express-btn')) {
-            const expBtn = document.createElement('button');
-            expBtn.id = 'bana-express-btn';
-            expBtn.type = 'button';
-            expBtn.className = 'sheet-btn';
-            expBtn.style.cssText = 'background:#10b981; color:#ffffff; padding:6px 14px; font-weight:bold; border-radius:6px; border:none; cursor:pointer; margin-left:8px; display:inline-flex; align-items:center; gap:5px; box-shadow:0 2px 4px rgba(16,185,129,0.3);';
-            expBtn.innerHTML = '⚡ BANA EXPRESS';
-            expBtn.onclick = () => openBanaStockExpressModal();
-
+        // Auto-inject A6 Print Button next to search box if not present
+        if (searchInp && searchInp.parentElement && !document.getElementById('bana-stock-print-btn')) {
             const printBtn = document.createElement('button');
             printBtn.id = 'bana-stock-print-btn';
             printBtn.type = 'button';
@@ -276,10 +269,8 @@
             printBtn.onclick = () => printBanaStockReport();
 
             if (searchInp.nextSibling) {
-                searchInp.parentElement.insertBefore(expBtn, searchInp.nextSibling);
-                searchInp.parentElement.insertBefore(printBtn, expBtn.nextSibling);
+                searchInp.parentElement.insertBefore(printBtn, searchInp.nextSibling);
             } else {
-                searchInp.parentElement.appendChild(expBtn);
                 searchInp.parentElement.appendChild(printBtn);
             }
         }
@@ -358,11 +349,9 @@
     };
 
     /* ========================================================================
-       4. ⚡ BANA STOCK EXPRESS (KEYBOARD-ONLY: PURANA BANA & NAYA BANA)
+       4. ⚡ BANA EXPRESS / STOCK EXPRESS MODAL (KEYBOARD-ONLY FAST ENTRY)
        ------------------------------------------------------------------------
     ======================================================================== */
-    let expressBanaMode = 'purana'; // 'purana' | 'naya'
-
     const openBanaStockExpressModal = () => {
         const existingModal = document.getElementById('bana-stock-express-modal');
         if (existingModal) existingModal.remove();
@@ -370,7 +359,6 @@
         expressBanaMode = 'purana';
         const today = getToday();
 
-        // Get unique bana names for autocomplete datalist
         const rawStock = window.safeArray ? window.safeArray(window.getStore('bana_stock')) : [];
         const unique = [];
         let datalistOptions = '';
@@ -393,13 +381,13 @@
                     
                     <!-- Header -->
                     <div style="background:#059669; color:#ffffff; padding:12px 16px; display:flex; justify-content:space-between; align-items:center;">
-                        <h3 style="margin:0; font-size:16px;">⚡ BANA STOCK EXPRESS (आवक काउंटर)</h3>
+                        <h3 style="margin:0; font-size:16px;">⚡ BANA EXPRESS (कच्चा माल आवक)</h3>
                         <button type="button" onclick="closeBanaStockExpressModal()" style="background:transparent; border:none; color:#ffffff; font-size:22px; cursor:pointer;">&times;</button>
                     </div>
 
                     <div style="padding:16px;">
                         
-                        <!-- Mode Switch Buttons -->
+                        <!-- Switch Buttons -->
                         <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:14px;">
                             <button type="button" id="btn-exp-purana" onclick="setBanaExpressMode('purana')" style="background:#059669; color:#fff; border:none; padding:9px; border-radius:6px; font-weight:bold; font-size:13px; cursor:pointer;">
                                 🔵 Purana Stock Aaya
@@ -409,13 +397,13 @@
                             </button>
                         </div>
 
-                        <!-- Godown Badge -->
+                        <!-- Info Banner -->
                         <div style="background:#ecfdf5; border:1px solid #d1fae5; border-radius:6px; padding:6px 10px; margin-bottom:12px; font-size:12px; display:flex; justify-content:space-between;">
                             <span>🏢 <strong>Godam:</strong> ${esc(godamName)}</span>
-                            <span style="color:#059669; font-weight:bold;">⚡ Zero-Mouse (Enter = Save)</span>
+                            <span style="color:#059669; font-weight:bold;">⚡ Enter = Instant Save</span>
                         </div>
 
-                        <!-- Form Fields -->
+                        <!-- Date -->
                         <div style="margin-bottom:10px;">
                             <label style="font-size:12px; font-weight:700; color:#374151;">तारीख (Date):</label><br>
                             <input type="date" id="exp-bana-date" value="${today}" style="width:100%; padding:8px; border:1px solid #cbd5e1; border-radius:6px; font-size:13px; margin-top:3px; box-sizing:border-box;">
@@ -424,11 +412,11 @@
                         <!-- 1. Purana Bana Autocomplete Input -->
                         <div id="box-exp-purana" style="margin-bottom:10px;">
                             <label style="font-size:12px; font-weight:700; color:#374151;">बाना का नाम (1-2 अक्षर लिखें):</label><br>
-                            <input type="text" id="exp-bana-select-input" list="exp-bana-datalist" placeholder="e.g. Katan, Silk, 20/22..." autocomplete="off" style="width:100%; padding:9px 12px; border:1.5px solid #059669; border-radius:6px; font-size:14px; font-weight:bold; margin-top:3px; box-sizing:border-box;">
+                            <input type="text" id="exp-bana-select-input" list="exp-bana-datalist" placeholder="e.g. Katan, Silk..." autocomplete="off" style="width:100%; padding:9px 12px; border:1.5px solid #059669; border-radius:6px; font-size:14px; font-weight:bold; margin-top:3px; box-sizing:border-box;">
                             <datalist id="exp-bana-datalist">
                                 ${datalistOptions}
                             </datalist>
-                            <div id="exp-bana-live-stock" style="font-size:11px; color:#64748b; margin-top:3px;">1-2 letter likhenge to naam aa jayega</div>
+                            <div id="exp-bana-live-stock" style="font-size:11px; color:#64748b; margin-top:3px;">1-2 letter likhenge to dropdown aa jayega</div>
                         </div>
 
                         <!-- 2. Naya Bana Input -->
@@ -437,7 +425,7 @@
                             <input type="text" id="exp-bana-new-name" placeholder="e.g. Pure Katan White 20/22" style="width:100%; padding:9px 12px; border:1.5px solid #10b981; border-radius:6px; font-size:14px; font-weight:bold; margin-top:3px; box-sizing:border-box;">
                         </div>
 
-                        <!-- Wazan (Qty) -->
+                        <!-- Qty -->
                         <div style="margin-bottom:16px;">
                             <label style="font-size:12px; font-weight:700; color:#374151;">कितना वज़न आया (Kg me):</label><br>
                             <input type="number" step="0.01" id="exp-bana-qty" placeholder="0.00 Kg" style="width:100%; padding:10px; border:1.5px solid #059669; border-radius:6px; font-size:16px; font-weight:900; color:#059669; margin-top:3px; box-sizing:border-box;">
@@ -454,13 +442,11 @@
 
         document.body.insertAdjacentHTML('beforeend', modalHtml);
 
-        // Auto Focus on Name field for instant typing
         setTimeout(() => {
             const inp = document.getElementById('exp-bana-select-input');
             if (inp) inp.focus();
         }, 100);
 
-        // Keyboard flow: Enter in Qty field submits form directly
         const qtyInp = document.getElementById('exp-bana-qty');
         if (qtyInp) {
             qtyInp.addEventListener('keypress', (e) => {
@@ -471,7 +457,6 @@
             });
         }
 
-        // Live check stock of selected item
         const selInp = document.getElementById('exp-bana-select-input');
         if (selInp) {
             selInp.addEventListener('input', () => {
@@ -483,7 +468,7 @@
                         stLabel.innerHTML = `Maujooda Bacha: <strong style="color:#059669;">${safeNum(stats.bacha).toFixed(2)} Kg</strong>`;
                     }
                 } else if (stLabel) {
-                    stLabel.innerHTML = '1-2 letter likhenge to naam aa jayega';
+                    stLabel.innerHTML = '1-2 letter likhenge to dropdown aa jayega';
                 }
             });
         }
@@ -584,7 +569,6 @@
         renderBanaTable();
         if (typeof window.updateDashboardBadgeTotals === 'function') window.updateDashboardBadgeTotals();
 
-        // Instant reset for the next item without touching mouse
         const qtyInp = document.getElementById('exp-bana-qty');
         if (qtyInp) qtyInp.value = '';
 
@@ -1349,6 +1333,7 @@
         changeBanaStockPage,
         printBanaStockReport,
         openBanaStockExpressModal,
+        openStockExpressModal: openBanaStockExpressModal,
         setBanaExpressMode,
         closeBanaStockExpressModal,
         submitBanaStockExpress,
