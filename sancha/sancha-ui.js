@@ -1,7 +1,7 @@
 /* ============================================================================
-   SIMPLICITY ERP - HIGH-PERFORMANCE SANCHA (TANI & CHUKKA) STOCK & PASSBOOK
+   SIMPLICITY ERP - HIGH-PERFORMANCE SANCHA (TANI & CHUKKA) STOCK & PASSBOOK (WITH A6 PRINT)
    File: sancha/sancha-ui.js • Developed by Farhan Jawed
-   Architecture: 20-Item Virtualized Pagination | Opening Stock Distinction
+   Architecture: Virtualized Pagination | Opening Stock Distinction | A6 Thermal Print
    Scale: 1,000,000 - 2,000,000 Active Users | Multi-Godam Lock Protection
 ============================================================================ */
 
@@ -16,12 +16,15 @@
     window.currentSanchaKarkhanaFilter = 'all';
     window.currentPassbookSanchaItem = '';
 
-    // 📱 PASSBOOK PAGINATION STATE (Prevents Mobile Freezing)
+    // 📱 PASSBOOK PAGINATION STATE
     let sanchaPassbookCurrentPage = 1;
     const SANCHA_PAGE_SIZE = 20;
     let filteredSanchaPassbookCache = [];
 
-    let passbookSearchDebounceTimer = null;
+    // Main Sancha Stock Table Pagination State
+    let sanchaStockCurrentPage = 1;
+    const SANCHA_STOCK_PAGE_SIZE = 15;
+    let currentSanchaFilteredRowsCache = [];
 
     /* ========================================================================
        2. SAFE DOM & DATA SANITIZATION UTILITIES
@@ -69,6 +72,7 @@
 
     const switchSanchaCategory = (cat) => {
         window.currentSanchaCategory = String(cat || 'tani').toLowerCase() === 'chukka' ? 'chukka' : 'tani';
+        sanchaStockCurrentPage = 1;
 
         const tabT = document.getElementById('tab-sancha-tani');
         const tabC = document.getElementById('tab-sancha-chukka');
@@ -113,6 +117,7 @@
 
     const switchSanchaKarkhanaTab = (kId) => {
         window.currentSanchaKarkhanaFilter = kId || 'all';
+        sanchaStockCurrentPage = 1;
         renderSanchaKarkhanaTabs();
         populateSanchaExistingDropdown();
         renderSanchaTable();
@@ -235,7 +240,6 @@
             window.setStore('sancha_items', list);
         }
 
-        // Post to History Ledger (Clearly marked as Nayi Khareed)
         const hist = window.safeArray ? window.safeArray(window.getStore('sancha_history')) : [];
         hist.push({
             id: `shist_${Date.now()}`,
@@ -270,11 +274,12 @@
     };
 
     const filterSancha = () => {
+        sanchaStockCurrentPage = 1;
         renderSanchaTable();
     };
 
     /* ========================================================================
-       5. MAIN TABLE RENDERER
+       5. MAIN TABLE RENDERER (WITH PAGINATION & PRINT)
        ------------------------------------------------------------------------
     ======================================================================== */
     const renderSanchaTable = () => {
@@ -308,16 +313,53 @@
             ? rows.filter((s) => `${s.name || ''} ${s.person || ''} ${s.date || ''}`.toLowerCase().includes(txt)) 
             : rows;
 
+        currentSanchaFilteredRowsCache = filteredRows;
+
+        // Auto-inject A6 Print Button next to search input if not present
+        if (searchInp && searchInp.parentElement && !document.getElementById('sancha-stock-print-btn')) {
+            const printBtn = document.createElement('button');
+            printBtn.id = 'sancha-stock-print-btn';
+            printBtn.type = 'button';
+            printBtn.className = 'sheet-btn';
+            printBtn.style.cssText = 'background:#0284c7; color:#ffffff; padding:6px 12px; font-weight:bold; border-radius:6px; border:none; cursor:pointer; margin-left:8px; display:inline-flex; align-items:center; gap:4px;';
+            printBtn.innerHTML = '🖨️ A6 Print';
+            printBtn.onclick = () => printSanchaStockReport();
+            if (searchInp.nextSibling) {
+                searchInp.parentElement.insertBefore(printBtn, searchInp.nextSibling);
+            } else {
+                searchInp.parentElement.appendChild(printBtn);
+            }
+        }
+
         let totalBacha = 0;
+        rows.forEach(r => { totalBacha += safeNum(r.bacha); });
 
-        if (!filteredRows.length) {
+        const totalEntries = filteredRows.length;
+        let pager = document.getElementById('sancha-stock-pagination-controls');
+        if (!pager) {
+            const tbl = tbody.closest('table') || tbody.parentElement;
+            if (tbl && tbl.parentElement) {
+                pager = document.createElement('div');
+                pager.id = 'sancha-stock-pagination-controls';
+                pager.style.cssText = 'display:flex; justify-content:space-between; align-items:center; margin-top:12px; padding:8px 4px; border-top:1px solid #e2e8f0; flex-wrap:wrap; gap:8px;';
+                tbl.parentElement.appendChild(pager);
+            }
+        }
+
+        if (!totalEntries) {
             tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding:20px; color:#888;">Koi ${window.currentSanchaCategory === 'tani' ? 'Tani' : 'Chukka'} Stock nahi mila.</td></tr>`;
+            if (pager) pager.innerHTML = '';
         } else {
-            let html = '';
-            filteredRows.forEach((s) => {
-                const bacha = safeNum(s.bacha);
-                totalBacha += bacha;
+            const totalPages = Math.ceil(totalEntries / SANCHA_STOCK_PAGE_SIZE) || 1;
+            if (sanchaStockCurrentPage > totalPages) sanchaStockCurrentPage = totalPages;
+            if (sanchaStockCurrentPage < 1) sanchaStockCurrentPage = 1;
 
+            const startIndex = (sanchaStockCurrentPage - 1) * SANCHA_STOCK_PAGE_SIZE;
+            const pageRows = filteredRows.slice(startIndex, startIndex + SANCHA_STOCK_PAGE_SIZE);
+
+            let html = '';
+            pageRows.forEach((s) => {
+                const bacha = safeNum(s.bacha);
                 const safeName = encodeURIComponent(s.name);
                 const safeCat = encodeURIComponent(s.category);
 
@@ -342,12 +384,30 @@
             });
 
             tbody.innerHTML = html;
+
+            // Render Stock Pagination Controls
+            if (pager) {
+                pager.innerHTML = `
+                    <div style="font-size:12px; color:#475569; font-weight:600;">
+                        Showing <strong>${startIndex + 1}</strong> - <strong>${Math.min(startIndex + SANCHA_STOCK_PAGE_SIZE, totalEntries)}</strong> of <strong>${totalEntries}</strong> Items
+                    </div>
+                    <div style="display:flex; gap:6px;">
+                        <button type="button" class="sheet-btn" style="background:${sanchaStockCurrentPage <= 1 ? '#cbd5e1' : '#0284c7'}; color:white; padding:4px 10px; border-radius:4px; border:none; cursor:${sanchaStockCurrentPage <= 1 ? 'not-allowed' : 'pointer'};" ${sanchaStockCurrentPage <= 1 ? 'disabled' : ''} onclick="changeSanchaStockPage(-1)">◀ Prev</button>
+                        <span style="font-size:12px; font-weight:bold; padding:4px 8px; background:#f1f5f9; border-radius:4px;">${sanchaStockCurrentPage} / ${totalPages}</span>
+                        <button type="button" class="sheet-btn" style="background:${sanchaStockCurrentPage >= totalPages ? '#cbd5e1' : '#0284c7'}; color:white; padding:4px 10px; border-radius:4px; border:none; cursor:${sanchaStockCurrentPage >= totalPages ? 'not-allowed' : 'pointer'};" ${sanchaStockCurrentPage >= totalPages ? 'disabled' : ''} onclick="changeSanchaStockPage(1)">Next ▶</button>
+                    </div>`;
+            }
         }
 
         const opVal = document.getElementById('sancha-opening-val');
         if (opVal) {
             opVal.textContent = `${totalBacha.toFixed(2)} Kg Kul ${window.currentSanchaCategory === 'tani' ? 'Tani' : 'Chukka'} Bacha`;
         }
+    };
+
+    const changeSanchaStockPage = (delta) => {
+        sanchaStockCurrentPage += delta;
+        renderSanchaTable();
     };
 
     /* ========================================================================
@@ -462,7 +522,7 @@
     };
 
     /* ========================================================================
-       7. 📱 20-ITEM PAGINATED SANCHA PASSBOOK ENGINE (With Opening Distinction)
+       7. 📱 20-ITEM PAGINATED SANCHA PASSBOOK ENGINE (WITH A6 PRINT)
        ------------------------------------------------------------------------
     ======================================================================== */
     const openSanchaPassbook = (itemName) => {
@@ -483,7 +543,10 @@
                     <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
                         <div><label style="font-size:12px; font-weight:700;">From Date:</label><br><input type="date" id="sancha-pass-from-date" onchange="applySanchaPassbookFilters()"></div>
                         <div><label style="font-size:12px; font-weight:700;">To Date:</label><br><input type="date" id="sancha-pass-to-date" onchange="applySanchaPassbookFilters()"></div>
-                        <div style="align-self:flex-end;"><button type="button" class="quick-btn btn-out" onclick="resetSanchaPassbookFilters()">Reset</button></div>
+                        <div style="align-self:flex-end; display:flex; gap:6px;">
+                            <button type="button" class="quick-btn btn-out" onclick="resetSanchaPassbookFilters()">Reset</button>
+                            <button type="button" class="sheet-btn" style="background:#0284c7; color:#ffffff; padding:6px 12px; font-weight:bold; border-radius:6px; border:none; cursor:pointer;" onclick="printSanchaPassbookFiltered()">🖨️ A6 Print</button>
+                        </div>
                     </div>
                     <div style="flex:1; min-width:180px;">
                         <label style="font-size:12px; font-weight:700;">🔍 Search:</label><br>
@@ -500,7 +563,7 @@
                         <tbody id="sancha-passbook-table-body"></tbody>
                     </table>
                 </div>
-                <div id="sancha-passbook-pagination-controls" style="display:flex; justify-content:space-between; align-items:center; margin-top:12px; padding:8px 4px; border-top:1px solid #e2e8f0;"></div>`;
+                <div id="sancha-passbook-pagination-controls" style="display:flex; justify-content:space-between; align-items:center; margin-top:12px; padding:8px 4px; border-top:1px solid #e2e8f0; flex-wrap:wrap; gap:8px;"></div>`;
         }
 
         modal.style.display = 'flex';
@@ -582,9 +645,10 @@
             const aayaQty = safeNum(r.aaya);
             const gayaQty = safeNum(r.gaya || r.qty);
 
-            // ⭐ OPENING STOCK VS FRESH INWARD CLEAR DISTINCTION
             const isOpening = (r.isOpening === true) || String(r.type || '').includes('Opening') || String(r.kariger || '').includes('Opening');
             const isKariger = String(r.type || '').includes('Kariger Issue') || String(r.kariger || '').includes('Kariger');
+
+            const singlePrintBtn = `<button type="button" title="A6 Slip Print" class="sheet-btn" style="background:#0284c7; color:#ffffff; padding:4px 7px; font-size:11px; font-weight:bold; border-radius:4px; border:none; cursor:pointer;" onclick="printSingleSanchaPassbookEntry('${esc(r.id)}')">🖨️</button>`;
 
             let typeDisplay = '';
             let karigerDisplay = '';
@@ -593,11 +657,17 @@
             if (isOpening) {
                 typeDisplay = `<span style="background:#fef3c7; color:#b45309; border:1px solid #fde68a; font-size:11px; font-weight:800; padding:2px 8px; border-radius:12px;">📦 Opening Stock (Pichle Saal Se)</span>`;
                 karigerDisplay = `<span style="color:#b45309; font-weight:bold;">📦 Pichla Bacha Stock</span>`;
-                actionBtns = `<span style='color:#64748b; font-size:11px; font-weight:700;'>🔒 Opening Lock</span>`;
+                actionBtns = `<div style="display:flex; gap:6px; justify-content:center; align-items:center;">
+                    <span style='color:#64748b; font-size:11px; font-weight:700;'>🔒 Opening Lock</span>
+                    ${singlePrintBtn}
+                </div>`;
             } else if (isKariger) {
                 typeDisplay = `<strong style="color:#1e3a8a;">${esc(r.type || 'Kariger Issue')}</strong>`;
                 karigerDisplay = `👤 ${esc(r.kariger || '-')}`;
-                actionBtns = `<span style='color:#64748b; font-size:11px; font-weight:700;'>🔒 Kariger Sheet</span>`;
+                actionBtns = `<div style="display:flex; gap:6px; justify-content:center; align-items:center;">
+                    <span style='color:#64748b; font-size:11px; font-weight:700;'>🔒 Kariger Sheet</span>
+                    ${singlePrintBtn}
+                </div>`;
             } else {
                 typeDisplay = `<span style="background:#ecfdf5; color:#059669; border:1px solid #a7f3d0; font-size:11px; font-weight:800; padding:2px 8px; border-radius:12px;">🏭 Nayi Khareed / Inward</span>`;
                 karigerDisplay = (r.kariger && r.kariger !== '-' && r.kariger !== 'undefined') ? `👤 ${esc(r.kariger)}` : '📦 Factory Inward';
@@ -605,6 +675,7 @@
                     <div style="display:flex; gap:6px; justify-content:center; align-items:center;">
                         <button type="button" class="sheet-btn" style="background:#3b82f6; color:#ffffff; padding:4px 8px; font-size:11px; font-weight:bold; border-radius:4px; border:none; cursor:pointer;" onclick="openSanchaEditModal('${esc(r.id)}')">✏️ Edit</button>
                         <button type="button" class="sheet-btn" style="background:#ef4444; color:#ffffff; padding:4px 8px; font-size:11px; font-weight:bold; border-radius:4px; border:none; cursor:pointer;" onclick="deleteSanchaHistoryEntry('${esc(r.id)}')">🗑️ Del</button>
+                        ${singlePrintBtn}
                     </div>`;
             }
 
@@ -620,7 +691,7 @@
 
         tbody.innerHTML = html;
 
-        // Render 20-Item Pagination Bar
+        // Render Pagination Bar
         if (pager) {
             pager.innerHTML = `
                 <div style="font-size:12px; color:#475569; font-weight:600;">
@@ -640,7 +711,296 @@
     };
 
     /* ========================================================================
-       8. DELETE & EDIT ENGINES
+       8. A6 PAPER & THERMAL PRINTER PRINT ENGINES
+       ------------------------------------------------------------------------
+    ======================================================================== */
+    const getSanchaKarkhanaPrintName = (kId) => {
+        if (!kId || kId === 'all') return 'Sabhi Karkhane (All Units)';
+        if (typeof window.getKarkhanaNameById === 'function') {
+            return window.getKarkhanaNameById(kId);
+        }
+        return kId;
+    };
+
+    // 1. Main Sancha Stock Report Print (Current Category & Filters)
+    const printSanchaStockReport = () => {
+        const rows = currentSanchaFilteredRowsCache;
+        if (!rows || !rows.length) {
+            return alert('Print karne ke liye koi Sancha stock nahi mila!');
+        }
+
+        const kName = getSanchaKarkhanaPrintName(window.currentSanchaKarkhanaFilter);
+        const catLabel = (window.currentSanchaCategory === 'chukka' ? 'CHUKKA' : 'TANI') + ' STOCK';
+        const today = new Date().toLocaleDateString('hi-IN');
+
+        let totalAaya = 0;
+        let totalGaya = 0;
+        let totalBacha = 0;
+
+        let rowsHtml = '';
+        rows.forEach((r, idx) => {
+            const aaya = safeNum(r.aaya);
+            const gaya = safeNum(r.gaya);
+            const bacha = safeNum(r.bacha);
+
+            totalAaya += aaya;
+            totalGaya += gaya;
+            totalBacha += bacha;
+
+            rowsHtml += `
+                <tr style="border-bottom:1px dashed #ccc;">
+                    <td style="padding:4px 2px;">${idx + 1}</td>
+                    <td style="padding:4px 2px; font-weight:bold;">${esc(r.name)}</td>
+                    <td style="padding:4px 2px;">${esc(r.person || '-')}</td>
+                    <td style="padding:4px 2px; text-align:right;">+${aaya.toFixed(2)}</td>
+                    <td style="padding:4px 2px; text-align:right;">-${gaya.toFixed(2)}</td>
+                    <td style="padding:4px 2px; text-align:right; font-weight:bold;">${bacha.toFixed(2)}</td>
+                </tr>`;
+        });
+
+        const printWindow = window.open('', '', 'width=450,height=650');
+        if (!printWindow) return alert('Popup block hai! Kripya browser me popup allow karein.');
+
+        printWindow.document.write(`
+            <html>
+            <head>
+                <title>Sancha Stock Report - A6</title>
+                <style>
+                    @page { size: A6 portrait; margin: 4mm; }
+                    body { font-family: monospace, sans-serif; font-size: 11px; margin: 0; padding: 4mm; color: #000; }
+                    .ticket { width: 100%; max-width: 96mm; margin: 0 auto; }
+                    .header { text-align: center; border-bottom: 2px dashed #000; padding-bottom: 6px; margin-bottom: 6px; }
+                    .header h2 { margin: 0; font-size: 15px; text-transform: uppercase; }
+                    .header p { margin: 2px 0 0; font-size: 10px; }
+                    .meta { font-size: 10px; margin-bottom: 6px; border-bottom: 1px dashed #666; padding-bottom: 4px; }
+                    table { width: 100%; border-collapse: collapse; font-size: 10px; }
+                    th { border-top: 1px solid #000; border-bottom: 1px solid #000; text-align: left; padding: 3px 2px; }
+                    .total-box { margin-top: 8px; border-top: 2px dashed #000; padding-top: 4px; font-size: 11px; font-weight: bold; }
+                    .footer { text-align: center; margin-top: 20px; font-size: 10px; border-top: 1px dashed #aaa; padding-top: 6px; }
+                </style>
+            </head>
+            <body>
+                <div class="ticket">
+                    <div class="header">
+                        <h2>SIMPLICITY ERP</h2>
+                        <p><strong>SANCHA ${catLabel} STATEMENT</strong></p>
+                    </div>
+                    <div class="meta">
+                        <div><strong>Karkhana:</strong> ${esc(kName)}</div>
+                        <div><strong>Print Tarikh:</strong> ${today}</div>
+                        <div><strong>Total Items:</strong> ${rows.length}</div>
+                    </div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>#</th><th>ITEM</th><th>PERSON</th><th style="text-align:right;">AAYA</th><th style="text-align:right;">GAYA</th><th style="text-align:right;">BACHA</th>
+                            </tr>
+                        </thead>
+                        <tbody>${rowsHtml}</tbody>
+                    </table>
+                    <div class="total-box">
+                        <div style="display:flex; justify-content:space-between; margin-bottom:2px;">
+                            <span>Kul Aaya:</span> <span>+${totalAaya.toFixed(2)} Kg</span>
+                        </div>
+                        <div style="display:flex; justify-content:space-between; margin-bottom:2px;">
+                            <span>Kul Gaya:</span> <span>-${totalGaya.toFixed(2)} Kg</span>
+                        </div>
+                        <div style="display:flex; justify-content:space-between; font-size:12px; border-top:1px dashed #000; padding-top:3px;">
+                            <span>NET BACHA STOCK:</span> <span>${totalBacha.toFixed(2)} Kg</span>
+                        </div>
+                    </div>
+                    <div class="footer">
+                        <p>हस्ताक्षर / मुंशी: ____________________</p>
+                    </div>
+                </div>
+                <script>
+                    window.onload = function() {
+                        window.focus();
+                        window.print();
+                        setTimeout(() => window.close(), 600);
+                    };
+                <\/script>
+            </body>
+            </html>
+        `);
+        printWindow.document.close();
+    };
+
+    // 2. Filtered Sancha Passbook Statement Print (Date Filter Supported)
+    const printSanchaPassbookFiltered = () => {
+        const rows = filteredSanchaPassbookCache;
+        if (!rows || !rows.length) {
+            return alert('Print karne ke liye koi passbook entry nahi mili!');
+        }
+
+        const itemName = window.currentPassbookSanchaItem || 'Sancha Item';
+        const catLabel = (window.currentSanchaCategory === 'chukka' ? 'Chukka' : 'Tani');
+        const kName = getSanchaKarkhanaPrintName(window.currentSanchaKarkhanaFilter);
+        const fDate = document.getElementById('sancha-pass-from-date')?.value || '';
+        const tDate = document.getElementById('sancha-pass-to-date')?.value || '';
+        const dateRangeTxt = (fDate && tDate) ? `${fDate} se ${tDate}` : (fDate ? `${fDate} ke baad` : (tDate ? `${tDate} tak` : 'Sabhi Tarikh'));
+
+        let totalAaya = 0;
+        let totalGaya = 0;
+
+        let rowsHtml = '';
+        rows.forEach((r) => {
+            const aaya = safeNum(r.aaya);
+            const gaya = safeNum(r.gaya || r.qty);
+
+            totalAaya += aaya;
+            totalGaya += gaya;
+
+            const party = (r.kariger && r.kariger !== '-' && r.kariger !== 'undefined') ? r.kariger : (r.type || 'Inward');
+
+            rowsHtml += `
+                <tr style="border-bottom:1px dashed #ccc;">
+                    <td style="padding:3px 2px;">${esc(r.date || '-')}</td>
+                    <td style="padding:3px 2px; font-weight:600;">${esc(party)}</td>
+                    <td style="padding:3px 2px; text-align:right;">${aaya > 0 ? `+${aaya.toFixed(2)}` : '-'}</td>
+                    <td style="padding:3px 2px; text-align:right;">${gaya > 0 ? `-${gaya.toFixed(2)}` : '-'}</td>
+                </tr>`;
+        });
+
+        const netBalance = totalAaya - totalGaya;
+
+        const printWindow = window.open('', '', 'width=450,height=650');
+        if (!printWindow) return alert('Popup block hai! Kripya browser me popup allow karein.');
+
+        printWindow.document.write(`
+            <html>
+            <head>
+                <title>Sancha Passbook - A6</title>
+                <style>
+                    @page { size: A6 portrait; margin: 4mm; }
+                    body { font-family: monospace, sans-serif; font-size: 11px; margin: 0; padding: 4mm; color: #000; }
+                    .ticket { width: 100%; max-width: 96mm; margin: 0 auto; }
+                    .header { text-align: center; border-bottom: 2px dashed #000; padding-bottom: 6px; margin-bottom: 6px; }
+                    .header h2 { margin: 0; font-size: 15px; text-transform: uppercase; }
+                    .header p { margin: 2px 0 0; font-size: 10px; }
+                    .meta { font-size: 10px; margin-bottom: 6px; border-bottom: 1px dashed #666; padding-bottom: 4px; }
+                    table { width: 100%; border-collapse: collapse; font-size: 10px; }
+                    th { border-top: 1px solid #000; border-bottom: 1px solid #000; text-align: left; padding: 3px 2px; }
+                    .total-box { margin-top: 8px; border-top: 2px dashed #000; padding-top: 4px; font-size: 11px; font-weight: bold; }
+                    .footer { text-align: center; margin-top: 20px; font-size: 10px; border-top: 1px dashed #aaa; padding-top: 6px; }
+                </style>
+            </head>
+            <body>
+                <div class="ticket">
+                    <div class="header">
+                        <h2>SIMPLICITY ERP</h2>
+                        <p><strong>SANCHA PASSBOOK (${catLabel.toUpperCase()})</strong></p>
+                    </div>
+                    <div class="meta">
+                        <div><strong>Item Naam:</strong> ${esc(itemName)}</div>
+                        <div><strong>Karkhana:</strong> ${esc(kName)}</div>
+                        <div><strong>Filter Avadhi:</strong> ${esc(dateRangeTxt)}</div>
+                        <div><strong>Kul Entries:</strong> ${rows.length}</div>
+                    </div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>TARIKH</th><th>SOURCE / PARTY</th><th style="text-align:right;">AAYA</th><th style="text-align:right;">GAYA</th>
+                            </tr>
+                        </thead>
+                        <tbody>${rowsHtml}</tbody>
+                    </table>
+                    <div class="total-box">
+                        <div style="display:flex; justify-content:space-between; margin-bottom:2px;">
+                            <span>Kul Aaya:</span> <span>+${totalAaya.toFixed(2)} Kg</span>
+                        </div>
+                        <div style="display:flex; justify-content:space-between; margin-bottom:2px;">
+                            <span>Kul Gaya:</span> <span>-${totalGaya.toFixed(2)} Kg</span>
+                        </div>
+                        <div style="display:flex; justify-content:space-between; font-size:12px; border-top:1px dashed #000; padding-top:3px;">
+                            <span>NET BALANCE:</span> <span>${netBalance.toFixed(2)} Kg</span>
+                        </div>
+                    </div>
+                    <div class="footer">
+                        <p>हस्ताक्षर / मुंशी: ____________________</p>
+                    </div>
+                </div>
+                <script>
+                    window.onload = function() {
+                        window.focus();
+                        window.print();
+                        setTimeout(() => window.close(), 600);
+                    };
+                <\/script>
+            </body>
+            </html>
+        `);
+        printWindow.document.close();
+    };
+
+    // 3. Single Entry Slip Print (Thermal Parchi)
+    const printSingleSanchaPassbookEntry = (id) => {
+        const hist = window.safeArray ? window.safeArray(window.getStore('sancha_history')) : [];
+        const entry = hist.find((x) => x && x.id === id);
+        if (!entry) return alert('Entry nahi mili!');
+
+        const itemName = entry.name || window.currentPassbookSanchaItem || 'Sancha Item';
+        const catLabel = (entry.category || window.currentSanchaCategory || 'tani').toUpperCase();
+        const kName = getSanchaKarkhanaPrintName(entry.karkhanaId || window.currentSanchaKarkhanaFilter);
+        const aaya = safeNum(entry.aaya);
+        const gaya = safeNum(entry.gaya || entry.qty);
+        const isAaya = aaya > 0;
+        const wazanDisplay = isAaya ? `+${aaya.toFixed(2)} Kg` : `-${gaya.toFixed(2)} Kg`;
+
+        const printWindow = window.open('', '', 'width=420,height=550');
+        if (!printWindow) return alert('Popup block hai! Kripya browser me popup allow karein.');
+
+        printWindow.document.write(`
+            <html>
+            <head>
+                <title>Sancha Voucher - A6</title>
+                <style>
+                    @page { size: A6 portrait; margin: 4mm; }
+                    body { font-family: monospace, sans-serif; font-size: 11px; margin: 0; padding: 4mm; color: #000; }
+                    .ticket { width: 100%; max-width: 90mm; margin: 0 auto; border: 1px dashed #000; padding: 8px; box-sizing: border-box; }
+                    .header { text-align: center; border-bottom: 1.5px dashed #000; padding-bottom: 6px; margin-bottom: 8px; }
+                    .header h2 { margin: 0; font-size: 15px; }
+                    .header p { margin: 2px 0 0; font-size: 10px; font-weight: bold; }
+                    .row { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 11px; }
+                    .total-highlight { background: #eee; padding: 6px 4px; border: 1px solid #000; font-size: 13px; font-weight: 900; text-align: center; margin: 10px 0; }
+                    .signs { display: flex; justify-content: space-between; margin-top: 25px; font-size: 10px; }
+                </style>
+            </head>
+            <body>
+                <div class="ticket">
+                    <div class="header">
+                        <h2>SIMPLICITY ERP</h2>
+                        <p>SANCHA (${catLabel}) LEN-DEN PARCHI</p>
+                    </div>
+                    <div class="row"><span><strong>Parchi ID:</strong></span><span>#${esc(String(entry.id).slice(-6))}</span></div>
+                    <div class="row"><span><strong>Tarikh:</strong></span><span>${esc(entry.date || '-')}</span></div>
+                    <div class="row"><span><strong>Godam:</strong></span><span>${esc(kName)}</span></div>
+                    <div class="row"><span><strong>Item:</strong></span><span>${esc(itemName)}</span></div>
+                    <div class="row"><span><strong>Type:</strong></span><span>${esc(entry.type || 'Movement')}</span></div>
+                    <div class="row"><span><strong>Kariger / Person:</strong></span><span>${esc(entry.kariger || '-')}</span></div>
+                    <div class="total-highlight">
+                        WAZAN: ${wazanDisplay}
+                    </div>
+                    <div class="signs">
+                        <div>हस्ताक्षर मुंशी<br><br>________</div>
+                        <div>हस्ताक्षर पाने वाला<br><br>________</div>
+                    </div>
+                </div>
+                <script>
+                    window.onload = function() {
+                        window.focus();
+                        window.print();
+                        setTimeout(() => window.close(), 600);
+                    };
+                <\/script>
+            </body>
+            </html>
+        `);
+        printWindow.document.close();
+    };
+
+    /* ========================================================================
+       9. DELETE & EDIT ENGINES
        ------------------------------------------------------------------------
     ======================================================================== */
     const deleteSanchaHistoryEntry = (id) => {
@@ -803,7 +1163,7 @@
     };
 
     /* ========================================================================
-       9. GLOBAL EXPORT
+       10. GLOBAL EXPORT
        ------------------------------------------------------------------------
     ======================================================================== */
     const sanchaUIAPI = {
@@ -817,6 +1177,8 @@
         saveNewSanchaStock,
         filterSancha,
         renderSanchaTable,
+        changeSanchaStockPage,
+        printSanchaStockReport,
         openSanchaTransferModal,
         closeSanchaTransferModal,
         submitSanchaTransferForm,
@@ -824,6 +1186,8 @@
         resetSanchaPassbookFilters,
         applySanchaPassbookFilters,
         changeSanchaPassbookPage,
+        printSanchaPassbookFiltered,
+        printSingleSanchaPassbookEntry,
         deleteSanchaHistoryEntry,
         openSanchaEditModal,
         closeSanchaEditModal,
