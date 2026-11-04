@@ -1,7 +1,7 @@
 /* ============================================================================
-   SIMPLICITY ERP - BANA STOCK & PAGINATED PASSBOOK ENGINE (WITH LIVE SEARCH & A6 PRINT)
+   SIMPLICITY ERP - BANA STOCK & ⚡ KEYBOARD-ONLY BANA EXPRESS ENGINE
    File: bana/bana-ui.js • Developed by Farhan Jawed
-   (Multi-Godam Stock, Edit/Delete, Kariger Lock, Fast Mobile Pagination, Live Search & A6 Print)
+   (Zero-Mouse Inward Express, Live Search, Pagination & A6 Print)
 ============================================================================ */
 
 (() => {
@@ -33,6 +33,12 @@
     const setDisplay = (id, val) => {
         const el = document.getElementById(id);
         if (el) el.style.display = val;
+    };
+
+    const getToday = () => {
+        return (typeof window.getTodayDate === 'function') 
+            ? window.getTodayDate() 
+            : new Date().toISOString().split('T')[0];
     };
 
     /* ========================================================================
@@ -85,7 +91,7 @@
     };
 
     /* ========================================================================
-       2. INWARD PURCHASE ENGINE
+       2. INWARD PURCHASE ENGINE (LEGACY FORM)
        ------------------------------------------------------------------------
     ======================================================================== */
     const toggleBanaForm = () => {
@@ -96,11 +102,7 @@
 
         if (isOpening) {
             const dInp = document.getElementById('bana-date');
-            if (dInp) {
-                dInp.value = (typeof window.getTodayDate === 'function') 
-                    ? window.getTodayDate() 
-                    : new Date().toISOString().split('T')[0];
-            }
+            if (dInp) dInp.value = getToday();
         }
     };
 
@@ -137,9 +139,7 @@
         const nameInp = isNew ? document.getElementById('bana-new-name') : document.getElementById('bana-select-existing');
         const name = String(nameInp?.value || '').trim();
 
-        const date = document.getElementById('bana-date')?.value || 
-                    ((typeof window.getTodayDate === 'function') ? window.getTodayDate() : new Date().toISOString().split('T')[0]);
-
+        const date = document.getElementById('bana-date')?.value || getToday();
         const qtyInp = document.getElementById('bana-aaya');
         const qty = safeNum(qtyInp?.value);
 
@@ -198,7 +198,7 @@
         alert(`✅ ${qty.toFixed(2)} Kg Bana Stock me jama ho gaya!`);
     };
 
-    // 🔍 LIVE SEARCH BINDER (Auto-binds without depending on HTML oninput)
+    // 🔍 LIVE SEARCH BINDER
     const bindBanaSearchInput = () => {
         const searchInp = document.getElementById('search-bana-input');
         if (searchInp && !searchInp.dataset.bound) {
@@ -216,7 +216,7 @@
     };
 
     /* ========================================================================
-       3. MAIN BANA TABLE RENDERER (WITH LIVE SEARCH, PAGINATION & PRINT)
+       3. MAIN BANA TABLE RENDERER (WITH BANA EXPRESS BUTTON)
        ------------------------------------------------------------------------
     ======================================================================== */
     const renderBanaTable = () => {
@@ -250,25 +250,36 @@
         const searchInp = document.getElementById('search-bana-input');
         const txt = searchInp ? searchInp.value.toLowerCase().trim() : '';
 
-        // Universal Search: Name, Date, Aaya, Gaya, Bacha
+        // Universal Search
         const filteredRows = txt 
             ? rows.filter(r => `${r.name || ''} ${r.date || ''} ${r.aaya || ''} ${r.gaya || ''} ${r.bacha || ''}`.toLowerCase().includes(txt)) 
             : rows;
 
         currentBanaFilteredRowsCache = filteredRows;
 
-        // Auto-inject A6 Print Button next to search box
-        if (searchInp && searchInp.parentElement && !document.getElementById('bana-stock-print-btn')) {
+        // Auto-inject ⚡ BANA EXPRESS & A6 PRINT BUTTONS next to search box
+        if (searchInp && searchInp.parentElement && !document.getElementById('bana-express-btn')) {
+            const expBtn = document.createElement('button');
+            expBtn.id = 'bana-express-btn';
+            expBtn.type = 'button';
+            expBtn.className = 'sheet-btn';
+            expBtn.style.cssText = 'background:#10b981; color:#ffffff; padding:6px 14px; font-weight:bold; border-radius:6px; border:none; cursor:pointer; margin-left:8px; display:inline-flex; align-items:center; gap:5px; box-shadow:0 2px 4px rgba(16,185,129,0.3);';
+            expBtn.innerHTML = '⚡ BANA EXPRESS';
+            expBtn.onclick = () => openBanaStockExpressModal();
+
             const printBtn = document.createElement('button');
             printBtn.id = 'bana-stock-print-btn';
             printBtn.type = 'button';
             printBtn.className = 'sheet-btn';
-            printBtn.style.cssText = 'background:#1e3a8a; color:#ffffff; padding:6px 12px; font-weight:bold; border-radius:6px; border:none; cursor:pointer; margin-left:8px; display:inline-flex; align-items:center; gap:4px;';
+            printBtn.style.cssText = 'background:#1e3a8a; color:#ffffff; padding:6px 12px; font-weight:bold; border-radius:6px; border:none; cursor:pointer; margin-left:6px; display:inline-flex; align-items:center; gap:4px;';
             printBtn.innerHTML = '🖨️ A6 Print';
             printBtn.onclick = () => printBanaStockReport();
+
             if (searchInp.nextSibling) {
-                searchInp.parentElement.insertBefore(printBtn, searchInp.nextSibling);
+                searchInp.parentElement.insertBefore(expBtn, searchInp.nextSibling);
+                searchInp.parentElement.insertBefore(printBtn, expBtn.nextSibling);
             } else {
+                searchInp.parentElement.appendChild(expBtn);
                 searchInp.parentElement.appendChild(printBtn);
             }
         }
@@ -323,7 +334,7 @@
             });
             tbody.innerHTML = html;
 
-            // Render Stock Pagination Controls
+            // Render Pagination Controls
             if (pager) {
                 pager.innerHTML = `
                     <div style="font-size:12px; color:#475569; font-weight:600;">
@@ -347,7 +358,247 @@
     };
 
     /* ========================================================================
-       4. INTER-GODOWN TRANSFER POPUP
+       4. ⚡ BANA STOCK EXPRESS (KEYBOARD-ONLY: PURANA BANA & NAYA BANA)
+       ------------------------------------------------------------------------
+    ======================================================================== */
+    let expressBanaMode = 'purana'; // 'purana' | 'naya'
+
+    const openBanaStockExpressModal = () => {
+        const existingModal = document.getElementById('bana-stock-express-modal');
+        if (existingModal) existingModal.remove();
+
+        expressBanaMode = 'purana';
+        const today = getToday();
+
+        // Get unique bana names for autocomplete datalist
+        const rawStock = window.safeArray ? window.safeArray(window.getStore('bana_stock')) : [];
+        const unique = [];
+        let datalistOptions = '';
+        rawStock.forEach((b) => {
+            const n = b?.name ? b.name.trim() : '';
+            if (n && unique.indexOf(n.toLowerCase()) === -1) {
+                unique.push(n.toLowerCase());
+                datalistOptions += `<option value="${esc(n)}">`;
+            }
+        });
+
+        const targetKid = (window.currentBanaKarkhanaFilter !== 'all') ? window.currentBanaKarkhanaFilter : 'k_main';
+        const godamName = (typeof window.getKarkhanaNameById === 'function') 
+            ? window.getKarkhanaNameById(targetKid) 
+            : 'Main Godown';
+
+        const modalHtml = `
+            <div id="bana-stock-express-modal" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.65); z-index:999999; display:flex; align-items:center; justify-content:center; padding:15px; box-sizing:border-box;">
+                <div style="background:#ffffff; width:100%; max-width:440px; border-radius:12px; box-shadow:0 25px 30px -5px rgba(0,0,0,0.4); overflow:hidden;">
+                    
+                    <!-- Header -->
+                    <div style="background:#059669; color:#ffffff; padding:12px 16px; display:flex; justify-content:space-between; align-items:center;">
+                        <h3 style="margin:0; font-size:16px;">⚡ BANA STOCK EXPRESS (आवक काउंटर)</h3>
+                        <button type="button" onclick="closeBanaStockExpressModal()" style="background:transparent; border:none; color:#ffffff; font-size:22px; cursor:pointer;">&times;</button>
+                    </div>
+
+                    <div style="padding:16px;">
+                        
+                        <!-- Mode Switch Buttons -->
+                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:14px;">
+                            <button type="button" id="btn-exp-purana" onclick="setBanaExpressMode('purana')" style="background:#059669; color:#fff; border:none; padding:9px; border-radius:6px; font-weight:bold; font-size:13px; cursor:pointer;">
+                                🔵 Purana Stock Aaya
+                            </button>
+                            <button type="button" id="btn-exp-naya" onclick="setBanaExpressMode('naya')" style="background:#e2e8f0; color:#334155; border:none; padding:9px; border-radius:6px; font-weight:bold; font-size:13px; cursor:pointer;">
+                                🟢 Naya Item Aaya
+                            </button>
+                        </div>
+
+                        <!-- Godown Badge -->
+                        <div style="background:#ecfdf5; border:1px solid #d1fae5; border-radius:6px; padding:6px 10px; margin-bottom:12px; font-size:12px; display:flex; justify-content:space-between;">
+                            <span>🏢 <strong>Godam:</strong> ${esc(godamName)}</span>
+                            <span style="color:#059669; font-weight:bold;">⚡ Zero-Mouse (Enter = Save)</span>
+                        </div>
+
+                        <!-- Form Fields -->
+                        <div style="margin-bottom:10px;">
+                            <label style="font-size:12px; font-weight:700; color:#374151;">तारीख (Date):</label><br>
+                            <input type="date" id="exp-bana-date" value="${today}" style="width:100%; padding:8px; border:1px solid #cbd5e1; border-radius:6px; font-size:13px; margin-top:3px; box-sizing:border-box;">
+                        </div>
+
+                        <!-- 1. Purana Bana Autocomplete Input -->
+                        <div id="box-exp-purana" style="margin-bottom:10px;">
+                            <label style="font-size:12px; font-weight:700; color:#374151;">बाना का नाम (1-2 अक्षर लिखें):</label><br>
+                            <input type="text" id="exp-bana-select-input" list="exp-bana-datalist" placeholder="e.g. Katan, Silk, 20/22..." autocomplete="off" style="width:100%; padding:9px 12px; border:1.5px solid #059669; border-radius:6px; font-size:14px; font-weight:bold; margin-top:3px; box-sizing:border-box;">
+                            <datalist id="exp-bana-datalist">
+                                ${datalistOptions}
+                            </datalist>
+                            <div id="exp-bana-live-stock" style="font-size:11px; color:#64748b; margin-top:3px;">1-2 letter likhenge to naam aa jayega</div>
+                        </div>
+
+                        <!-- 2. Naya Bana Input -->
+                        <div id="box-exp-naya" style="display:none; margin-bottom:10px;">
+                            <label style="font-size:12px; font-weight:700; color:#374151;">नए बाना का पूरा नाम:</label><br>
+                            <input type="text" id="exp-bana-new-name" placeholder="e.g. Pure Katan White 20/22" style="width:100%; padding:9px 12px; border:1.5px solid #10b981; border-radius:6px; font-size:14px; font-weight:bold; margin-top:3px; box-sizing:border-box;">
+                        </div>
+
+                        <!-- Wazan (Qty) -->
+                        <div style="margin-bottom:16px;">
+                            <label style="font-size:12px; font-weight:700; color:#374151;">कितना वज़न आया (Kg me):</label><br>
+                            <input type="number" step="0.01" id="exp-bana-qty" placeholder="0.00 Kg" style="width:100%; padding:10px; border:1.5px solid #059669; border-radius:6px; font-size:16px; font-weight:900; color:#059669; margin-top:3px; box-sizing:border-box;">
+                        </div>
+
+                        <!-- Submit Button -->
+                        <button type="button" id="exp-bana-submit-btn" onclick="submitBanaStockExpress()" style="background:#059669; color:#ffffff; border:none; width:100%; padding:12px; border-radius:6px; font-weight:bold; font-size:14px; cursor:pointer; box-shadow:0 3px 6px rgba(5,150,105,0.3);">
+                            💾 STOCK JAMA KAREIN [ ENTER ]
+                        </button>
+
+                    </div>
+                </div>
+            </div>`;
+
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+        // Auto Focus on Name field for instant typing
+        setTimeout(() => {
+            const inp = document.getElementById('exp-bana-select-input');
+            if (inp) inp.focus();
+        }, 100);
+
+        // Keyboard flow: Enter in Qty field submits form directly
+        const qtyInp = document.getElementById('exp-bana-qty');
+        if (qtyInp) {
+            qtyInp.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    submitBanaStockExpress();
+                }
+            });
+        }
+
+        // Live check stock of selected item
+        const selInp = document.getElementById('exp-bana-select-input');
+        if (selInp) {
+            selInp.addEventListener('input', () => {
+                const val = selInp.value.trim();
+                const stLabel = document.getElementById('exp-bana-live-stock');
+                if (val && typeof window.getBanaItemStats === 'function') {
+                    const stats = window.getBanaItemStats(val, targetKid);
+                    if (stLabel) {
+                        stLabel.innerHTML = `Maujooda Bacha: <strong style="color:#059669;">${safeNum(stats.bacha).toFixed(2)} Kg</strong>`;
+                    }
+                } else if (stLabel) {
+                    stLabel.innerHTML = '1-2 letter likhenge to naam aa jayega';
+                }
+            });
+        }
+    };
+
+    const setBanaExpressMode = (mode) => {
+        expressBanaMode = mode;
+        const btnPurana = document.getElementById('btn-exp-purana');
+        const btnNaya = document.getElementById('btn-exp-naya');
+        const boxPurana = document.getElementById('box-exp-purana');
+        const boxNaya = document.getElementById('box-exp-naya');
+
+        if (mode === 'purana') {
+            if (btnPurana) { btnPurana.style.background = '#059669'; btnPurana.style.color = '#fff'; }
+            if (btnNaya) { btnNaya.style.background = '#e2e8f0'; btnNaya.style.color = '#334155'; }
+            if (boxPurana) boxPurana.style.display = 'block';
+            if (boxNaya) boxNaya.style.display = 'none';
+
+            const inp = document.getElementById('exp-bana-select-input');
+            if (inp) inp.focus();
+        } else {
+            if (btnPurana) { btnPurana.style.background = '#e2e8f0'; btnPurana.style.color = '#334155'; }
+            if (btnNaya) { btnNaya.style.background = '#059669'; btnNaya.style.color = '#fff'; }
+            if (boxPurana) boxPurana.style.display = 'none';
+            if (boxNaya) boxNaya.style.display = 'block';
+
+            const inp = document.getElementById('exp-bana-new-name');
+            if (inp) inp.focus();
+        }
+    };
+
+    const closeBanaStockExpressModal = () => {
+        const modal = document.getElementById('bana-stock-express-modal');
+        if (modal) modal.remove();
+    };
+
+    const submitBanaStockExpress = () => {
+        const date = document.getElementById('exp-bana-date')?.value || getToday();
+        const isNew = (expressBanaMode === 'naya');
+
+        const nameInp = isNew ? document.getElementById('exp-bana-new-name') : document.getElementById('exp-bana-select-input');
+        const name = String(nameInp?.value || '').trim();
+        const qty = safeNum(document.getElementById('exp-bana-qty')?.value);
+
+        if (!name) {
+            alert('Bana item ka naam zaroori hai!');
+            if (nameInp) nameInp.focus();
+            return;
+        }
+
+        if (qty <= 0) {
+            alert('Wazan (Qty Kg me) daaliye!');
+            const qInp = document.getElementById('exp-bana-qty');
+            if (qInp) qInp.focus();
+            return;
+        }
+
+        const targetKid = (window.currentBanaKarkhanaFilter !== 'all') ? window.currentBanaKarkhanaFilter : 'k_main';
+        const list = window.safeArray ? window.safeArray(window.getStore('bana_stock')) : [];
+
+        const item = list.find((x) => {
+            const matchKid = (!x.karkhanaId && targetKid === 'k_main') || String(x.karkhanaId) === String(targetKid);
+            return x?.name && x.name.toLowerCase() === name.toLowerCase() && matchKid;
+        });
+
+        if (item) {
+            item.aaya = safeNum((safeNum(item.aaya) + qty).toFixed(2));
+            item.bacha = safeNum((safeNum(item.aaya) - safeNum(item.gaya)).toFixed(2));
+            item.date = date;
+        } else {
+            list.push({
+                id: `bana_${Date.now()}`,
+                date,
+                name,
+                aaya: qty,
+                gaya: 0,
+                bacha: qty,
+                karkhanaId: targetKid,
+                timestamp: Date.now()
+            });
+        }
+        if (typeof window.setStore === 'function') window.setStore('bana_stock', list);
+
+        const hist = window.safeArray ? window.safeArray(window.getStore('bana_history')) : [];
+        hist.push({
+            id: `bhist_${Date.now()}`,
+            date,
+            name,
+            kariger: 'Godown Purchase',
+            type: 'Khareed (Inward)',
+            aaya: qty,
+            gaya: 0,
+            karkhanaId: targetKid,
+            timestamp: Date.now()
+        });
+        if (typeof window.setStore === 'function') window.setStore('bana_history', hist);
+
+        renderBanaTable();
+        if (typeof window.updateDashboardBadgeTotals === 'function') window.updateDashboardBadgeTotals();
+
+        // Instant reset for the next item without touching mouse
+        const qtyInp = document.getElementById('exp-bana-qty');
+        if (qtyInp) qtyInp.value = '';
+
+        if (nameInp) {
+            nameInp.value = '';
+            nameInp.focus();
+        }
+
+        const stLabel = document.getElementById('exp-bana-live-stock');
+        if (stLabel) stLabel.innerHTML = `<span style="color:#059669; font-weight:bold;">✅ +${qty.toFixed(2)} Kg jama ho gaya! Agla item likhein:</span>`;
+    };
+
+    /* ========================================================================
+       5. INTER-GODOWN TRANSFER POPUP
        ------------------------------------------------------------------------
     ======================================================================== */
     const openBanaTransferModal = (safeName, availableBacha) => {
@@ -372,7 +623,7 @@
             }
         });
 
-        const today = (typeof window.getTodayDate === 'function') ? window.getTodayDate() : new Date().toISOString().split('T')[0];
+        const today = getToday();
 
         const modalHtml = `
             <div id="bana-transfer-popup-modal" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:99999; display:flex; align-items:center; justify-content:center; padding:15px; box-sizing:border-box;">
@@ -426,8 +677,7 @@
         const itemName = decodeURIComponent(safeName);
         const toKid = document.getElementById('bana-dest-godam')?.value;
         const qty = safeNum(document.getElementById('bana-transfer-qty')?.value);
-        const d = document.getElementById('bana-transfer-date')?.value || 
-                 ((typeof window.getTodayDate === 'function') ? window.getTodayDate() : '');
+        const d = document.getElementById('bana-transfer-date')?.value || getToday();
         const note = String(document.getElementById('bana-transfer-note')?.value || '').trim();
 
         if (!toKid) return alert('Kripya Paane wala Godam chunein!');
@@ -447,7 +697,7 @@
     };
 
     /* ========================================================================
-       5. 📱 PAGINATED BANA PASSBOOK ENGINE (WITH A6 PRINT)
+       6. 📱 PAGINATED BANA PASSBOOK ENGINE (WITH A6 PRINT)
        ------------------------------------------------------------------------
     ======================================================================== */
     const openBanaPassbook = (safeName) => {
@@ -627,7 +877,7 @@
     };
 
     /* ========================================================================
-       6. A6 PAPER & THERMAL PRINTER PRINT ENGINES
+       7. A6 PAPER & THERMAL PRINTER PRINT ENGINES
        ------------------------------------------------------------------------
     ======================================================================== */
     const getKarkhanaPrintName = (kId) => {
@@ -912,7 +1162,7 @@
     };
 
     /* ========================================================================
-       7. DELETE & EDIT ENGINES
+       8. DELETE & EDIT ENGINES
        ------------------------------------------------------------------------
     ======================================================================== */
     const deleteBanaHistoryEntry = (histId) => {
@@ -1082,7 +1332,7 @@
     };
 
     /* ========================================================================
-       8. GLOBAL EXPORTS
+       9. GLOBAL EXPORTS
        ------------------------------------------------------------------------
     ======================================================================== */
     const banaUIAPI = {
@@ -1098,6 +1348,10 @@
         renderBanaTable,
         changeBanaStockPage,
         printBanaStockReport,
+        openBanaStockExpressModal,
+        setBanaExpressMode,
+        closeBanaStockExpressModal,
+        submitBanaStockExpress,
         openBanaTransferModal,
         closeBanaTransferModal,
         submitBanaTransferForm,
