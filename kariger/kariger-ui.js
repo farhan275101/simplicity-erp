@@ -1,7 +1,7 @@
 /* ============================================================================
-   SIMPLICITY ERP - WEAVER (KARIGER) UI & SHEET CONTROLLER
+   SIMPLICITY ERP - WEAVER (KARIGER) UI & SHEET CONTROLLER (WITH A6 PRINT ENGINE)
    File: kariger/kariger-ui.js • Developed by Farhan Jawed
-   (Live Realtime Sheet Sync + Auto-Godam Stock + Zero Overwrite)
+   (Live Realtime Sheet Sync + Auto-Godam Stock + Zero Overwrite + A6 Thermal Print)
 ============================================================================ */
 
 (() => {
@@ -427,7 +427,7 @@
     };
 
     /* ========================================================================
-       3. TANI KHATA CONTROLLER (With Live Cloud Streaming)
+       3. TANI KHATA CONTROLLER (With Live Cloud Streaming & A6 Print)
        ------------------------------------------------------------------------
     ======================================================================== */
     const openKarigerSheet = (id) => {
@@ -438,7 +438,6 @@
         window.activeSheetIndex = 0;
         window.editingRowIndex = null;
 
-        // 🌟 LIVE CLOUD HOOK: Is Kariger ki sheet ko turant Firebase se live connect karo
         if (typeof window.syncKarigerSheetLive === 'function') {
             window.syncKarigerSheetLive(k.id);
         } else if (window.CloudEngine && typeof window.CloudEngine.syncKarigerSheetLive === 'function') {
@@ -453,6 +452,19 @@
         const kGodamName = (typeof window.getKarkhanaNameById === 'function') ? window.getKarkhanaNameById(k.karkhanaId) : 'Main Godown';
         setText('sheet-kariger-title', `${k.name} (${kGodamName}) - Saree: ${k.saree || '-'}`);
         setVal('row-date', (typeof window.getTodayDate === 'function') ? window.getTodayDate() : new Date().toISOString().split('T')[0]);
+
+        // Auto-inject A6 Print Button next to WhatsApp button or title
+        const waBtn = document.querySelector('button[onclick*="sendKarigerWhatsAppParchi"]');
+        if (waBtn && waBtn.parentElement && !document.getElementById('btn-print-kariger-sheet')) {
+            const printBtn = document.createElement('button');
+            printBtn.id = 'btn-print-kariger-sheet';
+            printBtn.type = 'button';
+            printBtn.className = 'sheet-btn';
+            printBtn.style.cssText = 'background:#1e3a8a; color:#ffffff; padding:6px 12px; font-weight:bold; border-radius:6px; border:none; cursor:pointer; margin-left:6px; display:inline-flex; align-items:center; gap:4px;';
+            printBtn.innerHTML = '🖨️ A6 Print Khata';
+            printBtn.onclick = () => openKarigerPrintModal();
+            waBtn.parentElement.insertBefore(printBtn, waBtn.nextSibling);
+        }
 
         let sheets = (typeof window.getKarigerSheets === 'function') ? window.getKarigerSheets(window.activeKarigerId) : [];
         if (!sheets || !sheets.length) {
@@ -709,7 +721,7 @@
     };
 
     /* ========================================================================
-       4. LINE ROW SAVE / EDIT / DELETE (With Cloud Live Trigger)
+       4. LINE ROW SAVE / EDIT / DELETE (With Print Prompt)
        ------------------------------------------------------------------------
     ======================================================================== */
     const saveTaniRow = () => {
@@ -782,12 +794,15 @@
 
         sh.rows = window.safeArray ? window.safeArray(sh.rows) : [];
 
+        let savedIndex = 0;
         if (isEditing) {
+            savedIndex = window.editingRowIndex;
             sh.rows[window.editingRowIndex] = rowObj;
             window.editingRowIndex = null;
             const sBtn = document.getElementById('row-submit-btn');
             if (sBtn) sBtn.textContent = '+ Line Jodein & Stock Minus';
         } else {
+            savedIndex = sh.rows.length;
             sh.rows.push(rowObj);
         }
 
@@ -879,7 +894,11 @@
 
         renderSheetRows(sh);
         updateLiveStockDisplay();
-        alert('✅ Line jud gayi! Cloud aur Stock dono update ho gaye!');
+
+        // 🌟 QUICK PRINT CONFIRMATION: Turant Le-Den Parchi print karne ka prompt
+        if (confirm('✅ Line jud gayi!\n\nKya aap is le-den ki A6 Thermal Parchi print karna chahte hain?')) {
+            printSingleKarigerRowSlip(savedIndex);
+        }
     };
 
     const editTaniRow = (idx) => {
@@ -934,7 +953,7 @@
     };
 
     /* ========================================================================
-       5. 9-COLUMN SHEET ROWS RENDERER
+       5. 9-COLUMN SHEET ROWS RENDERER (WITH PRINT BUTTONS)
        ------------------------------------------------------------------------
     ======================================================================== */
     const renderSheetRows = (sh) => {
@@ -968,7 +987,8 @@
                     <td style="color:#059669; font-weight:700;">₹ ${safeNum(r.paid)}</td>
                     <td>${safeNum(r.retBana)}</td>
                     <td>${safeNum(r.retZari)}</td>
-                    <td style="text-align:center;">
+                    <td style="text-align:center; white-space:nowrap;">
+                        <button type="button" title="Is Line Ki Parchi Print" class="sheet-btn" style="background:#0284c7; color:#fff; padding:3px 7px; font-size:11px; font-weight:bold; border-radius:4px; border:none; cursor:pointer;" onclick="printSingleKarigerRowSlip(${idx})">🖨️</button>
                         <button type="button" class="edit-btn" onclick="editTaniRow(${idx})">✏️</button> 
                         <button type="button" class="delete-btn" onclick="deleteTaniRow(${idx})">🗑️</button>
                     </td>
@@ -1017,6 +1037,283 @@
         setText('calc-remaining-zari', c.remainingZari.toFixed(2));
     };
 
+    /* ========================================================================
+       6. A6 PAPER & THERMAL PRINTER ENGINES (WITH OPTIONAL SUMMARY)
+       ------------------------------------------------------------------------
+    ======================================================================== */
+
+    // 1. Single Line Row Parchi Print (Jab Kariger Bana/Zari le jaye ya Saree jama kare)
+    const printSingleKarigerRowSlip = (idx) => {
+        if (!window.activeKarigerId) return alert('Pehle Kariger chunein!');
+        const k = sanitizeKarigerList().find((x) => String(x.id) === String(window.activeKarigerId));
+        const sheets = (typeof window.getKarigerSheets === 'function') ? window.getKarigerSheets(window.activeKarigerId) : [];
+        const sh = sheets[window.activeSheetIndex];
+        if (!k || !sh || !sh.rows || !sh.rows[idx]) return alert('Row entry nahi mili!');
+
+        const r = sh.rows[idx];
+        const kGodamName = (typeof window.getKarkhanaNameById === 'function') ? window.getKarkhanaNameById(k.karkhanaId) : 'Main Godown';
+        const sDesign = k.saree || 'General Saree';
+
+        const printWindow = window.open('', '', 'width=420,height=580');
+        if (!printWindow) return alert('Popup block hai! Kripya browser me popup allow karein.');
+
+        printWindow.document.write(`
+            <html>
+            <head>
+                <title>Kariger Parchi - A6</title>
+                <style>
+                    @page { size: A6 portrait; margin: 4mm; }
+                    body { font-family: monospace, sans-serif; font-size: 11px; margin: 0; padding: 4mm; color: #000; }
+                    .ticket { width: 100%; max-width: 90mm; margin: 0 auto; border: 1.5px dashed #000; padding: 8px; box-sizing: border-box; }
+                    .header { text-align: center; border-bottom: 1.5px dashed #000; padding-bottom: 6px; margin-bottom: 8px; }
+                    .header h2 { margin: 0; font-size: 15px; text-transform: uppercase; }
+                    .header p { margin: 2px 0 0; font-size: 10px; font-weight: bold; }
+                    .meta { margin-bottom: 8px; font-size: 11px; border-bottom: 1px dashed #666; padding-bottom: 6px; }
+                    .meta-row { display: flex; justify-content: space-between; margin-bottom: 3px; }
+                    table { width: 100%; border-collapse: collapse; font-size: 11px; margin: 8px 0; }
+                    th, td { padding: 4px 2px; text-align: left; border-bottom: 1px dashed #aaa; }
+                    th { border-top: 1px solid #000; border-bottom: 1px solid #000; font-size: 10px; }
+                    .signs { display: flex; justify-content: space-between; margin-top: 25px; font-size: 10px; }
+                </style>
+            </head>
+            <body>
+                <div class="ticket">
+                    <div class="header">
+                        <h2>SIMPLICITY ERP</h2>
+                        <p>कारीगर ले-देन पर्ची (RAW MATERIAL & WORK)</p>
+                    </div>
+                    <div class="meta">
+                        <div class="meta-row"><span><strong>कारीगर:</strong> ${esc(k.name)}</span><span><strong>तारीख:</strong> ${esc(r.date || '-')}</span></div>
+                        <div class="meta-row"><span><strong>साड़ी (Design):</strong> ${esc(sDesign)}</span><span><strong>खाता:</strong> ${esc(sh.title)}</span></div>
+                        <div class="meta-row"><span><strong>गोदाम:</strong> ${esc(kGodamName)}</span><span><strong>मो.:</strong> ${esc(k.mobile || '-')}</span></div>
+                    </div>
+                    <table>
+                        <thead>
+                            <tr><th>विवरण (ITEM / DETAIL)</th><th style="text-align:right;">मात्रा / वज़न</th></tr>
+                        </thead>
+                        <tbody>
+                            ${safeNum(r.netBana) > 0 ? `<tr><td>बाना दिया (${esc(r.banaItem || sh.banaItem || 'बाना')})</td><td style="text-align:right; font-weight:bold;">${safeNum(r.netBana).toFixed(2)} Kg</td></tr>` : ''}
+                            ${safeNum(r.netZari) > 0 ? `<tr><td>जरी दिया (${esc(r.zariItem || sh.zariItem || 'जरी')})</td><td style="text-align:right; font-weight:bold;">${safeNum(r.netZari).toFixed(2)} Kg</td></tr>` : ''}
+                            ${safeNum(r.saree) > 0 ? `<tr><td>साड़ी जमा</td><td style="text-align:right; font-weight:bold; color:#059669;">+${safeNum(r.saree)} Pcs</td></tr>` : ''}
+                            ${safeNum(r.lott) > 0 ? `<tr><td>लोट साड़ी</td><td style="text-align:right; font-weight:bold; color:#dc2626;">-${safeNum(r.lott)} Pcs</td></tr>` : ''}
+                            ${safeNum(r.paid) > 0 ? `<tr><td>मजदूरी दिया (Paid)</td><td style="text-align:right; font-weight:bold; color:#059669;">₹ ${safeNum(r.paid).toFixed(2)}</td></tr>` : ''}
+                            ${safeNum(r.retBana) > 0 ? `<tr><td>वापस बाना</td><td style="text-align:right;">${safeNum(r.retBana).toFixed(2)} Kg</td></tr>` : ''}
+                            ${safeNum(r.retZari) > 0 ? `<tr><td>वापस जरी</td><td style="text-align:right;">${safeNum(r.retZari).toFixed(2)} Kg</td></tr>` : ''}
+                        </tbody>
+                    </table>
+                    <div class="signs">
+                        <div>हस्ताक्षर मुंशी<br><br>___________</div>
+                        <div>हस्ताक्षर कारीगर<br><br>___________</div>
+                    </div>
+                </div>
+                <script>
+                    window.onload = function() {
+                        window.focus();
+                        window.print();
+                        setTimeout(() => window.close(), 600);
+                    };
+                <\/script>
+            </body>
+            </html>
+        `);
+        printWindow.document.close();
+    };
+
+    // 2. Modal Controller for Optional Summary Print
+    const openKarigerPrintModal = () => {
+        const existingModal = document.getElementById('kariger-print-options-modal');
+        if (existingModal) existingModal.remove();
+
+        const modalHtml = `
+            <div id="kariger-print-options-modal" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:999999; display:flex; align-items:center; justify-content:center; padding:15px; box-sizing:border-box;">
+                <div style="background:#ffffff; width:100%; max-width:420px; border-radius:12px; box-shadow:0 20px 25px -5px rgba(0,0,0,0.3); overflow:hidden;">
+                    <div style="background:#1e3a8a; color:#ffffff; padding:12px 16px; display:flex; justify-content:space-between; align-items:center;">
+                        <h3 style="margin:0; font-size:16px;">🖨️ Tani Khata Print (A6 Format)</h3>
+                        <button type="button" onclick="closeKarigerPrintModal()" style="background:transparent; border:none; color:#ffffff; font-size:22px; cursor:pointer;">&times;</button>
+                    </div>
+                    <div style="padding:16px;">
+                        <p style="font-size:13px; color:#374151; margin-top:0;">Aap is Tani Khata ko kis format me print karna chahte hain?</p>
+                        <div style="background:#f8fafc; border:1px solid #cbd5e1; padding:12px; border-radius:8px; margin-bottom:15px;">
+                            <label style="display:flex; align-items:flex-start; gap:8px; cursor:pointer;">
+                                <input type="checkbox" id="chk-include-tani-summary" checked style="margin-top:3px; cursor:pointer;">
+                                <div>
+                                    <strong style="color:#1e3a8a; font-size:13px;">Niche wali Summary sath me print karein</strong>
+                                    <div style="font-size:11px; color:#64748b; margin-top:2px;">(Gross Mazdoori, Diya, Baaki Rupya, aur Bana/Zari ka bacha wazan sath me aayega)</div>
+                                </div>
+                            </label>
+                        </div>
+                        <div style="display:flex; gap:8px;">
+                            <button type="button" onclick="confirmPrintKarigerSheet()" style="background:#1e3a8a; color:#ffffff; border:none; flex:1; padding:10px; border-radius:6px; font-weight:bold; font-size:13px; cursor:pointer;">
+                                🚀 Print Shuru Karein
+                            </button>
+                            <button type="button" onclick="closeKarigerPrintModal()" style="background:#e2e8f0; color:#334155; border:none; padding:10px 14px; border-radius:6px; font-weight:bold; font-size:13px; cursor:pointer;">
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>`;
+
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+    };
+
+    const closeKarigerPrintModal = () => {
+        const modal = document.getElementById('kariger-print-options-modal');
+        if (modal) modal.remove();
+    };
+
+    const confirmPrintKarigerSheet = () => {
+        const includeSummary = document.getElementById('chk-include-tani-summary')?.checked ?? true;
+        closeKarigerPrintModal();
+        printKarigerTaniSheet(includeSummary);
+    };
+
+    // 3. Full Tani Khata Sheet Print (With Optional Summary)
+    const printKarigerTaniSheet = (includeSummary = true) => {
+        if (!window.activeKarigerId) return alert('Pehle Kariger chunein!');
+        const k = sanitizeKarigerList().find((x) => String(x.id) === String(window.activeKarigerId));
+        const sheets = (typeof window.getKarigerSheets === 'function') ? window.getKarigerSheets(window.activeKarigerId) : [];
+        const sh = sheets[window.activeSheetIndex];
+        if (!k || !sh) return alert('Khata nahi mila!');
+
+        const kGodamName = (typeof window.getKarkhanaNameById === 'function') ? window.getKarkhanaNameById(k.karkhanaId) : 'Main Godown';
+        const sDesign = k.saree || 'General Saree';
+        const today = new Date().toLocaleDateString('hi-IN');
+        const rows = window.safeArray ? window.safeArray(sh.rows) : [];
+
+        let totS = 0, totL = 0, totB = 0, totZ = 0, totP = 0, totRB = 0, totRZ = 0;
+        let rowsHtml = '';
+
+        rows.forEach((r) => {
+            totS  += safeNum(r.saree);
+            totL  += safeNum(r.lott);
+            totB  += safeNum(r.netBana);
+            totZ  += safeNum(r.netZari);
+            totP  += safeNum(r.paid);
+            totRB += safeNum(r.retBana);
+            totRZ += safeNum(r.retZari);
+
+            rowsHtml += `
+                <tr style="border-bottom:1px dashed #ccc;">
+                    <td style="padding:3px 1px;">${esc(r.date || '-')}</td>
+                    <td style="padding:3px 1px; text-align:right;">${r.netBana ? safeNum(r.netBana).toFixed(2) : '-'}</td>
+                    <td style="padding:3px 1px; text-align:right;">${r.netZari ? safeNum(r.netZari).toFixed(2) : '-'}</td>
+                    <td style="padding:3px 1px; text-align:right;">${safeNum(r.saree) || '-'}</td>
+                    <td style="padding:3px 1px; text-align:right;">${safeNum(r.lott) || '-'}</td>
+                    <td style="padding:3px 1px; text-align:right;">${safeNum(r.paid) ? `₹${safeNum(r.paid)}` : '-'}</td>
+                    <td style="padding:3px 1px; text-align:right;">${safeNum(r.retBana) || '-'}</td>
+                    <td style="padding:3px 1px; text-align:right;">${safeNum(r.retZari) || '-'}</td>
+                </tr>`;
+        });
+
+        const c = (typeof window.calculateSheetTotals === 'function')
+            ? window.calculateSheetTotals(sh)
+            : {
+                totSaree: totS, totLott: totL, netSaree: totS - totL, grossBani: 0, totPaid: totP, remainingAmt: 0,
+                totBana: totB, retBana: totRB, banaConsumption: 0, banaWaste: 0, remainingBana: 0,
+                totZari: totZ, retZari: totRZ, zariConsumption: 0, zariWaste: 0, remainingZari: 0
+            };
+
+        let summaryHtml = '';
+        if (includeSummary) {
+            summaryHtml = `
+                <div style="margin-top:8px; border-top:1.5px dashed #000; padding-top:4px;">
+                    <div style="font-weight:bold; font-size:11px; margin-bottom:3px; background:#f1f5f9; padding:2px 4px; border:1px solid #cbd5e1;">💰 मजदूरी & साड़ी हिसाब</div>
+                    <div style="display:flex; justify-content:space-between; font-size:10px;">
+                        <span>कुल साड़ी: ${c.totSaree} Pcs | लोट: -${c.totLott} Pcs</span>
+                        <span><strong>नेट साड़ी: ${c.netSaree} Pcs</strong></span>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; font-size:10px; margin-top:2px;">
+                        <span>बनी रेट: ₹ ${sh.rateBani !== undefined ? sh.rateBani : 240} | पिछली: +₹ ${safeNum(sh.pichlaBani).toFixed(2)}</span>
+                        <span>ग्रॉस: ₹ ${c.grossBani.toFixed(2)}</span>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; font-size:10px; margin-top:2px;">
+                        <span>दिया गया: -₹ ${c.totPaid.toFixed(2)}</span>
+                        <span style="font-size:11px; font-weight:bold; color:#000;">अंतिम बाकी: ₹ ${c.remainingAmt.toFixed(2)}</span>
+                    </div>
+
+                    <div style="font-weight:bold; font-size:11px; margin:6px 0 3px; background:#f1f5f9; padding:2px 4px; border:1px solid #cbd5e1;">🧶 कच्चा माल हिसाब (बाना & जरी)</div>
+                    <div style="display:flex; justify-content:space-between; font-size:10px;">
+                        <span>बाना (खपत: ${c.banaConsumption.toFixed(2)} Kg)</span>
+                        <span><strong>बचा बाना: ${c.remainingBana.toFixed(2)} Kg</strong></span>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; font-size:10px; margin-top:2px;">
+                        <span>जरी (खपत: ${c.zariConsumption.toFixed(2)} Kg)</span>
+                        <span><strong>बची जरी: ${c.remainingZari.toFixed(2)} Kg</strong></span>
+                    </div>
+                </div>`;
+        }
+
+        const printWindow = window.open('', '', 'width=450,height=650');
+        if (!printWindow) return alert('Popup block hai! Kripya browser me popup allow karein.');
+
+        printWindow.document.write(`
+            <html>
+            <head>
+                <title>Tani Khata - A6</title>
+                <style>
+                    @page { size: A6 portrait; margin: 4mm; }
+                    body { font-family: monospace, sans-serif; font-size: 10px; margin: 0; padding: 4mm; color: #000; }
+                    .ticket { width: 100%; max-width: 96mm; margin: 0 auto; }
+                    .header { text-align: center; border-bottom: 2px dashed #000; padding-bottom: 5px; margin-bottom: 6px; }
+                    .header h2 { margin: 0; font-size: 14px; text-transform: uppercase; }
+                    .header p { margin: 2px 0 0; font-size: 10px; font-weight: bold; }
+                    .meta { font-size: 10px; margin-bottom: 6px; border-bottom: 1px dashed #666; padding-bottom: 4px; }
+                    .meta-row { display: flex; justify-content: space-between; margin-bottom: 2px; }
+                    table { width: 100%; border-collapse: collapse; font-size: 9.5px; }
+                    th { border-top: 1px solid #000; border-bottom: 1px solid #000; text-align: right; padding: 3px 1px; font-size: 9px; }
+                    th:first-child { text-align: left; }
+                    .footer { text-align: center; margin-top: 20px; font-size: 10px; border-top: 1px dashed #aaa; padding-top: 6px; }
+                </style>
+            </head>
+            <body>
+                <div class="ticket">
+                    <div class="header">
+                        <h2>SIMPLICITY ERP</h2>
+                        <p>तानी खाता पर्ची (${esc(sh.title)})</p>
+                    </div>
+                    <div class="meta">
+                        <div class="meta-row"><span><strong>कारीगर:</strong> ${esc(k.name)}</span><span><strong>तारीख:</strong> ${today}</span></div>
+                        <div class="meta-row"><span><strong>साड़ी (Design):</strong> ${esc(sDesign)}</span><span><strong>गोदाम:</strong> ${esc(kGodamName)}</span></div>
+                    </div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>TARIKH</th><th>BANA</th><th>ZARI</th><th>SAREE</th><th>LOTT</th><th>PAID</th><th>RET.B</th><th>RET.Z</th>
+                            </tr>
+                        </thead>
+                        <tbody>${rowsHtml}</tbody>
+                        <tfoot>
+                            <tr style="border-top:1px solid #000; font-weight:bold;">
+                                <td>TOTAL</td>
+                                <td style="text-align:right;">${totB.toFixed(2)}</td>
+                                <td style="text-align:right;">${totZ.toFixed(2)}</td>
+                                <td style="text-align:right;">${totS}</td>
+                                <td style="text-align:right;">${totL}</td>
+                                <td style="text-align:right;">₹${totP}</td>
+                                <td style="text-align:right;">${totRB.toFixed(2)}</td>
+                                <td style="text-align:right;">${totRZ.toFixed(2)}</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                    ${summaryHtml}
+                    <div class="footer">
+                        <p>हस्ताक्षर कारीगर: ________________ &nbsp; मुंशी: ________________</p>
+                    </div>
+                </div>
+                <script>
+                    window.onload = function() {
+                        window.focus();
+                        window.print();
+                        setTimeout(() => window.close(), 600);
+                    };
+                <\/script>
+            </body>
+            </html>
+        `);
+        printWindow.document.close();
+    };
+
     const sendKarigerWhatsAppParchi = () => {
         if (!window.activeKarigerId) return;
         const k = sanitizeKarigerList().find((x) => String(x.id) === String(window.activeKarigerId));
@@ -1049,6 +1346,10 @@
         window.open(`https://wa.me/${mob}?text=${encodeURIComponent(msg)}`, '_blank');
     };
 
+    /* ========================================================================
+       7. GLOBAL EXPORT
+       ------------------------------------------------------------------------
+    ======================================================================== */
     const karigerUIAPI = {
         openKarigerModule,
         backToDashboard,
@@ -1076,6 +1377,11 @@
         editTaniRow,
         deleteTaniRow,
         renderSheetRows,
+        printSingleKarigerRowSlip,
+        openKarigerPrintModal,
+        closeKarigerPrintModal,
+        confirmPrintKarigerSheet,
+        printKarigerTaniSheet,
         sendKarigerWhatsAppParchi,
         getKarigerAbsentDays,
         sanitizeKarigerList
