@@ -1,7 +1,7 @@
 /* ============================================================================
-   SIMPLICITY ERP - 3-IN-1 ⚡ MASTER STOCK EXPRESS ENGINE (BANA, ZARI, SANCHA)
+   SIMPLICITY ERP - 3-IN-1 ⚡ MASTER STOCK EXPRESS ENGINE (WITH SHORTCUT KEYS)
    File: bana/bana-ui.js • Developed by Farhan Jawed
-   (100% Keyboard-Only, Auto-Focus, Instant Enter-Save & Multi-Category Inward)
+   (Zero-Mouse: F2 Toggle, Alt+N/P, Alt+1/2/3, Instant Enter-Save & Auto-Focus)
 ============================================================================ */
 
 (() => {
@@ -38,6 +38,11 @@
     const setDisplay = (id, val) => {
         const el = document.getElementById(id);
         if (el) el.style.display = val;
+    };
+
+    const setText = (id, val) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = (val !== undefined && val !== null) ? val : '';
     };
 
     const getToday = () => {
@@ -166,13 +171,8 @@
         } else {
             list.push({
                 id: `bana_${Date.now()}`,
-                date,
-                name,
-                aaya: qty,
-                gaya: 0,
-                bacha: qty,
-                karkhanaId: targetKid,
-                timestamp: Date.now()
+                date, name, aaya: qty, gaya: 0, bacha: qty,
+                karkhanaId: targetKid, timestamp: Date.now()
             });
         }
         if (typeof window.setStore === 'function') window.setStore('bana_stock', list);
@@ -180,12 +180,10 @@
         const hist = window.safeArray ? window.safeArray(window.getStore('bana_history')) : [];
         hist.push({
             id: `bhist_${Date.now()}`,
-            date,
-            name,
+            date, name,
             kariger: 'Godown Purchase',
             type: 'Khareed (Inward)',
-            aaya: qty,
-            gaya: 0,
+            aaya: qty, gaya: 0,
             karkhanaId: targetKid,
             timestamp: Date.now()
         });
@@ -261,7 +259,6 @@
 
         currentBanaFilteredRowsCache = filteredRows;
 
-        // Auto-inject A6 Print Button next to search box if not present
         if (searchInp && searchInp.parentElement && !document.getElementById('bana-stock-print-btn')) {
             const printBtn = document.createElement('button');
             printBtn.id = 'bana-stock-print-btn';
@@ -351,11 +348,10 @@
     };
 
     /* ========================================================================
-       4. ⚡ 3-IN-1 MASTER STOCK EXPRESS (BANA, ZARI, SANCHA)
+       4. ⚡ 3-IN-1 MASTER STOCK EXPRESS (WITH KEYBOARD SHORTCUTS ENGINE)
        ------------------------------------------------------------------------
     ======================================================================== */
     const getStockExpressDatalists = () => {
-        // 1. Bana Datalist
         const rawBana = window.safeArray ? window.safeArray(window.getStore('bana_stock')) : [];
         const uB = [];
         let banaOpts = '';
@@ -367,7 +363,6 @@
             }
         });
 
-        // 2. Zari Datalist
         const rawZari = window.safeArray ? window.safeArray(window.getStore('zari_stock')) : [];
         const uZ = [];
         let zariOpts = '';
@@ -379,7 +374,6 @@
             }
         });
 
-        // 3. Sancha Datalist
         const rawSancha = window.safeArray ? window.safeArray(window.getStore('sancha_items')) : [];
         const uS = [];
         let sanchaOpts = '';
@@ -394,6 +388,45 @@
         return { banaOpts, zariOpts, sanchaOpts };
     };
 
+    // ⌨️ GLOBAL KEYBOARD SHORTCUTS LISTENER FOR STOCK EXPRESS
+    const handleStockExpressKeydown = (e) => {
+        const modal = document.getElementById('master-stock-express-modal');
+        if (!modal) return;
+
+        // Escape to Close Modal
+        if (e.key === 'Escape') {
+            e.preventDefault();
+            closeStockExpressModal();
+            return;
+        }
+
+        // F2 to Toggle Purana ⇄ Naya Mode
+        if (e.key === 'F2') {
+            e.preventDefault();
+            setExpressStockMode(expressStockMode === 'purana' ? 'naya' : 'purana');
+            return;
+        }
+
+        // Alt + P -> Purana Stock
+        if (e.altKey && (e.key === 'p' || e.key === 'P')) {
+            e.preventDefault();
+            setExpressStockMode('purana');
+            return;
+        }
+
+        // Alt + N -> Naya Item
+        if (e.altKey && (e.key === 'n' || e.key === 'N')) {
+            e.preventDefault();
+            setExpressStockMode('naya');
+            return;
+        }
+
+        // Alt + 1 -> Bana, Alt + 2 -> Zari, Alt + 3 -> Sancha
+        if (e.altKey && e.key === '1') { e.preventDefault(); switchExpressCategory('bana'); }
+        if (e.altKey && e.key === '2') { e.preventDefault(); switchExpressCategory('zari'); }
+        if (e.altKey && e.key === '3') { e.preventDefault(); switchExpressCategory('sancha'); }
+    };
+
     const openStockExpressModal = () => {
         const existingModal = document.getElementById('master-stock-express-modal');
         if (existingModal) existingModal.remove();
@@ -403,7 +436,7 @@
         expressSanchaCat = 'tani';
 
         const today = getToday();
-        const { banaOpts, zariOpts, sanchaOpts } = getStockExpressDatalists();
+        const { banaOpts } = getStockExpressDatalists();
 
         const targetKid = (window.currentBanaKarkhanaFilter !== 'all') ? window.currentBanaKarkhanaFilter : 'k_main';
         const godamName = (typeof window.getKarkhanaNameById === 'function') 
@@ -424,31 +457,31 @@
                         
                         <!-- 3 Category Master Tabs -->
                         <div style="display:grid; grid-template-columns:1fr 1fr 1.2fr; gap:6px; margin-bottom:12px;">
-                            <button type="button" id="tab-cat-bana" onclick="switchExpressCategory('bana')" style="background:#059669; color:#fff; border:none; padding:9px 4px; border-radius:6px; font-weight:bold; font-size:12.5px; cursor:pointer;">
-                                🧶 1. BANA
+                            <button type="button" id="tab-cat-bana" onclick="switchExpressCategory('bana')" style="background:#059669; color:#fff; border:none; padding:9px 4px; border-radius:6px; font-weight:bold; font-size:12px; cursor:pointer;">
+                                🧶 1. BANA [Alt+1]
                             </button>
-                            <button type="button" id="tab-cat-zari" onclick="switchExpressCategory('zari')" style="background:#e2e8f0; color:#334155; border:none; padding:9px 4px; border-radius:6px; font-weight:bold; font-size:12.5px; cursor:pointer;">
-                                ✨ 2. ZARI
+                            <button type="button" id="tab-cat-zari" onclick="switchExpressCategory('zari')" style="background:#e2e8f0; color:#334155; border:none; padding:9px 4px; border-radius:6px; font-weight:bold; font-size:12px; cursor:pointer;">
+                                ✨ 2. ZARI [Alt+2]
                             </button>
-                            <button type="button" id="tab-cat-sancha" onclick="switchExpressCategory('sancha')" style="background:#e2e8f0; color:#334155; border:none; padding:9px 4px; border-radius:6px; font-weight:bold; font-size:12.5px; cursor:pointer;">
-                                ⚙️ 3. SANCHA
+                            <button type="button" id="tab-cat-sancha" onclick="switchExpressCategory('sancha')" style="background:#e2e8f0; color:#334155; border:none; padding:9px 4px; border-radius:6px; font-weight:bold; font-size:12px; cursor:pointer;">
+                                ⚙️ 3. SANCHA [Alt+3]
                             </button>
                         </div>
 
-                        <!-- Sub-Mode: Purana vs Naya -->
+                        <!-- Sub-Mode: Purana vs Naya with Keyboard Hints -->
                         <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:12px;">
-                            <button type="button" id="btn-sub-purana" onclick="setExpressStockMode('purana')" style="background:#1e3a8a; color:#fff; border:none; padding:7px; border-radius:6px; font-weight:bold; font-size:12px; cursor:pointer;">
-                                🔵 Purana Stock Aaya
+                            <button type="button" id="btn-sub-purana" onclick="setExpressStockMode('purana')" style="background:#1e3a8a; color:#fff; border:none; padding:8px; border-radius:6px; font-weight:bold; font-size:12px; cursor:pointer;">
+                                🔵 Purana Stock [Alt+P]
                             </button>
-                            <button type="button" id="btn-sub-naya" onclick="setExpressStockMode('naya')" style="background:#f1f5f9; color:#475569; border:1px solid #cbd5e1; padding:7px; border-radius:6px; font-weight:bold; font-size:12px; cursor:pointer;">
-                                🟢 Naya Item Register
+                            <button type="button" id="btn-sub-naya" onclick="setExpressStockMode('naya')" style="background:#f1f5f9; color:#475569; border:1px solid #cbd5e1; padding:8px; border-radius:6px; font-weight:bold; font-size:12px; cursor:pointer;">
+                                🟢 Naya Item [F2 / Alt+N]
                             </button>
                         </div>
 
                         <!-- Info Banner -->
-                        <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px; padding:6px 10px; margin-bottom:12px; font-size:12px; display:flex; justify-content:space-between;">
+                        <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px; padding:6px 10px; margin-bottom:12px; font-size:11.5px; display:flex; justify-content:space-between;">
                             <span>🏢 <strong>Godam:</strong> ${esc(godamName)}</span>
-                            <span id="express-shortcut-tip" style="color:#059669; font-weight:bold;">⚡ Enter = Instant Save</span>
+                            <span style="color:#059669; font-weight:bold;">⚡ F2 = Switch | Enter = Save</span>
                         </div>
 
                         <!-- Date -->
@@ -473,7 +506,7 @@
                             <input type="text" id="exp-stock-new-name" placeholder="Item ka pura naam likhein..." style="width:100%; padding:9px 12px; border:1.5px solid #10b981; border-radius:6px; font-size:14px; font-weight:bold; margin-top:3px; box-sizing:border-box;">
                         </div>
 
-                        <!-- Sancha Special Fields (Only shown when Sancha is active) -->
+                        <!-- Sancha Special Fields -->
                         <div id="box-sancha-options" style="display:none; background:#f0f9ff; border:1px solid #bae6fd; padding:10px; border-radius:8px; margin-bottom:10px;">
                             <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:8px;">
                                 <label style="display:flex; align-items:center; gap:5px; font-size:12px; font-weight:bold; cursor:pointer;">
@@ -506,13 +539,15 @@
 
         document.body.insertAdjacentHTML('beforeend', modalHtml);
 
-        // Auto Focus on Name field
+        // Bind global key listener
+        window.removeEventListener('keydown', handleStockExpressKeydown);
+        window.addEventListener('keydown', handleStockExpressKeydown);
+
         setTimeout(() => {
             const inp = document.getElementById('exp-stock-select-input');
             if (inp) inp.focus();
         }, 100);
 
-        // Enter in Qty field triggers submit immediately
         const qtyInp = document.getElementById('exp-stock-qty');
         if (qtyInp) {
             qtyInp.addEventListener('keypress', (e) => {
@@ -523,7 +558,6 @@
             });
         }
 
-        // Live stock check
         bindStockExpressLiveInfo();
     };
 
@@ -566,7 +600,6 @@
 
         const { banaOpts, zariOpts, sanchaOpts } = getStockExpressDatalists();
 
-        // Theme colors: Bana=Green, Zari=Orange, Sancha=SkyBlue
         if (cat === 'bana') {
             if (tabB) { tabB.style.background = '#059669'; tabB.style.color = '#fff'; }
             if (tabZ) { tabZ.style.background = '#e2e8f0'; tabZ.style.color = '#334155'; }
@@ -634,6 +667,7 @@
     };
 
     const closeStockExpressModal = () => {
+        window.removeEventListener('keydown', handleStockExpressKeydown);
         const modal = document.getElementById('master-stock-express-modal');
         if (modal) modal.remove();
     };
@@ -733,7 +767,7 @@
         // ================= 3. SANCHA (TANI/CHUKKA) INWARD =================
         } else if (expressActiveCategory === 'sancha') {
             const person = String(document.getElementById('exp-sancha-person')?.value || '').trim();
-            const category = expressSanchaCat; // 'tani' or 'chukka'
+            const category = expressSanchaCat;
             const list = window.safeArray ? window.safeArray(window.getStore('sancha_items')) : [];
 
             const item = list.find((x) => {
@@ -775,10 +809,8 @@
             if (typeof window.renderSanchaTable === 'function') window.renderSanchaTable();
         }
 
-        // Global Badge & UI Sync
         if (typeof window.updateDashboardBadgeTotals === 'function') window.updateDashboardBadgeTotals();
 
-        // 🌟 ZERO-MOUSE RESET: Box clear and ready for next item
         const qtyInp = document.getElementById('exp-stock-qty');
         if (qtyInp) qtyInp.value = '';
 
@@ -1047,7 +1079,7 @@
                 <td><strong>${esc(r.type || 'Godam Inward')}</strong></td>
                 <td style="color:#1e3a8a; font-weight:700;">${karigerDisplay}</td>
                 <td style="color:#059669; font-weight:700;">${aayaQty > 0 ? `+${aayaQty.toFixed(2)}` : '-'}</td>
-                <td style="color:#ea580c; font-weight:700;">${gayaQty > 0 ? `-${gayaQty.toFixed(2)}` : '-'}</td>
+                <td style="color:#ea580c; font-weight:700;">-${gayaQty.toFixed(2)}</td>
                 <td style="text-align:center; white-space:nowrap;">${actBtn}</td>
             </tr>`;
         });
