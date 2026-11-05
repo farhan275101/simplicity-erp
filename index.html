@@ -591,7 +591,7 @@
                         <div>
                             <strong>Category:</strong>
                             <label style="margin-left:8px;"><input type="radio" name="sancha-cat" id="sancha-cat-tani" value="tani" checked onchange="toggleSanchaFormOptions()"> 🧵 Tani</label>
-                            <label style="margin-left:8px;"><input type="radio" name="sancha-cat" id="sancha-cat-chukka" value="chukka" onchange="toggleSanchaFormOptions()"> ⚙️ Chukka</label>
+                            <label style="margin-left:8px;"><input type="radio" name="sancha-cat" id="sancha-cat-tani" value="chukka" onchange="toggleSanchaFormOptions()"> ⚙️ Chukka</label>
                         </div>
                         <div>
                             <strong>Stock Type:</strong>
@@ -1162,19 +1162,24 @@
 
         // 📖 ROZANA DAY-BOOK MODULE OPENER
         window.openDayBookModule = function() {
-            if (typeof window.hideAllSections === "function") {
-                window.hideAllSections();
-            } else {
-                document.querySelectorAll(".module-section").forEach(s => s.style.display = "none");
-                const dView = document.getElementById("dashboard-view");
-                if (dView) dView.style.display = "none";
-            }
+            document.querySelectorAll(".module-section").forEach(s => s.style.display = "none");
+            const dView = document.getElementById("dashboard-view");
+            if (dView) dView.style.display = "none";
             const dbSec = document.getElementById("daybook-section");
             if (dbSec) dbSec.style.display = "block";
             if (typeof window.renderDashboardDayBook === "function") {
                 window.renderDashboardDayBook();
             }
         };
+
+        // 🛡️ UNIVERSAL DAYBOOK SHIELD (Jab bhi koi doosra module ya back button click ho, Daybook 100% chhip jaye)
+        document.addEventListener('click', (e) => {
+            const btn = e.target.closest('.menu-btn, .back-btn');
+            if (btn && !btn.getAttribute('onclick')?.includes('openDayBookModule')) {
+                const dbSec = document.getElementById('daybook-section');
+                if (dbSec) dbSec.style.display = 'none';
+            }
+        });
 
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
