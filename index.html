@@ -303,7 +303,7 @@
                     <div><label>Zari Waste</label><input type="number" step="0.01" id="waste-zari-input" onchange="saveCurrentSheetConfig()"></div>
                 </div>
 
-                <!-- 📦 ITEM SELECTION (WITH SAREE PCS & 8 COLORS MATCHING) -->
+                <!-- 📦 ITEM SELECTION (WITH SAREE PCS & MOBILE-RESPONSIVE 8 COLORS) -->
                 <div style="background:#f1f5f9; border:1px solid #cbd5e1; padding:12px; border-radius:10px; margin-bottom:14px;">
                     <div style="font-weight:800; color:#1e293b; margin-bottom:10px;">📦 Item Selection:</div>
                     
@@ -362,20 +362,20 @@
                         </div>
                     </div>
 
-                    <!-- 🎨 8 COLORS MATCHING STRIP -->
-                    <div style="background:#fffbeb; border:1.5px solid #fde68a; padding:10px; border-radius:8px;">
+                    <!-- 🎨 8 COLORS MATCHING STRIP (RESPONSIVE AUTO-FIT) -->
+                    <div style="background:#fffbeb; border:1.5px solid #fde68a; padding:10px; border-radius:8px; box-sizing:border-box;">
                         <label style="font-size:12px; font-weight:900; color:#b45309; display:block; margin-bottom:6px;">
                             🎨 Tani Ke 8 Colors (Matching Setting):
                         </label>
-                        <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap:6px;">
-                            <input type="text" id="sheet-color-1" placeholder="Color 1 (jaise: Rani)" onchange="saveCurrentSheetConfig()" style="padding:6px; font-size:12px; font-weight:bold; border:1px solid #cbd5e1; border-radius:4px;">
-                            <input type="text" id="sheet-color-2" placeholder="Color 2 (jaise: Lal)" onchange="saveCurrentSheetConfig()" style="padding:6px; font-size:12px; font-weight:bold; border:1px solid #cbd5e1; border-radius:4px;">
-                            <input type="text" id="sheet-color-3" placeholder="Color 3 (jaise: Mehendi)" onchange="saveCurrentSheetConfig()" style="padding:6px; font-size:12px; font-weight:bold; border:1px solid #cbd5e1; border-radius:4px;">
-                            <input type="text" id="sheet-color-4" placeholder="Color 4 (jaise: Blue)" onchange="saveCurrentSheetConfig()" style="padding:6px; font-size:12px; font-weight:bold; border:1px solid #cbd5e1; border-radius:4px;">
-                            <input type="text" id="sheet-color-5" placeholder="Color 5 (jaise: Peela)" onchange="saveCurrentSheetConfig()" style="padding:6px; font-size:12px; font-weight:bold; border:1px solid #cbd5e1; border-radius:4px;">
-                            <input type="text" id="sheet-color-6" placeholder="Color 6 (jaise: Wine)" onchange="saveCurrentSheetConfig()" style="padding:6px; font-size:12px; font-weight:bold; border:1px solid #cbd5e1; border-radius:4px;">
-                            <input type="text" id="sheet-color-7" placeholder="Color 7 (jaise: Firozi)" onchange="saveCurrentSheetConfig()" style="padding:6px; font-size:12px; font-weight:bold; border:1px solid #cbd5e1; border-radius:4px;">
-                            <input type="text" id="sheet-color-8" placeholder="Color 8 (jaise: Mungia)" onchange="saveCurrentSheetConfig()" style="padding:6px; font-size:12px; font-weight:bold; border:1px solid #cbd5e1; border-radius:4px;">
+                        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap:6px;">
+                            <input type="text" id="sheet-color-1" placeholder="1. Rani" onchange="saveCurrentSheetConfig()" style="width:100%; min-width:0; box-sizing:border-box; padding:7px 8px; font-size:12px; font-weight:bold; border:1px solid #cbd5e1; border-radius:4px;">
+                            <input type="text" id="sheet-color-2" placeholder="2. Lal" onchange="saveCurrentSheetConfig()" style="width:100%; min-width:0; box-sizing:border-box; padding:7px 8px; font-size:12px; font-weight:bold; border:1px solid #cbd5e1; border-radius:4px;">
+                            <input type="text" id="sheet-color-3" placeholder="3. Mehendi" onchange="saveCurrentSheetConfig()" style="width:100%; min-width:0; box-sizing:border-box; padding:7px 8px; font-size:12px; font-weight:bold; border:1px solid #cbd5e1; border-radius:4px;">
+                            <input type="text" id="sheet-color-4" placeholder="4. Blue" onchange="saveCurrentSheetConfig()" style="width:100%; min-width:0; box-sizing:border-box; padding:7px 8px; font-size:12px; font-weight:bold; border:1px solid #cbd5e1; border-radius:4px;">
+                            <input type="text" id="sheet-color-5" placeholder="5. Peela" onchange="saveCurrentSheetConfig()" style="width:100%; min-width:0; box-sizing:border-box; padding:7px 8px; font-size:12px; font-weight:bold; border:1px solid #cbd5e1; border-radius:4px;">
+                            <input type="text" id="sheet-color-6" placeholder="6. Wine" onchange="saveCurrentSheetConfig()" style="width:100%; min-width:0; box-sizing:border-box; padding:7px 8px; font-size:12px; font-weight:bold; border:1px solid #cbd5e1; border-radius:4px;">
+                            <input type="text" id="sheet-color-7" placeholder="7. Firozi" onchange="saveCurrentSheetConfig()" style="width:100%; min-width:0; box-sizing:border-box; padding:7px 8px; font-size:12px; font-weight:bold; border:1px solid #cbd5e1; border-radius:4px;">
+                            <input type="text" id="sheet-color-8" placeholder="8. Mungia" onchange="saveCurrentSheetConfig()" style="width:100%; min-width:0; box-sizing:border-box; padding:7px 8px; font-size:12px; font-weight:bold; border:1px solid #cbd5e1; border-radius:4px;">
                         </div>
                     </div>
 
