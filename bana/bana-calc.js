@@ -2,10 +2,16 @@
    SIMPLICITY ERP - BANA STOCK CALCULATION ENGINE
    File: bana/bana-calc.js • Developed by Farhan Jawed
    (Multi-Godam Stock, Inter-Transfer & Passbook Reconcile)
-   [FIXED: Zero Over-Deduction & Accurate Item-Specific Math]
+   [FIXED: Sheet-Level Default Item & Zero-Leakage Kariger Match]
 ======================================================== */
 
 var currentBanaKarkhanaFilter = "all";
+
+var normalizeGodownId = function(id) {
+    if (!id || id === 'all') return 'all';
+    var clean = String(id).trim();
+    return (!clean || clean === 'k_main') ? 'k_main' : clean;
+};
 
 /**
  * 1. Kisi specific Bana Item ka wazan calculate karna (Aaya, Gaya, Bacha)
@@ -13,8 +19,13 @@ var currentBanaKarkhanaFilter = "all";
  * @param {string} targetKarkhanaId - 'all', 'k_main', ya branch karkhana id
  */
 function getBanaItemStats(itemName, targetKarkhanaId) {
-    var kId = targetKarkhanaId || currentBanaKarkhanaFilter || "all";
-    var nameLower = (itemName || "").trim().toLowerCase();
+    var kId = normalizeGodownId(targetKarkhanaId || currentBanaKarkhanaFilter || "all");
+    var cleanName = String(itemName || "").trim();
+    var nameLower = cleanName.toLowerCase();
+
+    if (!cleanName) {
+        return { name: "", date: "", aaya: 0, gaya: 0, bacha: 0 };
+    }
 
     var totalAaya = 0;
     var totalGaya = 0;
@@ -41,11 +52,11 @@ function getBanaItemStats(itemName, targetKarkhanaId) {
         }
     });
 
-    // Helper match rule: Item name strictly match hona chahiye (Khali naam se doosre item ka wazan na kate)
+    // Helper match rule: Item name strictly match hona chahiye
     var isItemMatch = function(rowItemName) {
         var rN = (rowItemName || "").trim().toLowerCase();
         if (rN === nameLower) return true;
-        if (!rN && uniqueItemCount <= 1) return true; // Agar business me sirf 1 hi item hai tabhi bina naam wala count hoga
+        if (!rN && uniqueItemCount <= 1) return true; // Business me sirf 1 hi item ho toh bina naam wala count hoga
         return false;
     };
 
@@ -55,20 +66,22 @@ function getBanaItemStats(itemName, targetKarkhanaId) {
         bStock.forEach(function(b) {
             if (b && b.name && b.name.trim().toLowerCase() === nameLower) {
                 totalAaya += (Number(b.aaya !== undefined ? b.aaya : (b.qty || b.totalQty || 0)) || 0);
-                if (b.date) lastDate = b.date;
+                if (b.date && (!lastDate || b.date > lastDate)) lastDate = b.date;
             }
         });
 
-        // 2. All Kariger Consumption across all branches
+        // 2. All Kariger Consumption across all branches (Line + Sheet Default Match)
         allKarigers.forEach(function(k) {
             var sheets = (typeof getKarigerSheets === "function") ? getKarigerSheets(k.id) : [];
             sheets.forEach(function(sh) {
+                var defaultSheetItem = (sh.banaItem || "").trim();
                 safeArray(sh.rows).forEach(function(r) {
                     if (!r) return;
-                    if (isItemMatch(r.banaItemName)) {
+                    var item = r.banaItemName || r.banaItem || defaultSheetItem;
+                    if (isItemMatch(item)) {
                         totalGaya += (Number(r.netBana) || 0);
                         totalAaya += (Number(r.retBana) || 0);
-                        if (r.date) lastDate = r.date;
+                        if (r.date && (!lastDate || r.date > lastDate)) lastDate = r.date;
                     }
                 });
             });
@@ -82,24 +95,25 @@ function getBanaItemStats(itemName, targetKarkhanaId) {
             var matchK = (!b.karkhanaId || b.karkhanaId === "k_main");
             if (b && matchK && b.name && b.name.trim().toLowerCase() === nameLower) {
                 totalAaya += (Number(b.aaya !== undefined ? b.aaya : (b.qty || b.totalQty || 0)) || 0);
-                if (b.date) lastDate = b.date;
+                if (b.date && (!lastDate || b.date > lastDate)) lastDate = b.date;
             }
         });
 
         // 2. Transfers Sent OUT to branches (-)
         transfers.forEach(function(t) {
-            var isFromMain = (!t.fromKarkhanaId || t.fromKarkhanaId === "k_main");
-            if (isFromMain && t.itemName && t.itemName.trim().toLowerCase() === nameLower) {
+            var fromK = normalizeGodownId(t.fromKarkhanaId);
+            if (fromK === "k_main" && t.itemName && t.itemName.trim().toLowerCase() === nameLower) {
                 totalGaya += (Number(t.qty || t.quantity) || 0);
-                if (t.date) lastDate = t.date;
+                if (t.date && (!lastDate || t.date > lastDate)) lastDate = t.date;
             }
         });
 
         // 3. Transfers Received IN from branches (+)
         transfers.forEach(function(t) {
-            if (t.toKarkhanaId === "k_main" && t.itemName && t.itemName.trim().toLowerCase() === nameLower) {
+            var toK = normalizeGodownId(t.toKarkhanaId);
+            if (toK === "k_main" && t.itemName && t.itemName.trim().toLowerCase() === nameLower) {
                 totalAaya += (Number(t.qty || t.quantity) || 0);
-                if (t.date) lastDate = t.date;
+                if (t.date && (!lastDate || t.date > lastDate)) lastDate = t.date;
             }
         });
 
@@ -107,14 +121,16 @@ function getBanaItemStats(itemName, targetKarkhanaId) {
         allKarigers.forEach(function(k) {
             var sheets = (typeof getKarigerSheets === "function") ? getKarigerSheets(k.id) : [];
             sheets.forEach(function(sh) {
+                var defaultSheetItem = (sh.banaItem || "").trim();
                 safeArray(sh.rows).forEach(function(r) {
                     if (!r) return;
-                    var rowKarkhana = r.karkhanaId || k.karkhanaId || "k_main";
+                    var rowKarkhana = normalizeGodownId(r.karkhanaId || k.karkhanaId || "k_main");
                     if (rowKarkhana === "k_main") {
-                        if (isItemMatch(r.banaItemName)) {
+                        var item = r.banaItemName || r.banaItem || defaultSheetItem;
+                        if (isItemMatch(item)) {
                             totalGaya += (Number(r.netBana) || 0);
                             totalAaya += (Number(r.retBana) || 0);
-                            if (r.date) lastDate = r.date;
+                            if (r.date && (!lastDate || r.date > lastDate)) lastDate = r.date;
                         }
                     }
                 });
@@ -122,29 +138,31 @@ function getBanaItemStats(itemName, targetKarkhanaId) {
         });
     }
 
-    // --- CASE 3: BRANCH GODOWN (Mau, Mubarakpur, Khairabad etc.) ---
+    // --- CASE 3: BRANCH GODOWN (Mau, Mubarakpur, Bahadurganj etc.) ---
     else {
         // 1. Direct Purchase at Branch
         bStock.forEach(function(b) {
             if (b && String(b.karkhanaId) === String(kId) && b.name && b.name.trim().toLowerCase() === nameLower) {
                 totalAaya += (Number(b.aaya !== undefined ? b.aaya : (b.qty || b.totalQty || 0)) || 0);
-                if (b.date) lastDate = b.date;
+                if (b.date && (!lastDate || b.date > lastDate)) lastDate = b.date;
             }
         });
 
         // 2. Transfers Received IN from Main/other Godam (+)
         transfers.forEach(function(t) {
-            if (String(t.toKarkhanaId) === String(kId) && t.itemName && t.itemName.trim().toLowerCase() === nameLower) {
+            var toK = normalizeGodownId(t.toKarkhanaId);
+            if (String(toK) === String(kId) && t.itemName && t.itemName.trim().toLowerCase() === nameLower) {
                 totalAaya += (Number(t.qty || t.quantity) || 0);
-                if (t.date) lastDate = t.date;
+                if (t.date && (!lastDate || t.date > lastDate)) lastDate = t.date;
             }
         });
 
         // 3. Transfers Sent OUT from this branch (-)
         transfers.forEach(function(t) {
-            if (String(t.fromKarkhanaId) === String(kId) && t.itemName && t.itemName.trim().toLowerCase() === nameLower) {
+            var fromK = normalizeGodownId(t.fromKarkhanaId);
+            if (String(fromK) === String(kId) && t.itemName && t.itemName.trim().toLowerCase() === nameLower) {
                 totalGaya += (Number(t.qty || t.quantity) || 0);
-                if (t.date) lastDate = t.date;
+                if (t.date && (!lastDate || t.date > lastDate)) lastDate = t.date;
             }
         });
 
@@ -152,14 +170,16 @@ function getBanaItemStats(itemName, targetKarkhanaId) {
         allKarigers.forEach(function(k) {
             var sheets = (typeof getKarigerSheets === "function") ? getKarigerSheets(k.id) : [];
             sheets.forEach(function(sh) {
+                var defaultSheetItem = (sh.banaItem || "").trim();
                 safeArray(sh.rows).forEach(function(r) {
                     if (!r) return;
-                    var rowKarkhana = r.karkhanaId || k.karkhanaId || "k_main";
+                    var rowKarkhana = normalizeGodownId(r.karkhanaId || k.karkhanaId || "k_main");
                     if (String(rowKarkhana) === String(kId)) {
-                        if (isItemMatch(r.banaItemName)) {
+                        var item = r.banaItemName || r.banaItem || defaultSheetItem;
+                        if (isItemMatch(item)) {
                             totalGaya += (Number(r.netBana) || 0);
                             totalAaya += (Number(r.retBana) || 0);
-                            if (r.date) lastDate = r.date;
+                            if (r.date && (!lastDate || r.date > lastDate)) lastDate = r.date;
                         }
                     }
                 });
@@ -170,7 +190,7 @@ function getBanaItemStats(itemName, targetKarkhanaId) {
     var bacha = Math.max(0, totalAaya - totalGaya);
 
     return {
-        name: itemName,
+        name: cleanName,
         date: lastDate || (typeof getTodayDate === "function" ? getTodayDate() : ""),
         aaya: Number(totalAaya.toFixed(2)),
         gaya: Number(totalGaya.toFixed(2)),
@@ -196,7 +216,10 @@ function transferBanaStock(date, itemName, fromKarkhanaId, toKarkhanaId, qty, no
         return false;
     }
 
-    if (String(fromKarkhanaId) === String(toKarkhanaId)) {
+    var sourceKid = normalizeGodownId(fromKarkhanaId);
+    var targetKid = normalizeGodownId(toKarkhanaId);
+
+    if (String(sourceKid) === String(targetKid)) {
         alert("Bhejne wala aur Paane wala Godam alag-alag hona chahiye!");
         return false;
     }
@@ -207,15 +230,15 @@ function transferBanaStock(date, itemName, fromKarkhanaId, toKarkhanaId, qty, no
         return false;
     }
 
-    var available = getBanaAvailableBalance(cleanName, fromKarkhanaId);
+    var available = getBanaAvailableBalance(cleanName, sourceKid);
     if (weight > available) {
         alert("Bhejne wale godam me sirf " + available.toFixed(2) + " Kg Bana bacha hai! Aap " + weight.toFixed(2) + " Kg transfer nahi kar sakte.");
         return false;
     }
 
     var cleanDate = date || (typeof getTodayDate === "function" ? getTodayDate() : new Date().toISOString().split("T")[0]);
-    var fromName = (typeof getKarkhanaNameById === "function") ? getKarkhanaNameById(fromKarkhanaId) : fromKarkhanaId;
-    var toName = (typeof getKarkhanaNameById === "function") ? getKarkhanaNameById(toKarkhanaId) : toKarkhanaId;
+    var fromName = (typeof getKarkhanaNameById === "function") ? getKarkhanaNameById(sourceKid) : sourceKid;
+    var toName = (typeof getKarkhanaNameById === "function") ? getKarkhanaNameById(targetKid) : targetKid;
     var transferRef = "tr_bana_" + Date.now();
 
     var transfers = safeArray(getStore("material_transfers"));
@@ -224,8 +247,8 @@ function transferBanaStock(date, itemName, fromKarkhanaId, toKarkhanaId, qty, no
         date: cleanDate,
         type: "bana",
         itemName: cleanName,
-        fromKarkhanaId: fromKarkhanaId,
-        toKarkhanaId: toKarkhanaId,
+        fromKarkhanaId: sourceKid,
+        toKarkhanaId: targetKid,
         qty: weight,
         quantity: weight,
         note: note || ("Transfer: " + fromName + " ➔ " + toName),
@@ -242,20 +265,20 @@ function transferBanaStock(date, itemName, fromKarkhanaId, toKarkhanaId, qty, no
         type: "Transfer Out ➔ " + toName + (note ? " (" + note + ")" : ""),
         aaya: 0,
         gaya: weight,
-        karkhanaId: fromKarkhanaId,
+        karkhanaId: sourceKid,
         refId: transferRef,
         timestamp: Date.now()
     });
 
     hist.push({
-        id: "bhist_in_" + Date.now(),
+        id: "bhist_in_" + (Date.now() + 1),
         date: cleanDate,
         name: cleanName,
         kariger: "Godown Transfer",
         type: "Transfer In ⬅ " + fromName + (note ? " (" + note + ")" : ""),
         aaya: weight,
         gaya: 0,
-        karkhanaId: toKarkhanaId,
+        karkhanaId: targetKid,
         refId: transferRef,
         timestamp: Date.now() + 1
     });
@@ -266,8 +289,8 @@ function transferBanaStock(date, itemName, fromKarkhanaId, toKarkhanaId, qty, no
         recordTransferEntry({
             id: transferRef,
             date: cleanDate,
-            fromKarkhanaId: fromKarkhanaId,
-            toKarkhanaId: toKarkhanaId,
+            fromKarkhanaId: sourceKid,
+            toKarkhanaId: targetKid,
             type: "bana",
             itemName: cleanName,
             quantity: weight,
@@ -277,3 +300,12 @@ function transferBanaStock(date, itemName, fromKarkhanaId, toKarkhanaId, qty, no
 
     return true;
 }
+
+var banaCalcAPI = {
+    getBanaItemStats: getBanaItemStats,
+    getBanaAvailableBalance: getBanaAvailableBalance,
+    transferBanaStock: transferBanaStock
+};
+
+Object.keys(banaCalcAPI).forEach(function(fn) { window[fn] = banaCalcAPI[fn]; });
+window.BanaCalcEngine = banaCalcAPI;
