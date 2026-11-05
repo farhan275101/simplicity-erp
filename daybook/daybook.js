@@ -1,30 +1,21 @@
 /* ============================================================================
    SIMPLICITY ERP - HIGH-PERFORMANCE ROZANA DAY-BOOK & DASHBOARD ENGINE
    File: daybook/daybook.js • Developed by Farhan Jawed
-   (Universal Search, Pagination, Clean Tabs & A6 Print)
+   (Universal Section Isolation + Pagination + Clean Tabs & A6 Print)
 ============================================================================ */
 
 (() => {
     'use strict';
 
-    /* ========================================================================
-       1. GLOBAL STATE & MEMOIZATION POOL
-       ------------------------------------------------------------------------
-    ======================================================================== */
-    window.currentDayBookTab = 'bana'; // 'bana' | 'zari' | 'saree' | 'payment' | 'sancha'
+    window.currentDayBookTab = 'bana';
     window.currentDashboardKarkhanaFilter = 'all';
     window.badgeCalculationTimer = null;
 
-    // 📱 DAYBOOK PAGINATION & UNIVERSAL SEARCH STATE
     let daybookCurrentPage = 1;
     const DAYBOOK_PAGE_SIZE = 15;
     let currentDaybookFilteredRowsCache = [];
     let daybookSearchDebounceTimer = null;
 
-    /* ========================================================================
-       2. SAFE DOM & DATA SANITIZATION UTILITIES
-       ------------------------------------------------------------------------
-    ======================================================================== */
     const esc = (s) => {
         if (typeof window.sanitizeHTML === 'function') return window.sanitizeHTML(s);
         return String(s || '').replace(/[&<>"']/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
@@ -63,12 +54,8 @@
     };
 
     const setDisplay = (id, val) => {
-        if (typeof window.setDisplay === 'function') {
-            window.setDisplay(id, val);
-        } else {
-            const el = document.getElementById(id);
-            if (el) el.style.display = val;
-        }
+        const el = document.getElementById(id);
+        if (el) el.style.display = val;
     };
 
     const getToday = () => {
@@ -85,10 +72,8 @@
     };
 
     /* ========================================================================
-       3. NAVIGATION & DASHBOARD CONTROLS (CLEAN TABS)
-       ------------------------------------------------------------------------
-    ======================================================================== */
-
+       NAVIGATION & TABS
+       ======================================================================== */
     const setDashboardToday = () => {
         const dateInput = document.getElementById('dash-day-date');
         if (dateInput) dateInput.value = getToday();
@@ -124,8 +109,6 @@
         }
 
         const isAllActive = (window.currentDashboardKarkhanaFilter === 'all') ? ' active' : '';
-
-        // 🌟 DASHBOARD TOP BAR: Clean Tabs Only (No Stock Express Button)
         let html = `
             <div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center; margin-bottom:12px;">
                 <button type="button" class="sheet-tab${isAllActive}" onclick="switchDashboardKarkhanaTab('all')">👥 Sabhi Karkhane</button>`;
@@ -138,7 +121,6 @@
         });
 
         html += `</div>`;
-
         bar.innerHTML = html;
     };
 
@@ -159,9 +141,8 @@
     };
 
     /* ========================================================================
-       4. HIGH-SPEED MULTI-GODAM DAY-BOOK RENDER ENGINE
-       ------------------------------------------------------------------------
-    ======================================================================== */
+       DAY-BOOK RENDER ENGINE
+       ======================================================================== */
     const renderDashboardDayBook = () => {
         const d = document.getElementById('dash-day-date')?.value || getToday();
         const thead = document.getElementById('dash-daybook-thead');
@@ -215,10 +196,7 @@
         karList.forEach((k) => {
             if (!matchesGodown(k.karkhanaId, targetKid)) return;
 
-            const sheets = (typeof window.getKarigerSheets === 'function') 
-                ? window.getKarigerSheets(k.id) 
-                : [];
-
+            const sheets = (typeof window.getKarigerSheets === 'function') ? window.getKarigerSheets(k.id) : [];
             sheets.forEach((sh) => {
                 const rows = window.safeArray ? window.safeArray(sh?.rows) : [];
                 rows.forEach((r) => {
@@ -509,7 +487,7 @@
             sRows.forEach(h => { curIn += safeInt(h.aai); curOut += safeInt(h.gai); });
             tfoot.innerHTML = `<tr><td colspan='2'><strong>Kul Saree:</strong></td><td><strong style='color:#059669;'>+${curIn} Pcs</strong></td><td><strong style='color:#dc2626;'>-${curOut} Pcs</strong></td><td>-</td></tr>`;
 
-        // ================= TAB 4: PAYMENT & CASH MOVEMENT =================
+        // ================= TAB 4: PAYMENT =================
         } else if (window.currentDayBookTab === 'payment') {
             thead.innerHTML = "<tr style='background:#7c3aed; color:white;'><th>Party / Kariger</th><th>Vivran / Khata</th><th>📥 Aamad (In)</th><th>📤 Diya (Out)</th></tr>";
             let pRows = [];
@@ -562,7 +540,7 @@
             pRows.forEach(dp => { curIn += dp.inAmt; curOut += dp.outAmt; });
             tfoot.innerHTML = `<tr><td colspan='2'><strong>Total Rozana Cash Movement:</strong></td><td><strong style='color:#059669;'>+ ₹ ${curIn.toFixed(2)}</strong></td><td><strong style='color:#dc2626;'>- ₹ ${curOut.toFixed(2)}</strong></td></tr>`;
 
-        // ================= TAB 5: SANCHA (TANI & CHUKKA REGISTER) =================
+        // ================= TAB 5: SANCHA =================
         } else if (window.currentDayBookTab === 'sancha') {
             thead.innerHTML = "<tr style='background:#0284c7; color:white;'><th>Item (Category)</th><th>Kariger / Vivran</th><th>📥 Aaya (In)</th><th>📤 Gaya (Out)</th></tr>";
             let sRows = sanchaHist;
@@ -634,9 +612,8 @@
     };
 
     /* ========================================================================
-       5. A6 PAPER & THERMAL PRINTER DAYBOOK PRINT ENGINE
-       ------------------------------------------------------------------------
-    ======================================================================== */
+       PRINT ENGINE
+       ======================================================================== */
     const getDashboardKarkhanaPrintName = (kId) => {
         if (!kId || kId === 'all') return 'Sabhi Karkhane (All Units)';
         if (typeof window.getKarkhanaNameById === 'function') {
@@ -747,8 +724,8 @@
                     <tr style="border-bottom:1px dashed #ccc;">
                         <td style="padding:4px 2px; font-weight:bold;">${esc(h.name)} ${catStr}</td>
                         <td style="padding:4px 2px;">${esc(h.kariger || h.type || '-')}</td>
-                        <td style="padding:4px 2px; text-align:right;">${inQ > 0 ? `+${inQ.toFixed(2)} Kg` : '-'}</td>
-                        <td style="padding:4px 2px; text-align:right;">${outQ > 0 ? `-${outQ.toFixed(2)} Kg` : '-'}</td>
+                        <td style="padding:4px 2px; text-align:right;">${inQ > 0 ? `+${inQ.toFixed(2)}` : '-'}</td>
+                        <td style="padding:4px 2px; text-align:right;">${outQ > 0 ? `-${outQ.toFixed(2)}` : '-'}</td>
                     </tr>`;
             });
             totHtml = `
@@ -815,9 +792,8 @@
     };
 
     /* ========================================================================
-       6. DEBOUNCED & MEMOIZED DASHBOARD BADGES ENGINE
-       ------------------------------------------------------------------------
-    ======================================================================== */
+       DASHBOARD BADGES ENGINE
+       ======================================================================== */
     const updateDashboardBadgeTotals = () => {
         const targetKid = window.currentDashboardKarkhanaFilter;
         const isAll = (targetKid === 'all');
@@ -924,24 +900,21 @@
     };
 
     /* ========================================================================
-       7. SPA VIEW TOGGLING & NAVIGATION CONTROLLER
-       ------------------------------------------------------------------------
-    ======================================================================== */
-
+       🔹 BULLETPROOF SPA VIEW TOGGLING (DAYBOOK ISOLATION FIX)
+       ======================================================================== */
     const hideAllSections = () => {
-        [
-            'dashboard-view', 'admin-section', 'info-section',
-            'kariger-section', 'kariger-sheet-section', 'bana-section',
-            'zari-section', 'saree-section', 'payment-section', 'sancha-section',
-            'jobwork-section'
-        ].forEach((id) => {
-            setDisplay(id, 'none');
+        // Hide every module section on the entire screen
+        document.querySelectorAll('.module-section').forEach((el) => {
+            el.style.display = 'none';
         });
+        setDisplay('dashboard-view', 'none');
+        setDisplay('daybook-section', 'none');
     };
 
     const backToDashboard = () => {
         hideAllSections();
         setDisplay('dashboard-view', 'block');
+        setDisplay('daybook-section', 'none');
 
         renderDashboardKarkhanaTabs();
         if (typeof window.populateSessionDropdown === 'function') {
@@ -951,12 +924,18 @@
         updateDashboardBadgeTotals();
     };
 
+    const openDayBookModule = () => {
+        hideAllSections();
+        setDisplay('daybook-section', 'block');
+        renderDashboardDayBook();
+    };
+
     const getCurrentActiveSection = () => {
         const sections = [
             'dashboard-view', 'admin-section', 'info-section', 
             'kariger-section', 'kariger-sheet-section', 'bana-section', 
             'zari-section', 'saree-section', 'payment-section', 'sancha-section',
-            'jobwork-section'
+            'jobwork-section', 'daybook-section'
         ];
         for (let i = 0; i < sections.length; i++) {
             const el = document.getElementById(sections[i]);
@@ -971,6 +950,8 @@
             renderDashboardKarkhanaTabs();
             renderDashboardDayBook();
             updateDashboardBadgeTotals();
+        } else if (cur === 'daybook-section') {
+            renderDashboardDayBook();
         } else if (cur === 'kariger-section' && typeof window.renderKarigerTable === 'function') {
             window.renderKarigerTable();
         } else if (cur === 'bana-section' && typeof window.renderBanaTable === 'function') {
@@ -987,10 +968,8 @@
     };
 
     /* ========================================================================
-       8. REFRESH-PROOF AUTO-LOGIN & APP INITIALIZATION
-       ------------------------------------------------------------------------
-    ======================================================================== */
-
+       BOOTSTRAP & EXPORTS
+       ======================================================================== */
     const initApp = () => {
         const dEl = document.getElementById('dash-day-date');
         if (dEl) {
@@ -1043,10 +1022,6 @@
         bootstrapAppStartup();
     }
 
-    /* ========================================================================
-       9. GLOBAL EXPORT & BACKWARD COMPATIBILITY
-       ------------------------------------------------------------------------
-    ======================================================================== */
     const daybookAPI = {
         setElementText,
         setElementHTML,
@@ -1062,6 +1037,7 @@
         updateDashboardBadgeTotals,
         hideAllSections,
         backToDashboard,
+        openDayBookModule,
         triggerActiveSectionRefresh,
         getCurrentActiveSection,
         initApp
@@ -1072,6 +1048,7 @@
     });
 
     window.DaybookEngine = daybookAPI;
+    window.openDayBookModule = openDayBookModule;
 
     if (typeof module !== 'undefined' && module.exports) {
         module.exports = daybookAPI;
