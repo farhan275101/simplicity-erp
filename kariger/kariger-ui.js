@@ -1,7 +1,7 @@
 /* ============================================================================
    SIMPLICITY ERP - WEAVER (KARIGER) UI & SHEET CONTROLLER (WITH LIVE SEARCH & A6 PRINT)
    File: kariger/kariger-ui.js • Developed by Farhan Jawed
-   (Live Realtime Sheet Sync + Auto-Godam Stock + Zero Overwrite + Live Search + A6 Print)
+   (Live Realtime Sheet Sync + Auto-Godam Stock + 8 Colors & Tani Saree Pcs Engine)
 ============================================================================ */
 
 (() => {
@@ -125,7 +125,6 @@
         renderKarigerTable();
     };
 
-    // 🔍 LIVE SEARCH BINDER (Instant search on typing)
     const bindKarigerSearchInput = () => {
         const searchInput = document.getElementById('search-kariger-input');
         if (searchInput && !searchInput.dataset.bound) {
@@ -160,7 +159,6 @@
         const searchInput = document.getElementById('search-kariger-input');
         const txt = searchInput ? searchInput.value.toLowerCase().trim() : '';
 
-        // Universal Search: Name, Saree Design, Mobile, Karkhana Name, Date
         if (txt) {
             list = list.filter((k) => {
                 const kName = k.karkhanaName || ((typeof window.getKarkhanaNameById === 'function') ? window.getKarkhanaNameById(k.karkhanaId) : '');
@@ -445,7 +443,7 @@
     };
 
     /* ========================================================================
-       3. TANI KHATA CONTROLLER (With Live Cloud Streaming & A6 Print)
+       3. TANI KHATA CONTROLLER (With Saree Pcs & 8 Colors Engine)
        ------------------------------------------------------------------------
     ======================================================================== */
     const openKarigerSheet = (id) => {
@@ -471,7 +469,6 @@
         setText('sheet-kariger-title', `${k.name} (${kGodamName}) - Saree: ${k.saree || '-'}`);
         setVal('row-date', (typeof window.getTodayDate === 'function') ? window.getTodayDate() : new Date().toISOString().split('T')[0]);
 
-        // Auto-inject A6 Print Button next to WhatsApp button or title
         const waBtn = document.querySelector('button[onclick*="sendKarigerWhatsAppParchi"]');
         if (waBtn && waBtn.parentElement && !document.getElementById('btn-print-kariger-sheet')) {
             const printBtn = document.createElement('button');
@@ -491,6 +488,7 @@
                 pichlaBana: 0, pichlaZari: 0, pichlaBani: 0,
                 banaWaste: 0, zariWaste: 0,
                 rateBana: 0.311, rateZari: 0.110, rateBani: 240,
+                taniPcs: 72, chukkaPcs: 72, colors: [],
                 note: '', rows: []
             }];
             if (typeof window.saveKarigerSheets === 'function') window.saveKarigerSheets(window.activeKarigerId, sheets);
@@ -543,6 +541,9 @@
             rateBana: cur ? safeNum(cur.rateBana, 0.311) : 0.311,
             rateZari: cur ? safeNum(cur.rateZari, 0.110) : 0.110,
             rateBani: cur ? safeNum(cur.rateBani, 240) : 240,
+            taniPcs: cur ? safeNum(cur.taniPcs, 72) : 72,
+            chukkaPcs: cur ? safeNum(cur.chukkaPcs, 72) : 72,
+            colors: (cur && Array.isArray(cur.colors)) ? [...cur.colors] : [],
             note: '', rows: []
         });
 
@@ -593,6 +594,7 @@
         loadCurrentSheetData();
     };
 
+    // 🔹 LOAD SHEET (WITH SAREE PCS & 8 COLORS)
     const loadCurrentSheetData = () => {
         const sheets = (typeof window.getKarigerSheets === 'function') ? window.getKarigerSheets(window.activeKarigerId) : [];
         const sh = sheets[window.activeSheetIndex] || sheets[0];
@@ -616,10 +618,20 @@
         setVal('sheet-chukka-sancha', sh.chukkaSancha || '');
         setVal('sheet-chukka-wazan', sh.chukkaWazan || '');
 
+        // Load Saree Pcs
+        setVal('sheet-tani-pcs', (sh.taniPcs !== undefined) ? sh.taniPcs : 72);
+        setVal('sheet-chukka-pcs', (sh.chukkaPcs !== undefined) ? sh.chukkaPcs : 72);
+
+        // Load 8 Colors
+        for (let i = 1; i <= 8; i++) {
+            setVal(`sheet-color-${i}`, (sh.colors && sh.colors[i - 1]) ? sh.colors[i - 1] : '');
+        }
+
         renderSheetRows(sh);
         updateLiveStockDisplay();
     };
 
+    // 🔹 SAVE SHEET (WITH SAREE PCS & 8 COLORS)
     const saveCurrentSheetConfig = () => {
         if (!window.activeKarigerId) return;
         const sheets = (typeof window.getKarigerSheets === 'function') ? window.getKarigerSheets(window.activeKarigerId) : [];
@@ -641,6 +653,17 @@
 
         sh.banaItem = String(document.getElementById('line-bana-name')?.value || '').trim();
         sh.zariItem = String(document.getElementById('line-zari-name')?.value || '').trim();
+
+        // Save Saree Pcs
+        sh.taniPcs = safeNum(document.getElementById('sheet-tani-pcs')?.value, 72);
+        sh.chukkaPcs = safeNum(document.getElementById('sheet-chukka-pcs')?.value, 72);
+
+        // Save 8 Colors
+        sh.colors = [];
+        for (let i = 1; i <= 8; i++) {
+            const cVal = String(document.getElementById(`sheet-color-${i}`)?.value || '').trim();
+            if (cVal) sh.colors.push(cVal);
+        }
 
         const oldTaniWazan = safeNum(sh.taniWazan);
         const newTaniWazan = safeNum(document.getElementById('sheet-tani-wazan')?.value);
@@ -739,7 +762,7 @@
     };
 
     /* ========================================================================
-       4. LINE ROW SAVE / EDIT / DELETE (With Print Prompt)
+       4. LINE ROW SAVE / EDIT / DELETE
        ------------------------------------------------------------------------
     ======================================================================== */
     const saveTaniRow = () => {
@@ -970,7 +993,7 @@
     };
 
     /* ========================================================================
-       5. 9-COLUMN SHEET ROWS RENDERER (WITH PRINT BUTTONS)
+       5. 9-COLUMN SHEET ROWS RENDERER
        ------------------------------------------------------------------------
     ======================================================================== */
     const renderSheetRows = (sh) => {
@@ -1055,11 +1078,9 @@
     };
 
     /* ========================================================================
-       6. A6 PAPER & THERMAL PRINTER ENGINES (WITH OPTIONAL SUMMARY)
+       6. A6 PRINT ENGINES & WHATSAPP
        ------------------------------------------------------------------------
     ======================================================================== */
-
-    // 1. Single Line Row Parchi Print (Jab Kariger Bana/Zari le jaye ya Saree jama kare)
     const printSingleKarigerRowSlip = (idx) => {
         if (!window.activeKarigerId) return alert('Pehle Kariger chunein!');
         const k = sanitizeKarigerList().find((x) => String(x.id) === String(window.activeKarigerId));
@@ -1136,7 +1157,6 @@
         printWindow.document.close();
     };
 
-    // 2. Modal Controller for Optional Summary Print
     const openKarigerPrintModal = () => {
         const existingModal = document.getElementById('kariger-print-options-modal');
         if (existingModal) existingModal.remove();
@@ -1185,7 +1205,6 @@
         printKarigerTaniSheet(includeSummary);
     };
 
-    // 3. Full Tani Khata Sheet Print (With Optional Summary)
     const printKarigerTaniSheet = (includeSummary = true) => {
         if (!window.activeKarigerId) return alert('Pehle Kariger chunein!');
         const k = sanitizeKarigerList().find((x) => String(x.id) === String(window.activeKarigerId));
