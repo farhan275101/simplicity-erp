@@ -1,8 +1,7 @@
 /* ============================================================================
    SIMPLICITY ERP - HIGH-SCALE FINANCIAL YEAR SESSION CONTROLLER
    File: session/session.js • Developed by Farhan Jawed
-   Architecture: Realtime Cloud Session Sync | Multi-Device Alignment
-   Scale: 1,000,000 - 2,000,000 Concurrent Active Users | Zero UI Freeze
+   (Crash-Proof Clean Reload on Session Switch + Instant Cloud Sync)
 ============================================================================ */
 
 (() => {
@@ -16,9 +15,6 @@
 
     const yieldEventLoop = () => new Promise((resolve) => setTimeout(resolve, 0));
 
-    /**
-     * User ID Resolver (Accurate multi-tier lookup)
-     */
     const getEffectiveUserId = () => {
         try {
             if (typeof window.currentUserId !== 'undefined' && window.currentUserId) {
@@ -29,13 +25,8 @@
                 return String(stored).trim().toLowerCase().replace(/[^a-z0-9_-]/g, '');
             }
         } catch (_) {}
-        return 'farhan'; // Safe fallback to Master Admin
+        return 'farhan';
     };
-
-    /* ========================================================================
-       1. SESSION DISCOVERY & FIREBASE CLOUD SYNC
-       ------------------------------------------------------------------------
-    ======================================================================== */
 
     const getAppSessions = () => {
         const uId = getEffectiveUserId();
@@ -102,10 +93,6 @@
         });
     };
 
-    /**
-     * 🌟 REALTIME CLOUD SESSION LISTENER
-     * Mobile aur Computer dono par sessions aur active saal ko aapas me jodta hai
-     */
     const initCloudSessionSync = () => {
         if (typeof window.db === 'undefined' || !window.db || fbSessionListenerAttached) return;
         const uId = getEffectiveUserId();
@@ -113,14 +100,12 @@
 
         fbSessionListenerAttached = true;
 
-        // Firebase se sessions list aur active session live listen karo
         window.db.ref(`users/${uId}`).on('value', (snap) => {
             const val = snap.val();
             if (!val) return;
 
             let needRepaint = false;
 
-            // 1. Sync Sessions List from Cloud
             if (val.app_sessions_list && Array.isArray(val.app_sessions_list)) {
                 const cloudList = val.app_sessions_list;
                 const localList = getAppSessions();
@@ -131,7 +116,6 @@
                 }
             }
 
-            // 2. Sync Active Session from Cloud
             if (val.app_active_session && typeof val.app_active_session === 'string') {
                 const cloudActive = val.app_active_session.trim();
                 const localActive = getActiveFinancialSession();
@@ -151,14 +135,13 @@
     };
 
     /* ========================================================================
-       2. CONCURRENCY-SAFE SESSION SWITCHING
-       ------------------------------------------------------------------------
-    ======================================================================== */
+       🌟 100% BULLETPROOF SESSION SWITCH (WITH CLEAN PAGE RELOAD)
+       ======================================================================== */
     const switchAppFinancialSession = async (targetSession) => {
         const activeSess = getActiveFinancialSession();
         if (!targetSession || targetSession === activeSess) return;
 
-        if (!confirm(`Kya aap Session badal kar '${targetSession}' me jana chahte hain?`)) {
+        if (!confirm(`Kya aap Session badal kar '${targetSession}' me jana chahte hain?\nApp fresh naye saal ke data ke sath reload hoga.`)) {
             populateSessionDropdown();
             return;
         }
@@ -171,16 +154,15 @@
                 window.detachFirebaseLiveListeners();
             }
 
-            // LocalStorage, IndexedDB & RAM update
             localStorage.setItem(`${uId}_app_active_session`, cleanTarget);
-            if (typeof window.idbPut === 'function') {
-                window.idbPut(`${uId}_app_active_session`, cleanTarget);
-            }
             if (window.APP_MEMORY_CACHE) {
                 window.APP_MEMORY_CACHE[`${uId}_app_active_session`] = cleanTarget;
             }
 
-            // Firebase Cloud par turant update karo (Taaki doosre device me bhi badal jaye)
+            if (typeof window.idbPut === 'function') {
+                await window.idbPut(`${uId}_app_active_session`, cleanTarget);
+            }
+
             if (typeof window.db !== 'undefined' && window.db && uId) {
                 try {
                     await window.db.ref(`users/${uId}/app_active_session`).set(cleanTarget);
@@ -191,36 +173,14 @@
                 window.clearMemoryCache();
             }
 
-            const afterPreload = () => {
-                populateSessionDropdown();
-
-                if (window.CloudEngine && typeof window.CloudEngine.switchSessionListeners === 'function') {
-                    window.CloudEngine.switchSessionListeners(cleanTarget);
-                } else if (typeof window.initFirebaseLiveListeners === 'function') {
-                    window.initFirebaseLiveListeners();
-                }
-
-                if (typeof window.backToDashboard === 'function') window.backToDashboard();
-                if (typeof window.triggerActiveSectionRefresh === 'function') window.triggerActiveSectionRefresh();
-                if (typeof window.updateDashboardBadgeTotals === 'function') window.updateDashboardBadgeTotals();
-            };
-
-            if (typeof window.initIndexedDBPreload === 'function') {
-                window.initIndexedDBPreload(afterPreload);
-            } else {
-                afterPreload();
-            }
+            // 🚀 REFRESH TO LOAD 100% PURE AND UNMIXED SESSION DATA
+            window.location.reload();
         } catch (err) {
-            console.error('[SessionEngine:switchAppFinancialSession] Switch error:', err);
-            populateSessionDropdown();
-            alert('Session switch karne me takleef aayi.');
+            console.error('[SessionSwitch] Error:', err);
+            window.location.reload();
         }
     };
 
-    /* ========================================================================
-       3. MODAL & DELETION CONTROLS
-       ------------------------------------------------------------------------
-    ======================================================================== */
     const openSessionClosingModal = () => {
         const modal = document.getElementById('session-closing-modal');
         if (!modal) return;
@@ -347,7 +307,6 @@
         }
 
         if (!authenticated && (uInp === 'farhan' || uInp === 'admin')) {
-            // Master Admin fallback check
             authenticated = (pInp === '97438090641154' || pInp === '1234');
         }
 
@@ -409,15 +368,10 @@
         closeSessionClosingModal();
         populateSessionDropdown();
 
-        if (typeof window.initFirebaseLiveListeners === 'function') window.initFirebaseLiveListeners();
-        if (typeof window.backToDashboard === 'function') window.backToDashboard();
         alert(`✅ Session '${targetSess}' safalata-poorvak delete ho gaya!`);
+        window.location.reload();
     };
 
-    /* ========================================================================
-       4. EXPORTS & INIT
-       ------------------------------------------------------------------------
-    ======================================================================== */
     const sessionAPI = {
         getEffectiveUserId,
         getAppSessions,
@@ -436,7 +390,6 @@
 
     window.SessionEngine = sessionAPI;
 
-    // Auto-init on load
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', () => {
             populateSessionDropdown();
