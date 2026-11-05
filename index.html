@@ -303,6 +303,7 @@
                     <div><label>Zari Waste</label><input type="number" step="0.01" id="waste-zari-input" onchange="saveCurrentSheetConfig()"></div>
                 </div>
 
+                <!-- 📦 ITEM SELECTION (WITH SAREE PCS & 8 COLORS MATCHING) -->
                 <div style="background:#f1f5f9; border:1px solid #cbd5e1; padding:12px; border-radius:10px; margin-bottom:14px;">
                     <div style="font-weight:800; color:#1e293b; margin-bottom:10px;">📦 Item Selection:</div>
                     
@@ -319,7 +320,8 @@
                         </div>
                     </div>
 
-                    <div class="form-row-3" style="margin-bottom:10px; background:#eff6ff; padding:8px; border-radius:8px;">
+                    <!-- 3. TANI SELECT (4 COLUMNS INCLUDING TANI SAREE PCS) -->
+                    <div class="form-row-4" style="margin-bottom:10px; background:#eff6ff; padding:8px; border-radius:8px;">
                         <div class="input-group">
                             <label style="color:#0284c7; font-weight:700;">3. Tani Select Item:</label>
                             <input type="text" id="sheet-tani-item" list="sheet-sancha-tani-dl" placeholder="Tani Item..." oninput="updateLiveStockDisplay()" onchange="saveCurrentSheetConfig()">
@@ -327,15 +329,20 @@
                         </div>
                         <div class="input-group">
                             <label style="color:#0284c7; font-weight:700;">Sancha Name:</label>
-                            <input type="text" id="sheet-tani-sancha" placeholder="Sancha Naam..." onchange="saveCurrentSheetConfig()">
+                            <input type="text" id="sheet-tani-sancha" placeholder="jaise: Azhar / Arman" onchange="saveCurrentSheetConfig()">
                         </div>
                         <div class="input-group">
                             <label style="color:#0284c7; font-weight:700;">Wazan (Kg):</label>
                             <input type="number" step="0.01" id="sheet-tani-wazan" placeholder="0.00" onchange="saveCurrentSheetConfig()">
                         </div>
+                        <div class="input-group">
+                            <label style="color:#0284c7; font-weight:900;">🎯 Tani Saree (Pcs):</label>
+                            <input type="number" id="sheet-tani-pcs" placeholder="jaise: 72" style="font-weight:bold; border:1.5px solid #0284c7;" onchange="saveCurrentSheetConfig()">
+                        </div>
                     </div>
 
-                    <div class="form-row-3" style="background:#faf5ff; padding:8px; border-radius:8px;">
+                    <!-- 4. CHUKKA SELECT (4 COLUMNS INCLUDING CHUKKA SAREE PCS) -->
+                    <div class="form-row-4" style="margin-bottom:10px; background:#faf5ff; padding:8px; border-radius:8px;">
                         <div class="input-group">
                             <label style="color:#7c3aed; font-weight:700;">4. Chukka Select Item:</label>
                             <input type="text" id="sheet-chukka-item" list="sheet-sancha-chukka-dl" placeholder="Chukka Item..." oninput="updateLiveStockDisplay()" onchange="saveCurrentSheetConfig()">
@@ -349,6 +356,27 @@
                             <label style="color:#7c3aed; font-weight:700;">Wazan (Kg):</label>
                             <input type="number" step="0.01" id="sheet-chukka-wazan" placeholder="0.00" onchange="saveCurrentSheetConfig()">
                         </div>
+                        <div class="input-group">
+                            <label style="color:#7c3aed; font-weight:900;">🎯 Chukka Saree (Pcs):</label>
+                            <input type="number" id="sheet-chukka-pcs" placeholder="jaise: 72" style="font-weight:bold; border:1.5px solid #7c3aed;" onchange="saveCurrentSheetConfig()">
+                        </div>
+                    </div>
+
+                    <!-- 🎨 8 COLORS MATCHING STRIP -->
+                    <div style="background:#fffbeb; border:1.5px solid #fde68a; padding:10px; border-radius:8px;">
+                        <label style="font-size:12px; font-weight:900; color:#b45309; display:block; margin-bottom:6px;">
+                            🎨 Tani Ke 8 Colors (Matching Setting):
+                        </label>
+                        <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap:6px;">
+                            <input type="text" id="sheet-color-1" placeholder="Color 1 (jaise: Rani)" onchange="saveCurrentSheetConfig()" style="padding:6px; font-size:12px; font-weight:bold; border:1px solid #cbd5e1; border-radius:4px;">
+                            <input type="text" id="sheet-color-2" placeholder="Color 2 (jaise: Lal)" onchange="saveCurrentSheetConfig()" style="padding:6px; font-size:12px; font-weight:bold; border:1px solid #cbd5e1; border-radius:4px;">
+                            <input type="text" id="sheet-color-3" placeholder="Color 3 (jaise: Mehendi)" onchange="saveCurrentSheetConfig()" style="padding:6px; font-size:12px; font-weight:bold; border:1px solid #cbd5e1; border-radius:4px;">
+                            <input type="text" id="sheet-color-4" placeholder="Color 4 (jaise: Blue)" onchange="saveCurrentSheetConfig()" style="padding:6px; font-size:12px; font-weight:bold; border:1px solid #cbd5e1; border-radius:4px;">
+                            <input type="text" id="sheet-color-5" placeholder="Color 5 (jaise: Peela)" onchange="saveCurrentSheetConfig()" style="padding:6px; font-size:12px; font-weight:bold; border:1px solid #cbd5e1; border-radius:4px;">
+                            <input type="text" id="sheet-color-6" placeholder="Color 6 (jaise: Wine)" onchange="saveCurrentSheetConfig()" style="padding:6px; font-size:12px; font-weight:bold; border:1px solid #cbd5e1; border-radius:4px;">
+                            <input type="text" id="sheet-color-7" placeholder="Color 7 (jaise: Firozi)" onchange="saveCurrentSheetConfig()" style="padding:6px; font-size:12px; font-weight:bold; border:1px solid #cbd5e1; border-radius:4px;">
+                            <input type="text" id="sheet-color-8" placeholder="Color 8 (jaise: Mungia)" onchange="saveCurrentSheetConfig()" style="padding:6px; font-size:12px; font-weight:bold; border:1px solid #cbd5e1; border-radius:4px;">
+                        </div>
                     </div>
 
                     <datalist id="sheet-bana-dl"></datalist>
@@ -357,6 +385,7 @@
                     <datalist id="sheet-sancha-chukka-dl"></datalist>
                 </div>
 
+                <!-- ➕ ROZANA LINE ENTRY (MANUAL ENTRY / EDIT FORM SAFE INTACT) -->
                 <div style="background:#f8fafc; border:1px solid #cbd5e1; padding:12px; border-radius:10px; margin-bottom:14px;">
                     <div style="font-weight:800; color:#1e293b; margin-bottom:8px;">➕ Rozana Line Entry:</div>
                     <div class="form-row-4" style="margin-bottom:8px;">
