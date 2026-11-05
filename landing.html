@@ -6,7 +6,7 @@
     
     <!-- 🔍 SEO & SOCIAL LINK PREVIEW -->
     <title>Simplicity ERP • Saree Manufacturer Karkhana Portal</title>
-    <meta name="description" content="Purani Diary Chhodo, Karkhana Digital Karo! Tana, Bana, Zari, Sancha, Kariger Tani Khata, Booti Cutting, Calender aur Dukan ka 100% pakka hisab.">
+    <meta name="description" content="Purani Diary Chhodo, Karkhana Digital Karo! Kariger Express, Stock Express, Tana, Bana, Zari, Sancha, Tani Khata, Booti Cutting aur Dukan ka 100% pakka hisab.">
     <meta name="theme-color" content="#000000">
 
     <!-- Fonts: Apple System & Inter -->
@@ -32,6 +32,7 @@
             --accent-gold-glow: rgba(212, 175, 55, 0.2);
             --accent-blue: #2997ff;
             --accent-green: #25D366;
+            --accent-red: #ef4444;
 
             --ease-apple: cubic-bezier(0.16, 1, 0.3, 1);
             --radius-outer: 24px;
@@ -153,7 +154,7 @@
             font-weight: 800;
             line-height: 1.08;
             letter-spacing: -0.035em;
-            max-width: 950px;
+            max-width: 980px;
             margin: 0 auto 18px;
             background: linear-gradient(180deg, #ffffff 40%, rgba(255, 255, 255, 0.65) 100%);
             -webkit-background-clip: text;
@@ -163,7 +164,7 @@
         .hero-subhead {
             font-size: clamp(1.05rem, 2vw, 1.35rem);
             color: var(--text-secondary);
-            max-width: 720px;
+            max-width: 760px;
             margin: 0 auto 34px;
             line-height: 1.5;
             font-weight: 400;
@@ -220,7 +221,7 @@
             margin-top: 25px;
             padding-top: 25px;
             border-top: 1px solid var(--border-subtle);
-            max-width: 900px;
+            max-width: 980px;
             margin-left: auto;
             margin-right: auto;
         }
@@ -229,7 +230,7 @@
         .stat-item p { font-size: 12px; color: var(--text-secondary); text-transform: uppercase; font-weight: 600; }
 
         /* ====================================================================
-           4. ULTRA HD DASHBOARD SHOWCASE
+           4. ULTRA HD DASHBOARD SHOWCASE (11 MODULE TILES)
            ==================================================================== */
         .portal-preview-section {
             padding: 20px max(20px, calc((100vw - 1180px) / 2)) 70px;
@@ -288,15 +289,11 @@
 
         .erp-tiles-grid {
             display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 16px;
-            margin-bottom: 24px;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 14px;
         }
 
-        @media (max-width: 900px) {
-            .erp-tiles-grid { grid-template-columns: repeat(2, 1fr); }
-        }
-        @media (max-width: 480px) {
+        @media (max-width: 600px) {
             .erp-tiles-grid { grid-template-columns: 1fr; }
         }
 
@@ -304,7 +301,7 @@
             background: #ffffff;
             border: 1px solid #e2e8f0;
             border-radius: 14px;
-            padding: 18px 14px;
+            padding: 16px 14px;
             text-align: center;
             display: flex;
             flex-direction: column;
@@ -313,7 +310,7 @@
             gap: 6px;
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.03);
             position: relative;
-            border-top: 3.5px solid #0284c7;
+            border-top: 4px solid #0284c7;
             cursor: pointer;
             transition: transform 0.2s, box-shadow 0.2s;
         }
@@ -326,7 +323,7 @@
         .erp-tile .icon-box {
             font-size: 26px;
             line-height: 1;
-            margin-bottom: 4px;
+            margin-bottom: 2px;
         }
 
         .erp-tile .tile-title {
@@ -344,83 +341,6 @@
             color: #16a34a;
             border: 1px solid #bbf7d0;
             margin-top: 2px;
-        }
-
-        .daybook-preview {
-            background: #ffffff;
-            border: 1px solid #e2e8f0;
-            border-radius: 14px;
-            padding: 20px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
-        }
-
-        .daybook-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 12px;
-            margin-bottom: 16px;
-        }
-
-        .daybook-tabs {
-            display: grid;
-            grid-template-columns: repeat(5, 1fr);
-            gap: 10px;
-            margin-bottom: 16px;
-        }
-
-        @media (max-width: 768px) {
-            .daybook-tabs { grid-template-columns: repeat(2, 1fr); }
-        }
-
-        .d-tab {
-            background: #f8fafc;
-            border: 1px solid #e2e8f0;
-            padding: 10px 12px;
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 12px;
-            font-weight: 600;
-        }
-
-        .d-tab.active {
-            border-color: #2563eb;
-            background: #eff6ff;
-            color: #1d4ed8;
-            box-shadow: 0 0 0 1px #2563eb;
-        }
-
-        .daybook-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 12.5px;
-            text-align: left;
-            border-radius: 8px;
-            overflow: hidden;
-        }
-
-        .daybook-table th {
-            background: #1e3a8a;
-            color: #ffffff;
-            padding: 10px 14px;
-            font-weight: 700;
-            font-size: 12px;
-        }
-
-        .daybook-table td {
-            padding: 12px 14px;
-            border-bottom: 1px solid #f1f5f9;
-            color: #334155;
-            font-weight: 500;
-        }
-
-        .daybook-table tr:last-child td {
-            font-weight: 700;
-            background: #f8fafc;
-            border-bottom: none;
         }
 
         /* ====================================================================
@@ -477,7 +397,7 @@
         .problem-card p { font-size: 13px; color: var(--text-secondary); line-height: 1.6; }
 
         /* ====================================================================
-           6. WORKFLOW & FAST INTERACTIVE APP BUTTONS (NO LOGIN NEEDED)
+           6. WORKFLOW & FAST INTERACTIVE APP BUTTONS
            ==================================================================== */
         .workflow-grid {
             display: grid;
@@ -523,7 +443,6 @@
             letter-spacing: 0.05em;
         }
 
-        /* 🚀 Fast Interactive Button */
         .btn-card-app {
             background: linear-gradient(135deg, #1e293b, #0f172a);
             border: 1px solid rgba(255, 255, 255, 0.2);
@@ -652,7 +571,7 @@
         }
 
         /* ====================================================================
-           8. ULTRA-HD DIRECT MODAL SYSTEM (TARIKA 2)
+           8. ULTRA-HD DIRECT MODAL SYSTEM
            ==================================================================== */
         .lightbox-overlay {
             position: fixed;
@@ -679,7 +598,7 @@
             border: 1px solid rgba(255, 255, 255, 0.15);
             border-radius: 20px;
             width: 100%;
-            max-width: 900px;
+            max-width: 920px;
             max-height: 90vh;
             display: flex;
             flex-direction: column;
@@ -750,7 +669,6 @@
             gap: 12px;
         }
 
-        /* HD Preview Box inside Modal */
         .preview-stat-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
@@ -839,7 +757,6 @@
             <p class="hero-subhead">Loom se lekar Dukan tak — 1-1 Saree, 1-1 Gram Zari, Tana, Bana, Sancha aur Kariger ki Mazdoori ka 100% pakka hisab mobile me.</p>
             
             <div class="hero-cta-group">
-                <!-- 📲 Manager WhatsApp -->
                 <a href="https://wa.me/917985402962?text=Hello%20Rehan%20bhai,%20mujhe%20Simplicity%20ERP%20ke%20bare%20me%20janna%20hai." target="_blank" class="btn-apple-green">
                     📲 WhatsApp Par Demo Maangein
                 </a>
@@ -858,23 +775,23 @@
                     <p>Zari & Bana Safe</p>
                 </div>
                 <div class="stat-item">
-                    <h4>Minto Me</h4>
-                    <p>1 April Naya Saal</p>
+                    <h4>5 Second</h4>
+                    <p>Express Baithak Entry</p>
                 </div>
                 <div class="stat-item">
                     <h4>1-Click</h4>
-                    <p>WhatsApp Parchi</p>
+                    <p>WhatsApp & A6 Slip</p>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- 3. ULTRA HD APP DASHBOARD SHOWCASE -->
+    <!-- 3. ULTRA HD APP DASHBOARD SHOWCASE (11 INTERACTIVE LIVE TILES) -->
     <section class="portal-preview-section">
         <div class="reveal" style="text-align: center; margin-bottom: 24px;">
             <span style="color:var(--accent-gold); font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.1em;">Live Karkhana Interface</span>
             <h3 style="font-size: clamp(1.8rem, 3.5vw, 2.8rem); font-weight:800; letter-spacing:-0.025em; margin-top:6px;">Seedha Aapke Screen Par Kaam</h3>
-            <p style="color:var(--text-secondary); font-size:14px; margin-top:4px;">Asli karkhana software ka live Ultra-HD snapshot. Kisi bhi tile par click karke direct live preview dekhein (Bina Password).</p>
+            <p style="color:var(--text-secondary); font-size:14px; margin-top:4px;">Asli karkhana software ka live 11-Pillar snapshot. Kisi bhi tile par click karke direct live preview dekhein (Bina Password).</p>
         </div>
 
         <!-- MAC-STYLE WINDOW MOCKUP -->
@@ -888,17 +805,17 @@
                 <div class="window-title">
                     <span>⚡ simplicity-erp.app • Main Factory Portal</span>
                 </div>
-                <div style="font-size: 11px; color:#64748b; font-weight: 600;">✨ Interactive Live Tiles</div>
+                <div style="font-size: 11px; color:#64748b; font-weight: 600;">✨ Interactive 11 Live Tiles</div>
             </div>
 
             <div class="portal-body" id="erpScreenContent">
-                <!-- 8 DASHBOARD TILES -->
+                <!-- 11 DASHBOARD TILES -->
                 <div class="erp-tiles-grid">
                     <!-- 1. Kariger Master -->
-                    <div class="erp-tile" style="border-top-color:#0284c7;" onclick="openDirectModule('kariger')">
+                    <div class="erp-tile" style="border-top-color:#14b8a6;" onclick="openDirectModule('kariger')">
                         <span class="icon-box">🧵</span>
                         <span class="tile-title">1. Kariger Master</span>
-                        <span class="tile-badge">Total: 2 Active</span>
+                        <span class="tile-badge">Total: 4 Active</span>
                     </div>
 
                     <!-- 2. Info Ledger -->
@@ -912,21 +829,21 @@
                     <div class="erp-tile" style="border-top-color:#10b981;" onclick="openDirectModule('bana')">
                         <span class="icon-box">🧶</span>
                         <span class="tile-title">3. Bana Stock</span>
-                        <span class="tile-badge">Bacha: 89.00 Kg</span>
+                        <span class="tile-badge">Bacha: 2347.00 Kg</span>
                     </div>
 
                     <!-- 4. Zari Stock -->
-                    <div class="erp-tile" style="border-top-color:#f59e0b;" onclick="openDirectModule('zari')">
+                    <div class="erp-tile" style="border-top-color:#f97316;" onclick="openDirectModule('zari')">
                         <span class="icon-box">✨</span>
                         <span class="tile-title">4. Zari Stock</span>
-                        <span class="tile-badge" style="background:#fef3c7; color:#d97706; border-color:#fde68a;">Bacha: 99.00 Kg</span>
+                        <span class="tile-badge" style="background:#fef3c7; color:#d97706; border-color:#fde68a;">Bacha: 2821.00 Kg</span>
                     </div>
 
                     <!-- 5. Saree Stock -->
-                    <div class="erp-tile" style="border-top-color:#3b82f6;" onclick="openDirectModule('saree')">
+                    <div class="erp-tile" style="border-top-color:#2563eb;" onclick="openDirectModule('saree')">
                         <span class="icon-box">🥻</span>
                         <span class="tile-title">5. Saree Stock</span>
-                        <span class="tile-badge" style="background:#eff6ff; color:#2563eb; border-color:#bfdbfe;">Stock: 10 Pcs</span>
+                        <span class="tile-badge" style="background:#eff6ff; color:#2563eb; border-color:#bfdbfe;">Stock: 101 Pcs</span>
                     </div>
 
                     <!-- 6. Payments -->
@@ -937,97 +854,39 @@
                     </div>
 
                     <!-- 7. Sancha (Tani) -->
-                    <div class="erp-tile" style="border-top-color:#06b6d4;" onclick="openDirectModule('sancha')">
+                    <div class="erp-tile" style="border-top-color:#0284c7;" onclick="openDirectModule('sancha')">
                         <span class="icon-box">⚙️</span>
                         <span class="tile-title">7. Sancha (Tani)</span>
-                        <span class="tile-badge" style="background:#ecfeff; color:#0891b2; border-color:#a5f3fc;">🏺 Tani: 82.0 Kg • ⚙️ Chukka: 93.0 Kg</span>
+                        <span class="tile-badge" style="background:#ecfeff; color:#0891b2; border-color:#a5f3fc;">🧵 Tani: 2467 Kg • ⚙️ Chukka: 1483 Kg</span>
                     </div>
 
                     <!-- 8. Job Work -->
-                    <div class="erp-tile" style="border-top-color:#f97316;" onclick="openDirectModule('cutting')">
+                    <div class="erp-tile" style="border-top-color:#0d9488;" onclick="openDirectModule('cutting')">
                         <span class="icon-box">✂️</span>
                         <span class="tile-title">8. Job Work</span>
-                        <span class="tile-badge">Booti & Calender</span>
-                    </div>
-                </div>
-
-                <!-- ROZANA DAY-BOOK INTERACTION PREVIEW -->
-                <div class="daybook-preview" onclick="openDirectModule('daybook')" style="cursor: pointer;">
-                    <div class="daybook-header">
-                        <div>
-                            <h4 style="font-size:16px; font-weight:800; color:#1e3a8a; display:flex; align-items:center; gap:6px;">
-                                📖 Rozana Day-Book
-                            </h4>
-                            <small style="color:#64748b; font-size:11px;">Factory In/Out Register (Click to open details)</small>
-                        </div>
-                        <div style="display:flex; gap:8px;">
-                            <input type="text" value="dd-mm-yyyy 📅" readonly style="border:1px solid #cbd5e1; border-radius:6px; padding:4px 10px; font-size:11px; background:#fff; color:#64748b; width:120px;">
-                            <button style="background:#1e3a8a; color:#fff; border:none; padding:4px 12px; border-radius:6px; font-size:11px; font-weight:700;">📅 Aaj</button>
-                        </div>
+                        <span class="tile-badge" style="background:#ccfbf1; color:#0f766e;">Booti & Calender</span>
                     </div>
 
-                    <div class="daybook-tabs">
-                        <div class="d-tab active">
-                            <span>🧶</span>
-                            <div>
-                                <div>Bana</div>
-                                <small style="font-size:10px; color:#2563eb;">In: +0.0 | Out: -1.0</small>
-                            </div>
-                        </div>
-                        <div class="d-tab">
-                            <span>✨</span>
-                            <div>
-                                <div>Zari</div>
-                                <small style="font-size:10px; color:#64748b;">In: +100.0 | Out: -1.0</small>
-                            </div>
-                        </div>
-                        <div class="d-tab">
-                            <span>🥻</span>
-                            <div>
-                                <div>Saree</div>
-                                <small style="font-size:10px; color:#64748b;">In: +0 | Out: -0</small>
-                            </div>
-                        </div>
-                        <div class="d-tab">
-                            <span>💳</span>
-                            <div>
-                                <div>Payment</div>
-                                <small style="font-size:10px; color:#64748b;">Diya: ₹ 0</small>
-                            </div>
-                        </div>
-                        <div class="d-tab">
-                            <span>⚙️</span>
-                            <div>
-                                <div>Sancha</div>
-                                <small style="font-size:10px; color:#64748b;">In: +0.0 | Out: -3.0</small>
-                            </div>
-                        </div>
+                    <!-- 🌟 9. KARIGER EXPRESS (NEW SUPERFAST COUNTER) -->
+                    <div class="erp-tile" style="border-top-color:#ef4444; background:#fff5f5;" onclick="openDirectModule('kariger_express')">
+                        <span class="icon-box">⚡</span>
+                        <span class="tile-title" style="color:#b91c1c;">9. Kariger Express</span>
+                        <span class="tile-badge" style="background:#fee2e2; color:#b91c1c; border-color:#fca5a5;">⚡ Baithak Mode</span>
                     </div>
 
-                    <table class="daybook-table">
-                        <thead>
-                            <tr>
-                                <th>Bana Ka Naam</th>
-                                <th>Kariger / Godam Vivran</th>
-                                <th>📥 Aaya (In)</th>
-                                <th>📤 Gaya (Out)</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td><strong>Katan</strong></td>
-                                <td>JAWED (Tani 1)</td>
-                                <td style="color:#64748b;">-</td>
-                                <td style="color:#ef4444; font-weight:700;">-1.00</td>
-                            </tr>
-                            <tr>
-                                <td>Total Rozana Bana:</td>
-                                <td></td>
-                                <td style="color:#16a34a;">+0.00</td>
-                                <td style="color:#ef4444;">-1.00</td>
-                            </tr>
-                        </tbody>
-                    </table>
+                    <!-- 🌟 10. STOCK EXPRESS (NEW RAW MATERIAL INWARD) -->
+                    <div class="erp-tile" style="border-top-color:#10b981; background:#f0fdf4;" onclick="openDirectModule('stock_express')">
+                        <span class="icon-box">⚡</span>
+                        <span class="tile-title" style="color:#047857;">10. Stock Express</span>
+                        <span class="tile-badge" style="background:#d1fae5; color:#047857; border-color:#86efac;">⚡ Inward Mode</span>
+                    </div>
+
+                    <!-- 🌟 11. ROZANA DAY-BOOK (SEPARATE MODULE) -->
+                    <div class="erp-tile" style="border-top-color:#1e3a8a; background:#f8fafc;" onclick="openDirectModule('daybook')">
+                        <span class="icon-box">📖</span>
+                        <span class="tile-title" style="color:#1e3a8a;">11. Rozana Day-Book</span>
+                        <span class="tile-badge" style="background:#e0e7ff; color:#1e3a8a; border-color:#c7d2fe;">Daily In/Out Register</span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1051,13 +910,13 @@
                 <p>Karkhane se Booti Cutting aur Calender ke raste me kitni saree kharab hui ya gayab hui, iska koi pakka record nahi rehta.</p>
             </div>
             <div class="problem-card" style="border-top-color:#8b5cf6;">
-                <h4>📖 Panne Fatne Ya Khone Ka Dar</h4>
-                <p>Purani diary kho jaane ya panna fatne par hisab ruk jata hai. Maalik ko apne karkhane ka live stock mobile par nahi mil pata.</p>
+                <h4>📖 Baithak Ki Bheed Aur Panne Khona</h4>
+                <p>Baithak ke din 30 kariger gaddi par khade hote hain toh diary me hisab likhte-likhte bheed lag jaati hai aur galti ho jati hai.</p>
             </div>
         </div>
     </section>
 
-    <!-- 5. WORKFLOW & DIRECT INTERACTIVE BUTTONS (TARIKA 2) -->
+    <!-- 5. WORKFLOW & DIRECT INTERACTIVE BUTTONS -->
     <section class="section-container">
         <div class="section-title-box reveal">
             <span>Complete Karkhana Workflow</span>
@@ -1066,22 +925,61 @@
         </div>
 
         <div class="workflow-grid reveal">
+            <!-- ⚡ KARIGER EXPRESS (STAR FEATURE) -->
+            <div class="step-module-card" style="border-top:3.5px solid #ef4444; background:rgba(239, 68, 68, 0.04);">
+                <div>
+                    <div class="card-top-row">
+                        <span class="step-num" style="background:#fee2e2; color:#b91c1c;">⚡ SUPERFAST</span>
+                        <button type="button" class="btn-card-app" style="background:#ef4444; border-color:#f87171;" onclick="openDirectModule('kariger_express')">
+                            <span>⚡</span> View Kariger Express
+                        </button>
+                    </div>
+                    <h4>⚡ Kariger Express (बैठक काउन्टर)</h4>
+                    <p>Baithak ke din 1-screen par Zero-Mouse hisab. Saree jama, Bana/Zari issue, Mazdoori rokad aur Tani progress ek sath.</p>
+                </div>
+                <ul class="bullet-list">
+                    <li>✔️ 100% Zero-Mouse (Enter dabate jao agla box aayega)</li>
+                    <li>✔️ 72 Pcs Tani Target & Loom par bachi saree live track</li>
+                    <li>✔️ 🎨 8 Colors matching list display</li>
+                    <li>✔️ Enter dabate hi turant A6 Thermal parchi print</li>
+                </ul>
+            </div>
+
+            <!-- ⚡ STOCK EXPRESS (STAR FEATURE) -->
+            <div class="step-module-card" style="border-top:3.5px solid #10b981; background:rgba(16, 185, 129, 0.04);">
+                <div>
+                    <div class="card-top-row">
+                        <span class="step-num" style="background:#d1fae5; color:#047857;">⚡ INWARD COUNTER</span>
+                        <button type="button" class="btn-card-app" style="background:#10b981; border-color:#86efac;" onclick="openDirectModule('stock_express')">
+                            <span>⚡</span> View Stock Express
+                        </button>
+                    </div>
+                    <h4>⚡ Stock Express (कच्चा माल आवक)</h4>
+                    <p>Mandi ya tempo se aayi 10-15 bori Bana, Zari aur Sancha ek hi bade counter par bina screen badle 1 minute me stock me jama.</p>
+                </div>
+                <ul class="bullet-list">
+                    <li>✔️ 3-in-1 Engine: Bana, Zari aur Sancha</li>
+                    <li>✔️ [F1/F2/F3] Shortcuts se instant category switch</li>
+                    <li>✔️ Bacha wazan live screen par dikhna (502 Kg Bacha)</li>
+                    <li>✔️ Purana Stock ya +Naya Item mode</li>
+                </ul>
+            </div>
+
             <!-- 1. KARIGER & TANI KHATA -->
             <div class="step-module-card">
                 <div>
                     <div class="card-top-row">
                         <span class="step-num">STEP 01</span>
-                        <!-- 🎯 Interactive Button (No Password) -->
                         <button type="button" class="btn-card-app" onclick="openDirectModule('kariger')">
                             <span>🧵</span> View Kariger Master
                         </button>
                     </div>
                     <h4>🧵 Kariger Master & Tani Khata</h4>
-                    <p>Har kariger ki Tani 1, 2, 3 sheets ka exact hisab. Mazdoori (Bani rate), Saree aur Lott ka automatic calculation.</p>
+                    <p>Har kariger ki Tani 1, 2, 3 sheets ka exact hisab. Mazdoori (Bani rate), 8 Colors matching aur Sancha record.</p>
                 </div>
                 <ul class="bullet-list">
-                    <li>✔️ Net Mazdoori = Net Saree × Rate</li>
-                    <li>✔️ Pichli mazdoori naye khate me auto-carry</li>
+                    <li>✔️ 72 Saree Tani & Chukka Saree Setting</li>
+                    <li>✔️ Net Mazdoori = Net Saree × Bani Rate</li>
                     <li>✔️ 15/30 din se absent kariger ka alert</li>
                 </ul>
             </div>
@@ -1232,7 +1130,7 @@
                     <p>2000 Kariger ka pichla bacha hisab naye saal me minton me transfer, naye sire se diary likhne ki koi zaroorat nahi.</p>
                 </div>
                 <ul class="bullet-list">
-                    <li>✔️ Har godam ka bacha maal ➔ Naya Opening Stock</li>
+                    <li>✔️ Har godam ka bacha maal ➔ Naya Opening Stock (100% Match)</li>
                     <li>✔️ Kariger baki mazdoori ➔ Tani 1 me carry-forward</li>
                     <li>✔️ Purane saal me kabhi bhi switch karke dekhne ki azaadi</li>
                 </ul>
@@ -1289,7 +1187,7 @@
     </footer>
 
     <!-- ====================================================================
-         TARIKA 2: ULTRA-HD INTERACTIVE PREVIEW MODAL (NO PASSWORD NEEDED)
+         ULTRA-HD INTERACTIVE PREVIEW MODAL (TARIKA 2)
          ==================================================================== -->
     <div id="moduleModal" class="lightbox-overlay" onclick="closeModuleModal(event)">
         <div class="modal-container">
@@ -1306,7 +1204,7 @@
                 <!-- Content will load dynamically -->
             </div>
 
-            <!-- Modal Footer with High Converting CTAs -->
+            <!-- Modal Footer -->
             <div class="modal-footer">
                 <span style="font-size:12px; color:#94a3b8;">
                     🔒 Asli portal chalane ke liye manager se login PIN prapt karein.
@@ -1340,15 +1238,50 @@
         });
 
         // ==========================================================
-        // 🚀 TARIKA 2: DIRECT ULTRA-HD INTERACTIVE PREVIEW DATA
+        // 🚀 DIRECT ULTRA-HD INTERACTIVE PREVIEW DATABASE
         // ==========================================================
         const moduleDatabase = {
+            // 🌟 1. KARIGER EXPRESS (NEW)
+            kariger_express: {
+                title: "⚡ 9. Kariger Express (Zero-Mouse बैठक काउन्टर)",
+                stats: [
+                    { label: "Tani Target", val: "72 Pcs Capacity" },
+                    { label: "Speed Flow", val: "Zero-Mouse (Enter)" },
+                    { label: "8 Colors Matching", val: "Live Tags Display" }
+                ],
+                tableHead: ["Kariger (Maker)", "Saree Aayi", "Lott", "Bana Diya", "Zari Diya", "Rokad (Paid)", "Loom Par Baki", "A6 Thermal"],
+                rows: [
+                    ["JAWED (Loom 1)", "4 Pcs", "0 Pc", "4.00 Kg", "0.50 Kg", "₹ 2,000.00", "44 Pcs Baki (28 Aayi)", "🖨️ Auto Print"],
+                    ["SALIM (Loom 2)", "2 Pcs", "1 Pc", "3.00 Kg", "0.30 Kg", "₹ 1,500.00", "52 Pcs Baki (20 Aayi)", "🖨️ Auto Print"],
+                    ["RAFIQ (Loom 3)", "6 Pcs", "0 Pc", "5.50 Kg", "0.70 Kg", "₹ 3,500.00", "12 Pcs Baki (60 Aayi)", "🖨️ Auto Print"]
+                ],
+                notes: "⚡ <b>Baithak Mode:</b> Kariger ka naam likho ➔ Saree ➔ Bana ➔ Zari ➔ Rokad ➔ <b>ENTER</b>. Form turant reset hokar agle kariger par focus ho jayega, 72 saree tani meter live chalega aur A6 Thermal slip turant print ho jayegi!"
+            },
+
+            // 🌟 2. STOCK EXPRESS (NEW)
+            stock_express: {
+                title: "⚡ 10. Stock Express (कच्चा माल आवक व स्टॉक काउन्टर)",
+                stats: [
+                    { label: "3-in-1 Engine", val: "Bana, Zari & Sancha" },
+                    { label: "Shortcuts", val: "F1 / F2 / F3 & Alt+1/2/3" },
+                    { label: "Live Stock Meter", val: "Bacha: 502.00 Kg" }
+                ],
+                tableHead: ["Item Ka Naam", "Category", "Mode", "Wazan Aaya", "Godam Bacha", "Supplier / Note", "Voucher"],
+                rows: [
+                    ["Karishma 2/120", "🧶 Bana", "Purana Stock", "+50.00 Kg", "1547.00 Kg Bacha", "Bill #402 - Mandi Se", "🖨️ Print Slip"],
+                    ["Real Gold 30#", "✨ Zari", "Purani Zari", "+20.00 Kg", "2821.00 Kg Bacha", "Surat Parcel Received", "🖨️ Print Slip"],
+                    ["100 Dhiyaan Beam", "⚙️ Sancha (Tani)", "Naya Sancha", "+41.00 Kg", "2467.0 Kg Bacha", "Guddu Rangrej Se Aaya", "🖨️ Print Slip"]
+                ],
+                notes: "⚡ <b>Inward Counter:</b> Mandi ya tempo se aayi 10-15 bori ek hi bade counter par enter ho jaati hai. 1-2 akshar likhte hi godam ka live stock meter samne aa jata hai aur Enter dabate hi stock jama!"
+            },
+
+            // 1. KARIGER MASTER
             kariger: {
                 title: "🧵 1. Kariger Master & Tani Khata Sheet",
                 stats: [
-                    { label: "Active Karigers", val: "2 Loom Masters" },
+                    { label: "Active Karigers", val: "4 Loom Masters" },
                     { label: "Running Tani", val: "Tani 1, 2, 3" },
-                    { label: "Total Mazdoori Baki", val: "₹ 18,450.00" }
+                    { label: "Total Mazdoori Baki", val: "- ₹ 46,520.00" }
                 ],
                 tableHead: ["Kariger Ka Naam", "Saree Design", "Bani Rate (₹)", "Total Saree", "- Lott", "Net Mazdoori (₹)", "Closing Baki"],
                 rows: [
@@ -1358,40 +1291,45 @@
                 ],
                 notes: "💡 Kariger ka sara hisab mathematical accuracy se chalta hai: Net Mazdoori = (Total Saree - Lott) × Bani Rate. Pichla balance naye panno me auto-carry hota hai."
             },
+
+            // 2. BANA STOCK
             bana: {
-                title: "🧶 3. Bana Stock Register (Kg / Cone Tracking)",
+                title: "🧶 3. Bana Stock Register (Multi-Godam Master)",
                 stats: [
-                    { label: "Total Bacha Bana", val: "89.00 Kg" },
-                    { label: "Karkhana Issue", val: "142.50 Kg" },
-                    { label: "Net Less TP Cut", val: "-3.20 Kg" }
+                    { label: "Total Bacha Bana", val: "2347.00 Kg" },
+                    { label: "Items Listed", val: "3 Qualities" },
+                    { label: "Godam Covered", val: "Main, Bahadurganj, Mubarakpur" }
                 ],
-                tableHead: ["Tareeq", "Bana Quality", "Kariger / Loom", "Gross Diya", "Less TP", "Net Diya (Kg)", "Godam Bacha"],
+                tableHead: ["Tareeq", "Bana Quality", "Godam / Source", "Aaya (In)", "Gaya (Out)", "Bacha Stock", "Action"],
                 rows: [
-                    ["Today", "Katan Silk (Fine)", "JAWED (Tani 1)", "10.50 Kg", "0.50 Kg", "10.00 Kg", "89.00 Kg"],
-                    ["Yesterday", "Georgette Weft", "SALIM (Tani 2)", "15.00 Kg", "0.75 Kg", "14.25 Kg", "99.00 Kg"],
-                    ["2 Days Ago", "Organza Poly Weft", "Main Godam Inward", "50.00 Kg", "0.00 Kg", "+50.00 Kg", "113.25 Kg"]
+                    ["05-Nov-2026", "karishma", "Main Godown", "+1617.00 Kg", "-70.00 Kg", "1547.00 Kg", "📖 Passbook"],
+                    ["05-Nov-2026", "abcs", "Main Godown", "+500.00 Kg", "-0.00 Kg", "500.00 Kg", "📖 Passbook"],
+                    ["05-Nov-2026", "copper", "Main Godown", "+300.00 Kg", "-0.00 Kg", "300.00 Kg", "📖 Passbook"]
                 ],
                 notes: "💡 Less TP (Tare Weight / Cone Weight) ka automatic wazan katne ke baad hi Kariger ke khate me daaga darj hota hai, jisse gram ka bhi ghapla nahi hota."
             },
+
+            // 3. ZARI STOCK
             zari: {
                 title: "✨ 4. Zari Stock Register (0.00g Precision)",
                 stats: [
-                    { label: "Godam Bacha Zari", val: "99.00 Kg" },
-                    { label: "Issue Today", val: "1.00 Kg" },
-                    { label: "Wastage Cut (Topi)", val: "0.00 g Cut" }
+                    { label: "Godam Bacha Zari", val: "2821.00 Kg" },
+                    { label: "Precision Rate", val: "0.01 Kg / Gram" },
+                    { label: "Topi Wastage Cut", val: "Automatic Tare" }
                 ],
                 tableHead: ["Tareeq", "Zari Marka / No.", "Loom / Kariger", "Gross Issue", "Topi Cut", "Net Zari Diya", "Current Stock"],
                 rows: [
-                    ["Today", "Real Metallic Gold 30#", "JAWED (Tani 1)", "1.10 Kg", "0.10 Kg", "1.00 Kg", "99.00 Kg"],
-                    ["Yesterday", "Silver Antique 28#", "SALIM (Tani 2)", "2.20 Kg", "0.20 Kg", "2.00 Kg", "100.00 Kg"],
-                    ["3 Days Ago", "Rose Gold Fine Weave", "Godam Purchase", "100.00 Kg", "0.00 Kg", "+100.00 Kg", "102.00 Kg"]
+                    ["Today", "Real Metallic Gold 30#", "JAWED (Tani 1)", "1.10 Kg", "0.10 Kg", "1.00 Kg", "2821.00 Kg"],
+                    ["Yesterday", "Silver Antique 28#", "SALIM (Tani 2)", "2.20 Kg", "0.20 Kg", "2.00 Kg", "2750.00 Kg"]
                 ],
                 notes: "💡 Zari me Topi (Plastic Roll) ka wazan software khud nikaalta hai. Har gram metallic zari ka audit real-time hota hai."
             },
+
+            // 4. SAREE STOCK
             saree: {
                 title: "🥻 5. Saree Stock Master (4 Godam Registers)",
                 stats: [
-                    { label: "Total Fresh Stock", val: "10 Pcs" },
+                    { label: "Total Fresh Stock", val: "101 Pcs" },
                     { label: "Under Cutting", val: "18 Pcs" },
                     { label: "Finished Showroom", val: "42 Pcs" }
                 ],
@@ -1403,6 +1341,8 @@
                 ],
                 notes: "💡 4 Registers me saree track hoti hai: Fresh Saree ➔ Booti Cutting ➔ Calender Finish ➔ Dukan Final Out."
             },
+
+            // 5. BOOTI CUTTING
             cutting: {
                 title: "✂️ 8. Booti Cutting (Job Work Register)",
                 stats: [
@@ -1417,6 +1357,8 @@
                 ],
                 notes: "💡 Har saree ke pichhe thread cutting ka record rehta hai. Agar kisi cutter ne saree kaat di toh uska fine/kaat yahi darj ho jati hai."
             },
+
+            // 6. CALENDER
             calender: {
                 title: "🎛️ Calender Machine Finish (Ironing & Gloss)",
                 stats: [
@@ -1431,12 +1373,14 @@
                 ],
                 notes: "💡 Steam press aur rolling machine me bheji gayi saree ka date-wise challan banta hai taaki koi saree miss na ho."
             },
+
+            // 7. SANCHA MASTER
             sancha: {
                 title: "⚙️ 7. Sancha Master (Tani & Chukka Beam Register)",
                 stats: [
-                    { label: "Tani Beam Weight", val: "82.0 Kg" },
-                    { label: "Chukka Weight", val: "93.0 Kg" },
-                    { label: "Total Running Beams", val: "8 Looms" }
+                    { label: "Tani Beam Weight", val: "2467.0 Kg" },
+                    { label: "Chukka Weight", val: "1483.0 Kg" },
+                    { label: "Multi-Godam Setup", val: "3 Units Safe" }
                 ],
                 tableHead: ["Loom / Kariger", "Sancha Type", "Beam Gross (Kg)", "Chukka Gross (Kg)", "Issue Tareeq", "Status"],
                 rows: [
@@ -1445,6 +1389,8 @@
                 ],
                 notes: "💡 Tani aur Chukka ke alag-alag tabs hain. Beam lagte hi software me wazan darj ho jata hai aur utarne par balance update."
             },
+
+            // 8. DUKAN SHOWROOM
             dukan: {
                 title: "🏪 Dukan Bheja (Showroom Final Out Register)",
                 stats: [
@@ -1455,41 +1401,45 @@
                 tableHead: ["Dispatch Tareeq", "Parcel / Challan", "Destination Showroom", "Total Saree", "Driver / Handover", "Status"],
                 rows: [
                     ["Today", "BOX-101", "Gaddi Chowk Showroom", "25 Pcs", "Guddu Driver", "✅ Received"],
-                    ["Yesterday", "BOX-102", "Bahadurganj Depot", "30 Pcs", "Self Car", "✅ Received"],
-                    ["3 Days Ago", "PARCEL-88", "Wholesale Mumbai", "50 Pcs", "V-Trans Transport", "✅ In Hand"]
+                    ["Yesterday", "BOX-102", "Bahadurganj Depot", "30 Pcs", "Self Car", "✅ Received"]
                 ],
                 notes: "💡 Karkhane se tayyar maal dukan bhejte waqt live out-entry hoti hai, jisse maalik ko pata rehta hai showroom me kitni saree pahunchi."
             },
+
+            // 9. PAYMENTS
             payment: {
                 title: "💳 6. Payments & Kariger Bakaya Register",
                 stats: [
                     { label: "Kul Diya Payment", val: "₹ 45,000.00" },
-                    { label: "Kul Dena Baki", val: "₹ 18,450.00" },
+                    { label: "Kul Dena Baki", val: "- ₹ 46,520.00" },
                     { label: "Payment Modes", val: "Cash & UPI" }
                 ],
                 tableHead: ["Tareeq", "Kariger Ka Naam", "Payment Mode", "Diya Gaya (₹)", "Pichla Baki", "Naya Bacha Baki (₹)", "Receipt"],
                 rows: [
                     ["Today", "JAWED (Tani 1)", "UPI (GPay)", "₹ 3,000.00", "₹ 5,400.00", "₹ 2,400.00", "📲 WhatsApp Parchi"],
-                    ["Yesterday", "SALIM (Tani 2)", "Cash Handover", "₹ 2,000.00", "₹ 3,150.00", "₹ 1,150.00", "📲 WhatsApp Parchi"],
-                    ["3 Days Ago", "Rashid Cutter", "Cash Handover", "₹ 1,000.00", "₹ 1,350.00", "₹ 350.00", "📲 WhatsApp Parchi"]
+                    ["Yesterday", "SALIM (Tani 2)", "Cash Handover", "₹ 2,000.00", "₹ 3,150.00", "₹ 1,150.00", "📲 WhatsApp Parchi"]
                 ],
                 notes: "💡 Payment darj hote hi '1-Click WhatsApp Parchi' se Kariger ke mobile par turant date-wise receipt chali jaati hai."
             },
+
+            // 10. ROZANA DAY-BOOK
             daybook: {
-                title: "📖 Rozana Day-Book (Live Factory In/Out Register)",
+                title: "📖 11. Rozana Day-Book (Dedicated Factory Register)",
                 stats: [
-                    { label: "Bana Net Out", val: "-1.00 Kg" },
+                    { label: "Bana Net Out", val: "-70.00 Kg" },
                     { label: "Zari Inward", val: "+100.00 Kg" },
-                    { label: "Sancha Out", val: "-3.00 Kg" }
+                    { label: "Saree Movement", val: "Live In/Out" }
                 ],
                 tableHead: ["Quality / Item", "Kariger / Godam Vivran", "📥 Aaya (In)", "📤 Gaya (Out)", "Live Timing"],
                 rows: [
-                    ["Katan Silk Bana", "JAWED (Tani 1)", "-", "-1.00 Kg", "10:30 AM"],
+                    ["karishma Bana", "JAWED (Tani 1)", "-", "-70.00 Kg", "10:30 AM"],
                     ["Real Metallic Zari", "Main Godam Inward", "+100.00 Kg", "-", "11:15 AM"],
                     ["Chukka Sancha", "SALIM (Tani 2)", "-", "-3.00 Kg", "02:40 PM"]
                 ],
-                notes: "💡 Pure karkhane ka live record. Din bhar me kaun sa daaga aaya, kitni saree bani aur kitna payment gaya sab ek hi page par."
+                notes: "💡 Pure karkhane ka alag dedicated live record. Din bhar me kaun sa daaga aaya, kitni saree bani aur kitna payment gaya sab ek alag saaf page par."
             },
+
+            // 11. INFO LEDGER
             info: {
                 title: "📋 2. Info Ledger (Saree Design & Construction Master)",
                 stats: [
@@ -1506,7 +1456,7 @@
             }
         };
 
-        // Open Module Function (No Password, Ultra-HD Direct Pop)
+        // Open Module Function
         function openDirectModule(key) {
             const data = moduleDatabase[key] || moduleDatabase.kariger;
             const modal = document.getElementById('moduleModal');
