@@ -1,7 +1,7 @@
 /* ============================================================================
    SIMPLICITY ERP - HIGH-PERFORMANCE ROZANA DAY-BOOK & DASHBOARD ENGINE
    File: daybook/daybook.js • Developed by Farhan Jawed
-   (With ⚡ Top Dashboard STOCK EXPRESS, Universal Search, Pagination & A6 Print)
+   (Universal Search, Pagination, Clean Tabs & A6 Print)
 ============================================================================ */
 
 (() => {
@@ -85,7 +85,7 @@
     };
 
     /* ========================================================================
-       3. NAVIGATION & DASHBOARD CONTROLS (WITH ⚡ STOCK EXPRESS ON TOP)
+       3. NAVIGATION & DASHBOARD CONTROLS (CLEAN TABS)
        ------------------------------------------------------------------------
     ======================================================================== */
 
@@ -125,11 +125,10 @@
 
         const isAllActive = (window.currentDashboardKarkhanaFilter === 'all') ? ' active' : '';
 
-        // 🌟 DASHBOARD TOP BAR: Tabs on Left + Bada ⚡ STOCK EXPRESS Button on Right
+        // 🌟 DASHBOARD TOP BAR: Clean Tabs Only (No Stock Express Button)
         let html = `
-            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:12px;">
-                <div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center;">
-                    <button type="button" class="sheet-tab${isAllActive}" onclick="switchDashboardKarkhanaTab('all')">👥 Sabhi Karkhane</button>`;
+            <div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center; margin-bottom:12px;">
+                <button type="button" class="sheet-tab${isAllActive}" onclick="switchDashboardKarkhanaTab('all')">👥 Sabhi Karkhane</button>`;
 
         karkhanas.forEach((k) => {
             const isMain = (k.id === 'k_main' || k.isDefault);
@@ -138,14 +137,7 @@
             html += `<button type="button" class="sheet-tab${isActive}" onclick="switchDashboardKarkhanaTab('${esc(k.id)}')">${icon}${esc(k.name)}</button>`;
         });
 
-        html += `
-                </div>
-                <div>
-                    <button type="button" onclick="if(window.openStockExpressModal) window.openStockExpressModal(); else if(window.openBanaStockExpressModal) window.openBanaStockExpressModal(); else alert('Stock Express load ho raha hai...');" style="background:#10b981; color:#ffffff; font-weight:bold; font-size:13px; padding:8px 16px; border-radius:8px; border:none; cursor:pointer; box-shadow:0 3px 6px rgba(16,185,129,0.3); display:inline-flex; align-items:center; gap:6px;">
-                        ⚡ STOCK EXPRESS (कच्चा माल आवक)
-                    </button>
-                </div>
-            </div>`;
+        html += `</div>`;
 
         bar.innerHTML = html;
     };
@@ -755,8 +747,8 @@
                     <tr style="border-bottom:1px dashed #ccc;">
                         <td style="padding:4px 2px; font-weight:bold;">${esc(h.name)} ${catStr}</td>
                         <td style="padding:4px 2px;">${esc(h.kariger || h.type || '-')}</td>
-                        <td style="padding:4px 2px; text-align:right;">${inQ > 0 ? `+${inQ.toFixed(2)}` : '-'}</td>
-                        <td style="padding:4px 2px; text-align:right;">${outQ > 0 ? `-${outQ.toFixed(2)}` : '-'}</td>
+                        <td style="padding:4px 2px; text-align:right;">${inQ > 0 ? `+${inQ.toFixed(2)} Kg` : '-'}</td>
+                        <td style="padding:4px 2px; text-align:right;">${outQ > 0 ? `-${outQ.toFixed(2)} Kg` : '-'}</td>
                     </tr>`;
             });
             totHtml = `
