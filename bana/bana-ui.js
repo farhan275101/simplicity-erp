@@ -1,7 +1,7 @@
 /* ============================================================================
-   SIMPLICITY ERP - 3-IN-1 ⚡ MASTER STOCK EXPRESS ENGINE (WITH SHORTCUT KEYS)
+   SIMPLICITY ERP - BANA STOCK & PASSBOOK ENGINE (CLEAN VERSION)
    File: bana/bana-ui.js • Developed by Farhan Jawed
-   (Zero-Mouse: F2 Toggle, Alt+N/P, Alt+1/2/3, Instant Enter-Save & Auto-Focus)
+   (Inward Purchase + Inter-Godown Transfer + Paginated Passbook + A6 Print)
 ============================================================================ */
 
 (() => {
@@ -20,11 +20,6 @@
     const BANA_STOCK_PAGE_SIZE = 15;
     let currentBanaFilteredRowsCache = [];
 
-    // ⚡ STOCK EXPRESS STATE
-    let expressActiveCategory = 'bana'; // 'bana' | 'zari' | 'sancha'
-    let expressStockMode = 'purana';     // 'purana' | 'naya'
-    let expressSanchaCat = 'tani';       // 'tani' | 'chukka'
-
     const esc = (s) => {
         if (typeof window.sanitizeHTML === 'function') return window.sanitizeHTML(s);
         return String(s || '').replace(/[&<>"']/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
@@ -38,11 +33,6 @@
     const setDisplay = (id, val) => {
         const el = document.getElementById(id);
         if (el) el.style.display = val;
-    };
-
-    const setText = (id, val) => {
-        const el = document.getElementById(id);
-        if (el) el.textContent = (val !== undefined && val !== null) ? val : '';
     };
 
     const getToday = () => {
@@ -101,7 +91,7 @@
     };
 
     /* ========================================================================
-       2. INWARD PURCHASE ENGINE (LEGACY)
+       2. INWARD PURCHASE ENGINE
        ------------------------------------------------------------------------
     ======================================================================== */
     const toggleBanaForm = () => {
@@ -348,486 +338,7 @@
     };
 
     /* ========================================================================
-       4. ⚡ 3-IN-1 MASTER STOCK EXPRESS (WITH KEYBOARD SHORTCUTS ENGINE)
-       ------------------------------------------------------------------------
-    ======================================================================== */
-    const getStockExpressDatalists = () => {
-        const rawBana = window.safeArray ? window.safeArray(window.getStore('bana_stock')) : [];
-        const uB = [];
-        let banaOpts = '';
-        rawBana.forEach((b) => {
-            const n = b?.name ? b.name.trim() : '';
-            if (n && uB.indexOf(n.toLowerCase()) === -1) {
-                uB.push(n.toLowerCase());
-                banaOpts += `<option value="${esc(n)}">`;
-            }
-        });
-
-        const rawZari = window.safeArray ? window.safeArray(window.getStore('zari_stock')) : [];
-        const uZ = [];
-        let zariOpts = '';
-        rawZari.forEach((z) => {
-            const n = z?.name ? z.name.trim() : '';
-            if (n && uZ.indexOf(n.toLowerCase()) === -1) {
-                uZ.push(n.toLowerCase());
-                zariOpts += `<option value="${esc(n)}">`;
-            }
-        });
-
-        const rawSancha = window.safeArray ? window.safeArray(window.getStore('sancha_items')) : [];
-        const uS = [];
-        let sanchaOpts = '';
-        rawSancha.forEach((s) => {
-            const n = s?.name ? s.name.trim() : '';
-            if (n && uS.indexOf(n.toLowerCase()) === -1) {
-                uS.push(n.toLowerCase());
-                sanchaOpts += `<option value="${esc(n)}">`;
-            }
-        });
-
-        return { banaOpts, zariOpts, sanchaOpts };
-    };
-
-    // ⌨️ GLOBAL KEYBOARD SHORTCUTS LISTENER FOR STOCK EXPRESS
-    const handleStockExpressKeydown = (e) => {
-        const modal = document.getElementById('master-stock-express-modal');
-        if (!modal) return;
-
-        // Escape to Close Modal
-        if (e.key === 'Escape') {
-            e.preventDefault();
-            closeStockExpressModal();
-            return;
-        }
-
-        // F2 to Toggle Purana ⇄ Naya Mode
-        if (e.key === 'F2') {
-            e.preventDefault();
-            setExpressStockMode(expressStockMode === 'purana' ? 'naya' : 'purana');
-            return;
-        }
-
-        // Alt + P -> Purana Stock
-        if (e.altKey && (e.key === 'p' || e.key === 'P')) {
-            e.preventDefault();
-            setExpressStockMode('purana');
-            return;
-        }
-
-        // Alt + N -> Naya Item
-        if (e.altKey && (e.key === 'n' || e.key === 'N')) {
-            e.preventDefault();
-            setExpressStockMode('naya');
-            return;
-        }
-
-        // Alt + 1 -> Bana, Alt + 2 -> Zari, Alt + 3 -> Sancha
-        if (e.altKey && e.key === '1') { e.preventDefault(); switchExpressCategory('bana'); }
-        if (e.altKey && e.key === '2') { e.preventDefault(); switchExpressCategory('zari'); }
-        if (e.altKey && e.key === '3') { e.preventDefault(); switchExpressCategory('sancha'); }
-    };
-
-    const openStockExpressModal = () => {
-        const existingModal = document.getElementById('master-stock-express-modal');
-        if (existingModal) existingModal.remove();
-
-        expressActiveCategory = 'bana';
-        expressStockMode = 'purana';
-        expressSanchaCat = 'tani';
-
-        const today = getToday();
-        const { banaOpts } = getStockExpressDatalists();
-
-        const targetKid = (window.currentBanaKarkhanaFilter !== 'all') ? window.currentBanaKarkhanaFilter : 'k_main';
-        const godamName = (typeof window.getKarkhanaNameById === 'function') 
-            ? window.getKarkhanaNameById(targetKid) 
-            : 'Main Godown';
-
-        const modalHtml = `
-            <div id="master-stock-express-modal" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:999999; display:flex; align-items:center; justify-content:center; padding:15px; box-sizing:border-box;">
-                <div style="background:#ffffff; width:100%; max-width:460px; border-radius:12px; box-shadow:0 25px 30px -5px rgba(0,0,0,0.4); overflow:hidden;">
-                    
-                    <!-- Top Modal Header -->
-                    <div style="background:#0f172a; color:#ffffff; padding:12px 16px; display:flex; justify-content:space-between; align-items:center;">
-                        <h3 style="margin:0; font-size:16px;">⚡ STOCK EXPRESS (कच्चा माल आवक)</h3>
-                        <button type="button" onclick="closeStockExpressModal()" style="background:transparent; border:none; color:#ffffff; font-size:22px; cursor:pointer;">&times;</button>
-                    </div>
-
-                    <div style="padding:16px;">
-                        
-                        <!-- 3 Category Master Tabs -->
-                        <div style="display:grid; grid-template-columns:1fr 1fr 1.2fr; gap:6px; margin-bottom:12px;">
-                            <button type="button" id="tab-cat-bana" onclick="switchExpressCategory('bana')" style="background:#059669; color:#fff; border:none; padding:9px 4px; border-radius:6px; font-weight:bold; font-size:12px; cursor:pointer;">
-                                🧶 1. BANA [Alt+1]
-                            </button>
-                            <button type="button" id="tab-cat-zari" onclick="switchExpressCategory('zari')" style="background:#e2e8f0; color:#334155; border:none; padding:9px 4px; border-radius:6px; font-weight:bold; font-size:12px; cursor:pointer;">
-                                ✨ 2. ZARI [Alt+2]
-                            </button>
-                            <button type="button" id="tab-cat-sancha" onclick="switchExpressCategory('sancha')" style="background:#e2e8f0; color:#334155; border:none; padding:9px 4px; border-radius:6px; font-weight:bold; font-size:12px; cursor:pointer;">
-                                ⚙️ 3. SANCHA [Alt+3]
-                            </button>
-                        </div>
-
-                        <!-- Sub-Mode: Purana vs Naya with Keyboard Hints -->
-                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:12px;">
-                            <button type="button" id="btn-sub-purana" onclick="setExpressStockMode('purana')" style="background:#1e3a8a; color:#fff; border:none; padding:8px; border-radius:6px; font-weight:bold; font-size:12px; cursor:pointer;">
-                                🔵 Purana Stock [Alt+P]
-                            </button>
-                            <button type="button" id="btn-sub-naya" onclick="setExpressStockMode('naya')" style="background:#f1f5f9; color:#475569; border:1px solid #cbd5e1; padding:8px; border-radius:6px; font-weight:bold; font-size:12px; cursor:pointer;">
-                                🟢 Naya Item [F2 / Alt+N]
-                            </button>
-                        </div>
-
-                        <!-- Info Banner -->
-                        <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px; padding:6px 10px; margin-bottom:12px; font-size:11.5px; display:flex; justify-content:space-between;">
-                            <span>🏢 <strong>Godam:</strong> ${esc(godamName)}</span>
-                            <span style="color:#059669; font-weight:bold;">⚡ F2 = Switch | Enter = Save</span>
-                        </div>
-
-                        <!-- Date -->
-                        <div style="margin-bottom:10px;">
-                            <label style="font-size:12px; font-weight:700; color:#374151;">तारीख (Date):</label><br>
-                            <input type="date" id="exp-stock-date" value="${today}" style="width:100%; padding:8px; border:1px solid #cbd5e1; border-radius:6px; font-size:13px; margin-top:3px; box-sizing:border-box;">
-                        </div>
-
-                        <!-- 1. Purana Item Input (Datalist Autocomplete) -->
-                        <div id="box-purana-stock" style="margin-bottom:10px;">
-                            <label id="lbl-purana-item" style="font-size:12px; font-weight:700; color:#374151;">बाना का नाम (1-2 अक्षर लिखें):</label><br>
-                            <input type="text" id="exp-stock-select-input" list="exp-stock-datalist" placeholder="Type 1-2 letters to search..." autocomplete="off" style="width:100%; padding:9px 12px; border:1.5px solid #059669; border-radius:6px; font-size:14px; font-weight:bold; margin-top:3px; box-sizing:border-box;">
-                            <datalist id="exp-stock-datalist">
-                                ${banaOpts}
-                            </datalist>
-                            <div id="exp-stock-live-info" style="font-size:11px; color:#64748b; margin-top:3px;">1-2 letter likhenge to naam aa jayega</div>
-                        </div>
-
-                        <!-- 2. Naya Item Input -->
-                        <div id="box-naya-stock" style="display:none; margin-bottom:10px;">
-                            <label id="lbl-naya-item" style="font-size:12px; font-weight:700; color:#374151;">नए आइटम का पूरा नाम:</label><br>
-                            <input type="text" id="exp-stock-new-name" placeholder="Item ka pura naam likhein..." style="width:100%; padding:9px 12px; border:1.5px solid #10b981; border-radius:6px; font-size:14px; font-weight:bold; margin-top:3px; box-sizing:border-box;">
-                        </div>
-
-                        <!-- Sancha Special Fields -->
-                        <div id="box-sancha-options" style="display:none; background:#f0f9ff; border:1px solid #bae6fd; padding:10px; border-radius:8px; margin-bottom:10px;">
-                            <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:8px;">
-                                <label style="display:flex; align-items:center; gap:5px; font-size:12px; font-weight:bold; cursor:pointer;">
-                                    <input type="radio" name="exp_sancha_type" value="tani" checked onchange="setExpressSanchaCategory('tani')"> 🧵 Tani (ताना)
-                                </label>
-                                <label style="display:flex; align-items:center; gap:5px; font-size:12px; font-weight:bold; cursor:pointer;">
-                                    <input type="radio" name="exp_sancha_type" value="chukka" onchange="setExpressSanchaCategory('chukka')"> ⚙️ Chukka (चुक्का)
-                                </label>
-                            </div>
-                            <div>
-                                <label style="font-size:11px; font-weight:bold; color:#0369a1;">Kahan Se Aayi / Rangrej Ka Naam (Optional):</label>
-                                <input type="text" id="exp-sancha-person" placeholder="e.g. Guddu Rangrej / Store" style="width:100%; padding:7px; border:1px solid #cbd5e1; border-radius:6px; font-size:12px; margin-top:3px; box-sizing:border-box;">
-                            </div>
-                        </div>
-
-                        <!-- Wazan (Qty) -->
-                        <div style="margin-bottom:16px;">
-                            <label style="font-size:12px; font-weight:700; color:#374151;">कितना वज़न आया (Wazan Kg me):</label><br>
-                            <input type="number" step="0.01" id="exp-stock-qty" placeholder="0.00 Kg" style="width:100%; padding:10px; border:1.5px solid #059669; border-radius:6px; font-size:17px; font-weight:900; color:#059669; margin-top:3px; box-sizing:border-box;">
-                        </div>
-
-                        <!-- Submit Button -->
-                        <button type="button" id="exp-stock-submit-btn" onclick="submitMasterStockExpress()" style="background:#059669; color:#ffffff; border:none; width:100%; padding:12px; border-radius:6px; font-weight:bold; font-size:14px; cursor:pointer; box-shadow:0 3px 6px rgba(5,150,105,0.3);">
-                            💾 STOCK JAMA KAREIN [ ENTER ]
-                        </button>
-
-                    </div>
-                </div>
-            </div>`;
-
-        document.body.insertAdjacentHTML('beforeend', modalHtml);
-
-        // Bind global key listener
-        window.removeEventListener('keydown', handleStockExpressKeydown);
-        window.addEventListener('keydown', handleStockExpressKeydown);
-
-        setTimeout(() => {
-            const inp = document.getElementById('exp-stock-select-input');
-            if (inp) inp.focus();
-        }, 100);
-
-        const qtyInp = document.getElementById('exp-stock-qty');
-        if (qtyInp) {
-            qtyInp.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') {
-                    e.preventDefault();
-                    submitMasterStockExpress();
-                }
-            });
-        }
-
-        bindStockExpressLiveInfo();
-    };
-
-    const bindStockExpressLiveInfo = () => {
-        const selInp = document.getElementById('exp-stock-select-input');
-        if (!selInp) return;
-
-        selInp.addEventListener('input', () => {
-            const val = selInp.value.trim();
-            const infoEl = document.getElementById('exp-stock-live-info');
-            const targetKid = (window.currentBanaKarkhanaFilter !== 'all') ? window.currentBanaKarkhanaFilter : 'k_main';
-
-            if (!val) {
-                if (infoEl) infoEl.innerHTML = '1-2 letter likhenge to naam aa jayega';
-                return;
-            }
-
-            if (expressActiveCategory === 'bana' && typeof window.getBanaItemStats === 'function') {
-                const stats = window.getBanaItemStats(val, targetKid);
-                if (infoEl) infoEl.innerHTML = `Maujooda Bacha Bana: <strong style="color:#059669;">${safeNum(stats.bacha).toFixed(2)} Kg</strong>`;
-            } else if (expressActiveCategory === 'zari' && typeof window.getZariItemStats === 'function') {
-                const stats = window.getZariItemStats(val, targetKid);
-                if (infoEl) infoEl.innerHTML = `Maujooda Bachi Zari: <strong style="color:#ea580c;">${safeNum(stats.bacha).toFixed(2)} Kg</strong>`;
-            } else if (expressActiveCategory === 'sancha' && typeof window.getSanchaItemStats === 'function') {
-                const stats = window.getSanchaItemStats(null, val, expressSanchaCat, targetKid);
-                if (infoEl) infoEl.innerHTML = `Maujooda Bacha Sancha: <strong style="color:#0284c7;">${safeNum(stats.bacha).toFixed(2)} Kg</strong>`;
-            }
-        });
-    };
-
-    const switchExpressCategory = (cat) => {
-        expressActiveCategory = cat;
-        const tabB = document.getElementById('tab-cat-bana');
-        const tabZ = document.getElementById('tab-cat-zari');
-        const tabS = document.getElementById('tab-cat-sancha');
-        const boxSancha = document.getElementById('box-sancha-options');
-        const submitBtn = document.getElementById('exp-stock-submit-btn');
-        const selInp = document.getElementById('exp-stock-select-input');
-        const datalist = document.getElementById('exp-stock-datalist');
-
-        const { banaOpts, zariOpts, sanchaOpts } = getStockExpressDatalists();
-
-        if (cat === 'bana') {
-            if (tabB) { tabB.style.background = '#059669'; tabB.style.color = '#fff'; }
-            if (tabZ) { tabZ.style.background = '#e2e8f0'; tabZ.style.color = '#334155'; }
-            if (tabS) { tabS.style.background = '#e2e8f0'; tabS.style.color = '#334155'; }
-            if (boxSancha) boxSancha.style.display = 'none';
-            if (submitBtn) { submitBtn.style.background = '#059669'; }
-            if (datalist) datalist.innerHTML = banaOpts;
-            setText('lbl-purana-item', 'बाना का नाम (1-2 अक्षर लिखें):');
-            setText('lbl-naya-item', 'नए बाना का पूरा नाम:');
-        } else if (cat === 'zari') {
-            if (tabB) { tabB.style.background = '#e2e8f0'; tabB.style.color = '#334155'; }
-            if (tabZ) { tabZ.style.background = '#ea580c'; tabZ.style.color = '#fff'; }
-            if (tabS) { tabS.style.background = '#e2e8f0'; tabS.style.color = '#334155'; }
-            if (boxSancha) boxSancha.style.display = 'none';
-            if (submitBtn) { submitBtn.style.background = '#ea580c'; }
-            if (datalist) datalist.innerHTML = zariOpts;
-            setText('lbl-purana-item', 'जरी का नाम (1-2 अक्षर लिखें):');
-            setText('lbl-naya-item', 'नई जरी का पूरा नाम:');
-        } else if (cat === 'sancha') {
-            if (tabB) { tabB.style.background = '#e2e8f0'; tabB.style.color = '#334155'; }
-            if (tabZ) { tabZ.style.background = '#e2e8f0'; tabZ.style.color = '#334155'; }
-            if (tabS) { tabS.style.background = '#0284c7'; tabS.style.color = '#fff'; }
-            if (boxSancha) boxSancha.style.display = 'block';
-            if (submitBtn) { submitBtn.style.background = '#0284c7'; }
-            if (datalist) datalist.innerHTML = sanchaOpts;
-            setText('lbl-purana-item', 'साँचा/तानी का नाम (1-2 अक्षर लिखें):');
-            setText('lbl-naya-item', 'नई साँचा/तानी का पूरा नाम:');
-        }
-
-        if (selInp) {
-            selInp.value = '';
-            selInp.focus();
-        }
-        setText('exp-stock-live-info', '1-2 letter likhenge to naam aa jayega');
-    };
-
-    const setExpressStockMode = (mode) => {
-        expressStockMode = mode;
-        const btnP = document.getElementById('btn-sub-purana');
-        const btnN = document.getElementById('btn-sub-naya');
-        const boxP = document.getElementById('box-purana-stock');
-        const boxN = document.getElementById('box-naya-stock');
-
-        if (mode === 'purana') {
-            if (btnP) { btnP.style.background = '#1e3a8a'; btnP.style.color = '#fff'; }
-            if (btnN) { btnN.style.background = '#f1f5f9'; btnN.style.color = '#475569'; }
-            if (boxP) boxP.style.display = 'block';
-            if (boxN) boxN.style.display = 'none';
-
-            const inp = document.getElementById('exp-stock-select-input');
-            if (inp) inp.focus();
-        } else {
-            if (btnP) { btnP.style.background = '#f1f5f9'; btnP.style.color = '#475569'; }
-            if (btnN) { btnN.style.background = '#10b981'; btnN.style.color = '#fff'; }
-            if (boxP) boxP.style.display = 'none';
-            if (boxN) boxN.style.display = 'block';
-
-            const inp = document.getElementById('exp-stock-new-name');
-            if (inp) inp.focus();
-        }
-    };
-
-    const setExpressSanchaCategory = (cat) => {
-        expressSanchaCat = cat;
-    };
-
-    const closeStockExpressModal = () => {
-        window.removeEventListener('keydown', handleStockExpressKeydown);
-        const modal = document.getElementById('master-stock-express-modal');
-        if (modal) modal.remove();
-    };
-
-    const submitMasterStockExpress = () => {
-        const date = document.getElementById('exp-stock-date')?.value || getToday();
-        const isNew = (expressStockMode === 'naya');
-
-        const nameInp = isNew ? document.getElementById('exp-stock-new-name') : document.getElementById('exp-stock-select-input');
-        const name = String(nameInp?.value || '').trim();
-        const qty = safeNum(document.getElementById('exp-stock-qty')?.value);
-        const targetKid = (window.currentBanaKarkhanaFilter !== 'all') ? window.currentBanaKarkhanaFilter : 'k_main';
-
-        if (!name) {
-            alert('Item ka naam likhna zaroori hai!');
-            if (nameInp) nameInp.focus();
-            return;
-        }
-
-        if (qty <= 0) {
-            alert('Wazan (Qty Kg me) daaliye!');
-            const qInp = document.getElementById('exp-stock-qty');
-            if (qInp) qInp.focus();
-            return;
-        }
-
-        // ================= 1. BANA INWARD =================
-        if (expressActiveCategory === 'bana') {
-            const list = window.safeArray ? window.safeArray(window.getStore('bana_stock')) : [];
-            const item = list.find((x) => {
-                const matchKid = (!x.karkhanaId && targetKid === 'k_main') || String(x.karkhanaId) === String(targetKid);
-                return x?.name && x.name.toLowerCase() === name.toLowerCase() && matchKid;
-            });
-
-            if (item) {
-                item.aaya = safeNum((safeNum(item.aaya) + qty).toFixed(2));
-                item.bacha = safeNum((safeNum(item.aaya) - safeNum(item.gaya)).toFixed(2));
-                item.date = date;
-            } else {
-                list.push({
-                    id: `bana_${Date.now()}`,
-                    date, name, aaya: qty, gaya: 0, bacha: qty,
-                    karkhanaId: targetKid, timestamp: Date.now()
-                });
-            }
-            if (typeof window.setStore === 'function') window.setStore('bana_stock', list);
-
-            const hist = window.safeArray ? window.safeArray(window.getStore('bana_history')) : [];
-            hist.push({
-                id: `bhist_${Date.now()}`,
-                date, name,
-                kariger: 'Godown Purchase',
-                type: 'Khareed (Inward)',
-                aaya: qty, gaya: 0,
-                karkhanaId: targetKid,
-                timestamp: Date.now()
-            });
-            if (typeof window.setStore === 'function') window.setStore('bana_history', hist);
-
-            renderBanaTable();
-
-        // ================= 2. ZARI INWARD =================
-        } else if (expressActiveCategory === 'zari') {
-            const list = window.safeArray ? window.safeArray(window.getStore('zari_stock')) : [];
-            const item = list.find((x) => {
-                const matchKid = (!x.karkhanaId && targetKid === 'k_main') || String(x.karkhanaId) === String(targetKid);
-                return x?.name && x.name.toLowerCase() === name.toLowerCase() && matchKid;
-            });
-
-            if (item) {
-                item.aaya = safeNum((safeNum(item.aaya) + qty).toFixed(2));
-                item.bacha = safeNum((safeNum(item.aaya) - safeNum(item.gaya)).toFixed(2));
-                item.date = date;
-            } else {
-                list.push({
-                    id: `zari_${Date.now()}`,
-                    date, name, aaya: qty, gaya: 0, bacha: qty,
-                    karkhanaId: targetKid, timestamp: Date.now()
-                });
-            }
-            if (typeof window.setStore === 'function') window.setStore('zari_stock', list);
-
-            const hist = window.safeArray ? window.safeArray(window.getStore('zari_history')) : [];
-            hist.push({
-                id: `zhist_${Date.now()}`,
-                date, name,
-                kariger: 'Godown Purchase',
-                type: 'Khareed (Inward)',
-                aaya: qty, gaya: 0,
-                karkhanaId: targetKid,
-                timestamp: Date.now()
-            });
-            if (typeof window.setStore === 'function') window.setStore('zari_history', hist);
-
-            if (typeof window.renderZariTable === 'function') window.renderZariTable();
-
-        // ================= 3. SANCHA (TANI/CHUKKA) INWARD =================
-        } else if (expressActiveCategory === 'sancha') {
-            const person = String(document.getElementById('exp-sancha-person')?.value || '').trim();
-            const category = expressSanchaCat;
-            const list = window.safeArray ? window.safeArray(window.getStore('sancha_items')) : [];
-
-            const item = list.find((x) => {
-                const cat = x.category || 'tani';
-                const matchK = (!x.karkhanaId && targetKid === 'k_main') || String(x.karkhanaId) === String(targetKid);
-                return x?.name && x.name.toLowerCase() === name.toLowerCase() && cat.toLowerCase() === category.toLowerCase() && matchK;
-            });
-
-            if (item) {
-                item.aaya = safeNum((safeNum(item.aaya) + qty).toFixed(2));
-                item.bacha = safeNum((safeNum(item.aaya) - safeNum(item.gaya)).toFixed(2));
-                if (person) item.person = person;
-                item.date = date;
-            } else {
-                list.push({
-                    id: `sancha_${Date.now()}`,
-                    date, name, category,
-                    aaya: qty, gaya: 0, bacha: qty,
-                    person: person || '-',
-                    karkhanaId: targetKid,
-                    timestamp: Date.now()
-                });
-            }
-            if (typeof window.setStore === 'function') window.setStore('sancha_items', list);
-
-            const hist = window.safeArray ? window.safeArray(window.getStore('sancha_history')) : [];
-            hist.push({
-                id: `shist_${Date.now()}`,
-                date, name, category,
-                kariger: person || 'Factory Inward',
-                type: `Khareed / Inward (${category === 'tani' ? 'Tani' : 'Chukka'})`,
-                aaya: qty, gaya: 0,
-                karkhanaId: targetKid,
-                isOpening: false,
-                timestamp: Date.now()
-            });
-            if (typeof window.setStore === 'function') window.setStore('sancha_history', hist);
-
-            if (typeof window.renderSanchaTable === 'function') window.renderSanchaTable();
-        }
-
-        if (typeof window.updateDashboardBadgeTotals === 'function') window.updateDashboardBadgeTotals();
-
-        const qtyInp = document.getElementById('exp-stock-qty');
-        if (qtyInp) qtyInp.value = '';
-
-        if (nameInp) {
-            nameInp.value = '';
-            nameInp.focus();
-        }
-
-        const infoEl = document.getElementById('exp-stock-live-info');
-        const catName = expressActiveCategory === 'bana' ? 'Bana' : (expressActiveCategory === 'zari' ? 'Zari' : 'Sancha');
-        if (infoEl) {
-            infoEl.innerHTML = `<span style="color:#059669; font-weight:bold;">✅ ${catName} (+${qty.toFixed(2)} Kg) jama ho gaya! Agla item likhein:</span>`;
-        }
-    };
-
-    /* ========================================================================
-       5. INTER-GODOWN TRANSFER POPUP
+       4. INTER-GODOWN TRANSFER POPUP
        ------------------------------------------------------------------------
     ======================================================================== */
     const openBanaTransferModal = (safeName, availableBacha) => {
@@ -926,7 +437,7 @@
     };
 
     /* ========================================================================
-       6. 📱 PAGINATED BANA PASSBOOK ENGINE (WITH A6 PRINT)
+       5. 📱 PAGINATED BANA PASSBOOK ENGINE (WITH A6 PRINT)
        ------------------------------------------------------------------------
     ======================================================================== */
     const openBanaPassbook = (safeName) => {
@@ -1105,7 +616,7 @@
     };
 
     /* ========================================================================
-       7. A6 PAPER & THERMAL PRINTER PRINT ENGINES
+       6. A6 PAPER & THERMAL PRINTER PRINT ENGINES
        ------------------------------------------------------------------------
     ======================================================================== */
     const getKarkhanaPrintName = (kId) => {
@@ -1387,7 +898,7 @@
     };
 
     /* ========================================================================
-       8. DELETE & EDIT ENGINES
+       7. DELETE & EDIT ENGINES
        ------------------------------------------------------------------------
     ======================================================================== */
     const deleteBanaHistoryEntry = (histId) => {
@@ -1557,7 +1068,7 @@
     };
 
     /* ========================================================================
-       9. GLOBAL EXPORTS
+       8. GLOBAL EXPORTS
        ------------------------------------------------------------------------
     ======================================================================== */
     const banaUIAPI = {
@@ -1573,13 +1084,6 @@
         renderBanaTable,
         changeBanaStockPage,
         printBanaStockReport,
-        openStockExpressModal,
-        openBanaStockExpressModal: openStockExpressModal,
-        switchExpressCategory,
-        setExpressStockMode,
-        setExpressSanchaCategory,
-        closeStockExpressModal,
-        submitMasterStockExpress,
         openBanaTransferModal,
         closeBanaTransferModal,
         submitBanaTransferForm,
