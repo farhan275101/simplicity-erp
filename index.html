@@ -169,7 +169,7 @@
                 </div>
             </div>
 
-            <!-- DASHBOARD HOME VIEW -->
+            <!-- DASHBOARD HOME VIEW (CLEAN MENU GRID ONLY) -->
             <section id="dashboard-view">
                 <div id="dash-karkhana-tabs-bar" class="sheet-tabs-bar" style="margin-bottom:14px;"></div>
 
@@ -199,24 +199,37 @@
                         <span class="icon">🧵</span><span class="title">8. Job Work</span><span class="menu-badge" id="btn-total-jobwork" style="background:#ccfbf1; color:#0f766e;">Workers: 0</span>
                     </div>
 
-                    <!-- 9. KARIGER EXPRESS BUTTON (BAITHAK MODE) -->
+                    <!-- 9. KARIGER EXPRESS BUTTON -->
                     <div class="menu-btn" style="border-top:4px solid #ef4444;" onclick="openKarigerExpressModal()">
                         <span class="icon">⚡</span><span class="title">9. Kariger Express</span><span class="menu-badge" id="btn-total-kariger-express" style="background:#fee2e2; color:#b91c1c;">Baithak Mode</span>
                     </div>
+
+                    <!-- 10. STOCK EXPRESS BUTTON -->
+                    <div class="menu-btn" style="border-top:4px solid #10b981;" onclick="openStockExpressModal()">
+                        <span class="icon">⚡</span><span class="title">10. Stock Express</span><span class="menu-badge" style="background:#d1fae5; color:#047857;">Inward Mode</span>
+                    </div>
+
+                    <!-- 11. ROZANA DAY-BOOK MODULE BUTTON -->
+                    <div class="menu-btn" style="border-top:4px solid #1e3a8a;" onclick="openDayBookModule()">
+                        <span class="icon">📖</span><span class="title">11. Rozana Day-Book</span><span class="menu-badge" style="background:#e0e7ff; color:#1e3a8a;">Daily Register</span>
+                    </div>
                 </div>
 
-                <!-- ROZANA DAYBOOK CONTAINER -->
-                <div class="daybook-container">
-                    <div class="daybook-header">
-                        <div>
-                            <h3 style="color:#1e3a8a; font-size:18px; font-weight:800;">📖 Rozana Day-Book</h3>
-                            <p style="color:#64748b; font-size:13px;">Factory In/Out Register</p>
-                        </div>
-                        <div class="daily-controls">
-                            <input type="date" id="dash-day-date" onchange="renderDashboardDayBook()">
-                            <button type="button" class="today-btn" onclick="setDashboardToday()">📅 Aaj</button>
-                        </div>
+                <footer class="creator-footer" style="margin-top:30px;">Simplicity ERP • by <span>Farhan Jawed</span></footer>
+            </section>
+
+            <!-- MODULE: ROZANA DAY-BOOK (SEPARATE PAGE VIEW) -->
+            <section id="daybook-section" class="module-section" style="display:none;">
+                <div class="module-header">
+                    <button type="button" class="back-btn" onclick="backToDashboard()">← Dashboard</button>
+                    <h2 style="color:#1e3a8a; font-size:19px;">📖 Rozana Day-Book Register</h2>
+                    <div class="daily-controls" style="display:flex; gap:8px; align-items:center;">
+                        <input type="date" id="dash-day-date" onchange="renderDashboardDayBook()" style="padding:6px 10px; border-radius:6px; border:1px solid #cbd5e1; font-weight:bold;">
+                        <button type="button" class="today-btn" onclick="setDashboardToday()" style="padding:6px 12px; background:#1e3a8a; color:white; border:none; border-radius:6px; font-weight:bold; cursor:pointer;">📅 Aaj</button>
                     </div>
+                </div>
+
+                <div class="daybook-container" style="background:transparent; padding:0; box-shadow:none; border:none; margin-top:10px;">
                     <div class="daybook-btn-grid">
                         <button type="button" class="daybook-tab-btn active" id="btn-tab-bana" onclick="switchDayBookTab('bana')"><span class="day-icon">🧶</span><div><div class="day-title">Bana</div><div class="day-sub" id="sub-day-bana">-</div></div></button>
                         <button type="button" class="daybook-tab-btn" id="btn-tab-zari" onclick="switchDayBookTab('zari')"><span class="day-icon">✨</span><div><div class="day-title">Zari</div><div class="day-sub" id="sub-day-zari">-</div></div></button>
@@ -232,7 +245,6 @@
                         </table>
                     </div>
                 </div>
-                <footer class="creator-footer">Simplicity ERP • by <span>Farhan Jawed</span></footer>
             </section>
 
             <!-- MODULE 1: KARIGER MASTER -->
@@ -303,7 +315,7 @@
                     <div><label>Zari Waste</label><input type="number" step="0.01" id="waste-zari-input" onchange="saveCurrentSheetConfig()"></div>
                 </div>
 
-                <!-- 📦 ITEM SELECTION (WITH SAREE PCS & MOBILE-RESPONSIVE 8 COLORS) -->
+                <!-- 📦 ITEM SELECTION (WITH SAREE PCS & RESPONSIVE 8 COLORS) -->
                 <div style="background:#f1f5f9; border:1px solid #cbd5e1; padding:12px; border-radius:10px; margin-bottom:14px;">
                     <div style="font-weight:800; color:#1e293b; margin-bottom:10px;">📦 Item Selection:</div>
                     
@@ -1106,8 +1118,9 @@
     <script src="admin/admin.js?v=3.0"></script>
     <script src="backup/backup.js?v=3.0"></script>
 
-    <!-- ⚡ KARIGER EXPRESS MODULE SCRIPT -->
+    <!-- ⚡ EXPRESS MODULES -->
     <script src="kariger-express/kariger-express.js?v=3.0"></script>
+    <script src="stock-express/stock-express.js?v=3.0"></script>
 
     <!-- 5. APPLICATION INITIALIZER -->
     <script>
@@ -1146,6 +1159,22 @@
                 });
             }
         }
+
+        // 📖 ROZANA DAY-BOOK MODULE OPENER
+        window.openDayBookModule = function() {
+            if (typeof window.hideAllSections === "function") {
+                window.hideAllSections();
+            } else {
+                document.querySelectorAll(".module-section").forEach(s => s.style.display = "none");
+                const dView = document.getElementById("dashboard-view");
+                if (dView) dView.style.display = "none";
+            }
+            const dbSec = document.getElementById("daybook-section");
+            if (dbSec) dbSec.style.display = "block";
+            if (typeof window.renderDashboardDayBook === "function") {
+                window.renderDashboardDayBook();
+            }
+        };
 
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
