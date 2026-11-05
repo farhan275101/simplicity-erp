@@ -1,17 +1,12 @@
 /* ============================================================================
    SIMPLICITY ERP - 5-STAGE ENTERPRISE BULLETPROOF YEAR CLOSING ENGINE
    File: session/session-closing.js • Developed by Farhan Jawed
-   Architecture: Multi-Godam Isolated Opening | Zero-Collapse Ledger Pipeline
-   [FIXED: Case-Insensitive Deduplication, Tani 72 Pcs & 8 Colors Carry Forward]
+   Architecture: Zero-Item-Drop Consolidated Stock Shield | Multi-Godam Safe
 ============================================================================ */
 
 (() => {
     'use strict';
 
-    /* ========================================================================
-       1. CONSTANTS, PAYLOAD BOUNDS & PERFORMANCE CONFIGURATION
-       ------------------------------------------------------------------------
-    ======================================================================== */
     const STAGE1_KARIGER_CHUNK_SIZE = 25;
     const STAGE5_KARIGER_COMMIT_BATCH = 15;
     const UI_THREAD_YIELD_MS = 16;
@@ -46,12 +41,9 @@
                 if (clean && clean !== 'app') return clean;
             }
         } catch (_) {}
-        return 'farhan'; // Master Admin safe fallback
+        return 'farhan';
     };
 
-    /**
-     * Case-Insensitive Deduplicator (Prevents 2x Double Counting)
-     */
     const getUniqueItemNamesCaseInsensitive = (list) => {
         const map = new Map();
         list.forEach((it) => {
@@ -63,10 +55,6 @@
         return Array.from(map.values());
     };
 
-    /* ========================================================================
-       2. QUOTA-SAFE STORAGE HELPERS
-       ------------------------------------------------------------------------
-    ======================================================================== */
     const pruneHistoricalSessionCaches = (uId, currentSess, targetNewSess) => {
         try {
             const keysToEvict = [];
@@ -96,16 +84,10 @@
             pruneHistoricalSessionCaches(uId, curSess, newSess);
             try {
                 localStorage.setItem(key, payloadStr);
-            } catch (_) {
-                console.warn(`[SessionClosing] LocalStorage full. Delegating ${key} to IndexedDB.`);
-            }
+            } catch (_) {}
         }
     };
 
-    /* ========================================================================
-       3. PROGRESS UI HELPERS
-       ------------------------------------------------------------------------
-    ======================================================================== */
     const updateProgressUI = (stageNum, statusText, pct, mainPct, isCompleted = false) => {
         const bar = document.getElementById(`stage-bar-${stageNum}`);
         const status = document.getElementById(`stage-status-${stageNum}`);
@@ -147,10 +129,6 @@
         stage4_newJwSheetsMap: {}
     });
 
-    /* ========================================================================
-       4. MAIN EXECUTION PIPELINE
-       ------------------------------------------------------------------------
-    ======================================================================== */
     const startSequentialYearClosing = async () => {
         if (isClosingInProgress) return;
 
@@ -158,7 +136,7 @@
         const newSessEl = document.getElementById('session-new-input');
         const newSess = String(newSessEl?.value || '').trim();
 
-        if (!newSess) return alert('Naye Saal ka naam daalein! (Jaise: 2027-2028)');
+        if (!newSess) return alert('Naye Saal ka naam daalein! (Jaise: 2029-2030)');
         if (newSess === curSess) return alert('Naya session purane se alag hona chahiye!');
 
         const sessions = window.getAppSessions ? window.getAppSessions() : [];
@@ -191,11 +169,11 @@
                 <div style="background:#e2e8f0; height:10px; margin-bottom:14px; border-radius:5px; overflow:hidden;">
                     <div id="transfer-main-bar" style="background:#2563eb; width:0%; height:100%; transition:width 0.2s;"></div>
                 </div>
-                <div><span id="stage-badge-1" class="badge-blue">Waiting</span> <small id="stage-status-1">1. Kariger Opening Carry-Forward (With 72 Pcs & Colors)</small><div style="background:#e2e8f0; height:4px; margin-top:4px;"><div id="stage-bar-1" style="background:#2563eb; width:0%; height:100%;"></div></div></div>
-                <div style="margin-top:10px;"><span id="stage-badge-2" class="badge-blue">Waiting</span> <small id="stage-status-2">2. Saree Multi-Godam Opening Stock</small><div style="background:#e2e8f0; height:4px; margin-top:4px;"><div id="stage-bar-2" style="background:#2563eb; width:0%; height:100%;"></div></div></div>
-                <div style="margin-top:10px;"><span id="stage-badge-3" class="badge-blue">Waiting</span> <small id="stage-status-3">3. Bana & Zari Multi-Godam Opening (Accurate Math)</small><div style="background:#e2e8f0; height:4px; margin-top:4px;"><div id="stage-bar-3" style="background:#2563eb; width:0%; height:100%;"></div></div></div>
-                <div style="margin-top:10px;"><span id="stage-badge-4" class="badge-blue">Waiting</span> <small id="stage-status-4">4. Sancha (Tani/Chukka) Multi-Godam Opening</small><div style="background:#e2e8f0; height:4px; margin-top:4px;"><div id="stage-bar-4" style="background:#2563eb; width:0%; height:100%;"></div></div></div>
-                <div style="margin-top:10px;"><span id="stage-badge-5" class="badge-blue">Waiting</span> <small id="stage-status-5">5. Safe Micro-Batch Cloud Commit</small><div style="background:#e2e8f0; height:4px; margin-top:4px;"><div id="stage-bar-5" style="background:#2563eb; width:0%; height:100%;"></div></div></div>`;
+                <div><span id="stage-badge-1" class="badge-blue">Waiting</span> <small id="stage-status-1">1. Kariger Opening (72 Pcs & Colors)</small><div style="background:#e2e8f0; height:4px; margin-top:4px;"><div id="stage-bar-1" style="background:#2563eb; width:0%; height:100%;"></div></div></div>
+                <div style="margin-top:10px;"><span id="stage-badge-2" class="badge-blue">Waiting</span> <small id="stage-status-2">2. Saree Opening Stock</small><div style="background:#e2e8f0; height:4px; margin-top:4px;"><div id="stage-bar-2" style="background:#2563eb; width:0%; height:100%;"></div></div></div>
+                <div style="margin-top:10px;"><span id="stage-badge-3" class="badge-blue">Waiting</span> <small id="stage-status-3">3. Bana & Zari Zero-Drop Transfer</small><div style="background:#e2e8f0; height:4px; margin-top:4px;"><div id="stage-bar-3" style="background:#2563eb; width:0%; height:100%;"></div></div></div>
+                <div style="margin-top:10px;"><span id="stage-badge-4" class="badge-blue">Waiting</span> <small id="stage-status-4">4. Sancha (Tani/Chukka) Stock Transfer</small><div style="background:#e2e8f0; height:4px; margin-top:4px;"><div id="stage-bar-4" style="background:#2563eb; width:0%; height:100%;"></div></div></div>
+                <div style="margin-top:10px;"><span id="stage-badge-5" class="badge-blue">Waiting</span> <small id="stage-status-5">5. Safe Cloud Commit</small><div style="background:#e2e8f0; height:4px; margin-top:4px;"><div id="stage-bar-5" style="background:#2563eb; width:0%; height:100%;"></div></div></div>`;
         }
 
         modal.style.display = 'flex';
@@ -208,7 +186,7 @@
             await runStage4_SanchaAndJobworkAsync(curSess, newSess);
             await runStage5_FinalizeCommitAsync(curSess, newSess, uId);
         } catch (pipelineErr) {
-            console.error('[SessionClosing] Fatal pipeline error:', pipelineErr);
+            console.error('[SessionClosing] Pipeline error:', pipelineErr);
             alert(`Year closing me takleef aayi: ${pipelineErr.message || pipelineErr}`);
         } finally {
             isClosingInProgress = false;
@@ -216,9 +194,8 @@
     };
 
     /* ========================================================================
-       STAGE 1: KARIGER KHATA (With Tani 72 Pcs & 8 Colors Carry Forward)
-       ------------------------------------------------------------------------
-    ======================================================================== */
+       STAGE 1: KARIGER KHATA (Tani 72 Pcs & 8 Colors Carry Forward)
+       ======================================================================== */
     const runStage1_KarigersAsync = async (curSess, newSess) => {
         const rawKarigers = window.safeArray 
             ? window.safeArray(window.getStore('kariger_list')) 
@@ -245,7 +222,6 @@
                 const remZari = safeNum(calc.remainingZari);
                 const remAmt = safeNum(calc.remainingAmt);
 
-                // 🌟 Tani Pcs & 8 Colors Carry Forward
                 const taniPcs = lastSheet ? safeNum(lastSheet.taniPcs, 72) : 72;
                 const chukkaPcs = lastSheet ? safeNum(lastSheet.chukkaPcs, 72) : 72;
                 const colors = (lastSheet && Array.isArray(lastSheet.colors)) ? [...lastSheet.colors] : [];
@@ -276,7 +252,7 @@
             }
 
             const pct = total > 0 ? Math.floor((end / total) * 100) : 100;
-            updateProgressUI(1, `⏳ ${end} / ${total} Kariger Done (${pct}%)`, pct, Math.floor(pct * 0.20));
+            updateProgressUI(1, `⏳ ${end} / ${total} Karigers Done`, pct, Math.floor(pct * 0.20));
             await yieldThread();
         }
 
@@ -285,9 +261,8 @@
     };
 
     /* ========================================================================
-       STAGE 2: SAREE STOCK (Multi-Godam Isolated Opening Stock)
-       ------------------------------------------------------------------------
-    ======================================================================== */
+       STAGE 2: SAREE STOCK
+       ======================================================================== */
     const runStage2_SareeStockAsync = async (curSess, newSess) => {
         const rawHistory = window.safeArray 
             ? window.safeArray(window.getStore('saree_history')) 
@@ -350,14 +325,13 @@
             }
         }
 
-        updateProgressUI(2, `✅ Fresh: ${pipelineState.stage2_totFreshPcs} | Finished: ${pipelineState.stage2_totFinPcs} Pcs (Multi-Godam)`, 100, 40, true);
+        updateProgressUI(2, `✅ Saree Stock Ready (${pipelineState.stage2_totFreshPcs} Pcs)`, 100, 40, true);
         await yieldThread(50);
     };
 
     /* ========================================================================
-       STAGE 3: BANA & ZARI STOCK (Case-Insensitive & Multi-Godam Accurate)
-       ------------------------------------------------------------------------
-    ======================================================================== */
+       STAGE 3: BANA & ZARI STOCK (ZERO-ITEM-DROP SHIELD)
+       ======================================================================== */
     const runStage3_BanaZariStockAsync = async (curSess, newSess) => {
         let karkhanas = (typeof window.getKarkhanasSafe === 'function') 
             ? window.getKarkhanasSafe() 
@@ -367,12 +341,15 @@
         const todayStr = (typeof window.getTodayDate === 'function') ? window.getTodayDate() : '';
         let bSeq = 0, zSeq = 0;
 
-        // 1. Bana Stock Scanning (Stock + History Combined to Prevent Any Item Drop)
+        // 1. BANA SCANNING (Combines All Items: karishma, abcs, copper etc.)
         const rawBana = window.safeArray ? window.safeArray(window.getStore('bana_stock')) : [];
         const rawBHist = window.safeArray ? window.safeArray(window.getStore('bana_history')) : [];
         const uniqueBanaNames = getUniqueItemNamesCaseInsensitive([...rawBana, ...rawBHist]);
 
         for (const bName of uniqueBanaNames) {
+            let itemTransferred = false;
+
+            // Step A: Branch-wise Transfer
             for (const k of karkhanas) {
                 const statsK = (typeof window.getBanaItemStats === 'function') 
                     ? window.getBanaItemStats(bName, k.id) 
@@ -380,6 +357,7 @@
                 const bachaVal = Math.max(0, safeNum(statsK.bacha));
 
                 if (bachaVal > 0) {
+                    itemTransferred = true;
                     const uniqueId = `bana_open_${Date.now()}_${++bSeq}`;
                     pipelineState.stage3_newBanaStock.push({
                         id: uniqueId,
@@ -407,15 +385,53 @@
                     });
                 }
             }
+
+            // Step B: 🛡️ ZERO-DROP SAFETY SHIELD: Agar branch check me item chhoot gaya tha, toh 'all' total se Main Godown me pakka le aao!
+            if (!itemTransferred) {
+                const statsAll = (typeof window.getBanaItemStats === 'function') 
+                    ? window.getBanaItemStats(bName, 'all') 
+                    : { bacha: 0 };
+                const bachaAll = Math.max(0, safeNum(statsAll.bacha));
+
+                if (bachaAll > 0) {
+                    const uniqueId = `bana_open_${Date.now()}_${++bSeq}`;
+                    pipelineState.stage3_newBanaStock.push({
+                        id: uniqueId,
+                        name: bName,
+                        date: todayStr,
+                        aaya: bachaAll,
+                        openingAaya: bachaAll,
+                        gaya: 0,
+                        bacha: bachaAll,
+                        karkhanaId: 'k_main',
+                        isOpening: true,
+                        note: `📦 Opening Stock (${curSess} Se Aaya)`
+                    });
+
+                    pipelineState.stage3_newBanaHistory.push({
+                        id: `bhist_open_${Date.now()}_${bSeq}`,
+                        date: todayStr,
+                        name: bName,
+                        kariger: '📦 Pichla Bacha Stock',
+                        type: `📦 Opening Stock (${curSess} Se Aaya)`,
+                        aaya: bachaAll,
+                        gaya: 0,
+                        karkhanaId: 'k_main',
+                        isOpening: true
+                    });
+                }
+            }
             await yieldThread();
         }
 
-        // 2. Zari Stock Scanning (Stock + History Combined)
+        // 2. ZARI SCANNING (Combines All Items with Safety Shield)
         const rawZari = window.safeArray ? window.safeArray(window.getStore('zari_stock')) : [];
         const rawZHist = window.safeArray ? window.safeArray(window.getStore('zari_history')) : [];
         const uniqueZariNames = getUniqueItemNamesCaseInsensitive([...rawZari, ...rawZHist]);
 
         for (const zName of uniqueZariNames) {
+            let zariTransferred = false;
+
             for (const k of karkhanas) {
                 const statsZK = (typeof window.getZariItemStats === 'function') 
                     ? window.getZariItemStats(zName, k.id) 
@@ -423,6 +439,7 @@
                 const bachaValZ = Math.max(0, safeNum(statsZK.bacha));
 
                 if (bachaValZ > 0) {
+                    zariTransferred = true;
                     pipelineState.stage3_newZariStock.push({
                         id: `zari_open_${Date.now()}_${++zSeq}`,
                         name: zName,
@@ -449,17 +466,50 @@
                     });
                 }
             }
+
+            if (!zariTransferred) {
+                const statsZAll = (typeof window.getZariItemStats === 'function') 
+                    ? window.getZariItemStats(zName, 'all') 
+                    : { bacha: 0 };
+                const bachaZAll = Math.max(0, safeNum(statsZAll.bacha));
+
+                if (bachaZAll > 0) {
+                    pipelineState.stage3_newZariStock.push({
+                        id: `zari_open_${Date.now()}_${++zSeq}`,
+                        name: zName,
+                        date: todayStr,
+                        aaya: bachaZAll,
+                        openingAaya: bachaZAll,
+                        gaya: 0,
+                        bacha: bachaZAll,
+                        karkhanaId: 'k_main',
+                        isOpening: true,
+                        note: `📦 Opening Stock (${curSess} Se Aaya)`
+                    });
+
+                    pipelineState.stage3_newZariHistory.push({
+                        id: `zhist_open_${Date.now()}_${zSeq}`,
+                        date: todayStr,
+                        name: zName,
+                        kariger: '📦 Pichla Bacha Stock',
+                        type: `📦 Opening Stock (${curSess} Se Aaya)`,
+                        aaya: bachaZAll,
+                        gaya: 0,
+                        karkhanaId: 'k_main',
+                        isOpening: true
+                    });
+                }
+            }
             await yieldThread();
         }
 
-        updateProgressUI(3, '✅ Bana & Zari Multi-Godam Opening Ready', 100, 60, true);
+        updateProgressUI(3, `✅ Bana (${uniqueBanaNames.length} Items) & Zari (${uniqueZariNames.length} Items) Ready`, 100, 60, true);
         await yieldThread(50);
     };
 
     /* ========================================================================
-       STAGE 4: SANCHA (Tani & Chukka) MULTI-GODAM ISOLATED OPENING
-       ------------------------------------------------------------------------
-    ======================================================================== */
+       STAGE 4: SANCHA (TANI & CHUKKA)
+       ======================================================================== */
     const runStage4_SanchaAndJobworkAsync = async (curSess, newSess) => {
         let karkhanas = (typeof window.getKarkhanasSafe === 'function') 
             ? window.getKarkhanasSafe() 
@@ -478,6 +528,8 @@
             const uniqueNames = getUniqueItemNamesCaseInsensitive([...catItems, ...catHist]);
 
             for (const sName of uniqueNames) {
+                let sanchaTransferred = false;
+
                 for (const k of karkhanas) {
                     const stats = (typeof window.getSanchaItemStats === 'function')
                         ? window.getSanchaItemStats(null, sName, cat, k.id)
@@ -486,6 +538,7 @@
                     const bachaVal = Math.max(0, safeNum(stats.bacha));
 
                     if (bachaVal > 0) {
+                        sanchaTransferred = true;
                         const sId = `sancha_open_${cat}_${Date.now()}_${++sSeq}`;
 
                         pipelineState.stage4_newSanchaItems.push({
@@ -516,11 +569,47 @@
                         });
                     }
                 }
+
+                if (!sanchaTransferred) {
+                    const statsAll = (typeof window.getSanchaItemStats === 'function')
+                        ? window.getSanchaItemStats(null, sName, cat, 'all')
+                        : { bacha: 0 };
+                    const bachaAll = Math.max(0, safeNum(statsAll.bacha));
+
+                    if (bachAll > 0) {
+                        const sId = `sancha_open_${cat}_${Date.now()}_${++sSeq}`;
+                        pipelineState.stage4_newSanchaItems.push({
+                            id: sId,
+                            name: sName,
+                            category: cat,
+                            aaya: bachaAll,
+                            openingAaya: bachaAll,
+                            gaya: 0,
+                            bacha: bachaAll,
+                            date: todayStr,
+                            karkhanaId: 'k_main',
+                            isOpening: true,
+                            note: `📦 Opening Stock (${curSess} Se Aaya)`
+                        });
+
+                        pipelineState.stage4_newSanchaHistory.push({
+                            id: `shist_open_${cat}_${Date.now()}_${sSeq}`,
+                            date: todayStr,
+                            name: sName,
+                            category: cat,
+                            kariger: '📦 Pichla Bacha Stock',
+                            type: `📦 Opening Stock (${curSess} Se Aaya)`,
+                            aaya: bachaAll,
+                            gaya: 0,
+                            karkhanaId: 'k_main',
+                            isOpening: true
+                        });
+                    }
+                }
                 await yieldThread();
             }
         }
 
-        // Job Work Workers carry forward
         const rawWorkers = window.safeArray ? window.safeArray(window.getStore('jobwork_workers')) : [];
         pipelineState.stage4_oldJwWorkers = rawWorkers;
 
@@ -544,14 +633,13 @@
             await yieldThread();
         }
 
-        updateProgressUI(4, '✅ Sancha (Teeno Godam Alag-Alag) Opening Ready', 100, 80, true);
+        updateProgressUI(4, '✅ Sancha Stock Ready', 100, 80, true);
         await yieldThread(50);
     };
 
     /* ========================================================================
-       STAGE 5: ATOMIC COMMIT & DISPATCH (Clean Isolation)
-       ------------------------------------------------------------------------
-    ======================================================================== */
+       STAGE 5: ATOMIC COMMIT
+       ======================================================================== */
     const runStage5_FinalizeCommitAsync = async (curSess, newSess, uId) => {
         updateProgressUI(5, '⏳ Storing Core Data...', 10, 82);
 
@@ -578,7 +666,6 @@
             safeSetLocalStorage(fullKey, data, uId, curSess, newSess);
         };
 
-        // Write Core Collections (Opening Stock + History Ledgers fully intact)
         persistGeneralStore('kariger_list', pipelineState.stage1_oldKarigers);
         persistGeneralStore('saree_stock', pipelineState.stage2_newSareeStock);
         persistGeneralStore('saree_history', pipelineState.stage2_newSareeHistory);
@@ -594,7 +681,7 @@
             persistGeneralStore(`jobwork_sheets_${wId}`, pipelineState.stage4_newJwSheetsMap[wId]);
         }
 
-        persistGeneralStore('material_transfers', []); // Naye saal me transfers clean shuru honge
+        persistGeneralStore('material_transfers', []);
         persistGeneralStore('jw_bills_list', []);
         persistGeneralStore('jw_payments_list', []);
         persistGeneralStore('dukan_transfer_history', []);
@@ -602,7 +689,6 @@
         persistGeneralStore('payment_records', []);
         persistGeneralStore('dukan_records', []);
 
-        // Cloud Base Commit
         if (typeof window.db !== 'undefined' && window.db && uId) {
             try {
                 const baseBatch = {
@@ -637,7 +723,6 @@
             }
         }
 
-        // Kariger Sheets Micro-Batch Commit
         const karigerKeys = Object.keys(pipelineState.stage1_newKarigerSheetsMap);
         const totalKarigers = karigerKeys.length;
 
@@ -675,9 +760,8 @@
     };
 
     /* ========================================================================
-       5. CELEBRATION & STARTUP
-       ------------------------------------------------------------------------
-    ======================================================================== */
+       CELEBRATION & STARTUP
+       ======================================================================== */
     const showClosingCelebrationScreen = (newSess) => {
         const modal = document.getElementById('session-transfer-modal');
         if (!modal) return;
@@ -703,7 +787,6 @@
                     <div>⚙️ <strong>Sancha Stock:</strong> ${sanchaCount} Items (Multi-Godam)</div>
                     <div>✂️ <strong>Job Work Khata:</strong> Carry Forwarded</div>
                 </div>
-                <p style="font-size:12px; color:#64748b; margin-bottom:15px;">* Sabhi godamon (Main, Bahadurganj, Mubarakpur) ka bacha hua maal unhi ke godam me alag-alag Opening Stock ban chuka hai.</p>
                 <button type="button" class="btn" style="background:linear-gradient(135deg, #10b981, #059669); font-size:15px; font-weight:bold; padding:12px 24px; border-radius:8px; border:none; color:#ffffff; cursor:pointer;" onclick="completeNewSessionStartup('${newSess}')">🚀 Naye Saal Me Kaam Shuru Karein</button>
             </div>`;
 
@@ -743,10 +826,6 @@
         window.location.reload();
     };
 
-    /* ========================================================================
-       6. GLOBAL EXPORT
-       ------------------------------------------------------------------------
-    ======================================================================== */
     const sessionClosingAPI = {
         startSequentialYearClosing,
         completeNewSessionStartup,
