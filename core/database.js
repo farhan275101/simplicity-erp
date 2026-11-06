@@ -1,7 +1,7 @@
 /* ============================================================================
-   SIMPLICITY ERP - ENTERPRISE SUPABASE CLOUD & REALTIME SYNC ENGINE (FIXED)
+   SIMPLICITY ERP - ENTERPRISE SUPABASE CLOUD & DUAL-LAYER REALTIME ENGINE
    File: core/database.js • Developed by Farhan Jawed
-   Architecture: 100% 404-Proof Supabase PostgreSQL Dedicated Router
+   Architecture: Postgres Changes + Instant Live Broadcast (<50ms Auto-Sync)
 ============================================================================ */
 
 (() => {
@@ -23,11 +23,9 @@
             supabaseClient = window.supabase.createClient(SUPABASE_CONFIG.url, SUPABASE_CONFIG.anonKey);
             window.supabaseClient = supabaseClient;
             console.log('✅ [CloudEngine] Supabase Realtime Engine Initialized.');
-        } else {
-            console.warn('⚠️ [CloudEngine] Supabase JS SDK not detected.');
         }
     } catch (initErr) {
-        console.error('❌ [CloudEngine] Supabase Initialization failure:', initErr);
+        console.error('❌ [CloudEngine] Supabase Init failure:', initErr);
     }
 
     const getSafeUserId = () => {
@@ -59,9 +57,6 @@
         return '2026-2027';
     };
 
-    /**
-     * 🎯 SMART TABLE ROUTER:
-     */
     const resolveTargetTable = (fullKey) => {
         const k = String(fullKey).toLowerCase();
 
@@ -166,11 +161,11 @@
             if (typeof window.triggerActiveSectionRefresh === 'function') {
                 window.triggerActiveSectionRefresh();
             }
-        }, 50);
+        }, 30);
     };
 
     /**
-     * 🚀 CLOUD WRITE
+     * 🚀 CLOUD WRITE (Database Save + Instant WebSocket Broadcast)
      */
     const cloudWrite = async (fullKey, data) => {
         if (!supabaseClient) return false;
@@ -189,12 +184,21 @@
                 updated_at: new Date().toISOString()
             };
 
+            // 1. Instant WebSocket Broadcast (Doosre device ko 50ms me bhej do)
+            if (realtimeChannel) {
+                realtimeChannel.send({
+                    type: 'broadcast',
+                    event: 'erp_live_data_sync',
+                    payload: { key: String(fullKey), data: data, user_id: uid }
+                }).catch(() => {});
+            }
+
+            // 2. Database me save karo
             const { error } = await supabaseClient
                 .from(targetTable)
                 .upsert(payload, { onConflict: 'id' });
 
             if (error) {
-                // Secondary retry without extra columns
                 const { error: retryError } = await supabaseClient
                     .from(targetTable)
                     .upsert({ id: String(fullKey), data: data }, { onConflict: 'id' });
@@ -204,7 +208,6 @@
 
             isConnectedToCloud = true;
             showSyncStatus('online');
-            console.log(`✅ [Supabase] Saved in ${targetTable}: ${fullKey}`);
             return true;
         } catch (err) {
             console.error(`❌ [Supabase] cloudWrite failed on ${targetTable}:`, err);
@@ -214,7 +217,7 @@
     };
 
     /**
-     * 📥 100% SAFE CLOUD PULL (No 404, No Special Characters in URL)
+     * 📥 CLOUD PULL
      */
     const pullAllCloudData = async () => {
         if (!supabaseClient || !navigator.onLine) return;
@@ -228,7 +231,6 @@
 
         for (const tbl of tables) {
             try {
-                // Safe query: Sirf user_id match karega, URL me koi % symbol nahi jayega
                 const { data, error } = await supabaseClient
                     .from(tbl)
                     .select('*')
@@ -250,34 +252,53 @@
     };
 
     /**
-     * ⚡ REALTIME LISTENER
+     * ⚡ DUAL REALTIME LISTENER (Broadcast + Postgres Changes)
      */
     const initSupabaseRealtime = () => {
         if (!supabaseClient) return;
         detachSupabaseRealtime();
 
+        const uid = getSafeUserId();
+
         try {
-            realtimeChannel = supabaseClient.channel('public_db_realtime')
-                .on(
-                    'postgres_changes',
-                    { event: '*', schema: 'public' },
-                    (payload) => {
-                        if (typeof window.isBackupPreviewMode !== 'undefined' && window.isBackupPreviewMode) return;
-                        const row = payload.new;
-                        if (row && row.id && typeof window.setRemoteStore === 'function') {
-                            const rowData = row.data !== undefined ? row.data : row;
-                            window.setRemoteStore(row.id, rowData);
-                        }
+            realtimeChannel = supabaseClient.channel('erp_global_live_room', {
+                config: { broadcast: { self: false } }
+            })
+            // ⚡ A. Instant Live Broadcast Listener (<50ms auto-update)
+            .on(
+                'broadcast',
+                { event: 'erp_live_data_sync' },
+                (eventPayload) => {
+                    if (typeof window.isBackupPreviewMode !== 'undefined' && window.isBackupPreviewMode) return;
+                    const p = eventPayload.payload;
+                    if (p && p.key && p.user_id === uid && typeof window.setRemoteStore === 'function') {
+                        window.setRemoteStore(p.key, p.data);
                         triggerSmartUIRepaint();
                         showSyncStatus('online');
                     }
-                )
-                .subscribe((status) => {
-                    if (status === 'SUBSCRIBED') {
-                        isConnectedToCloud = true;
-                        showSyncStatus('online');
+                }
+            )
+            // ⚡ B. Postgres Database Change Listener
+            .on(
+                'postgres_changes',
+                { event: '*', schema: 'public' },
+                (payload) => {
+                    if (typeof window.isBackupPreviewMode !== 'undefined' && window.isBackupPreviewMode) return;
+                    const row = payload.new;
+                    if (row && row.id && typeof window.setRemoteStore === 'function') {
+                        const rowData = row.data !== undefined ? row.data : row;
+                        window.setRemoteStore(row.id, rowData);
                     }
-                });
+                    triggerSmartUIRepaint();
+                    showSyncStatus('online');
+                }
+            )
+            .subscribe((status) => {
+                if (status === 'SUBSCRIBED') {
+                    isConnectedToCloud = true;
+                    showSyncStatus('online');
+                }
+            });
 
             pullAllCloudData();
         } catch (err) {
