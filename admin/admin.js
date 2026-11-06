@@ -1,10 +1,15 @@
 /* ========================================================
    SIMPLICITY ERP - LIVE ADMIN CONTROL & REALTIME USER APPROVAL
    File: admin/admin.js • Developed by Farhan Jawed
+   Architecture: Supabase PostgreSQL Realtime Engine
 ======================================================== */
 
 window.adminUsersData = [];
-var fbUsersListenerAttached = false;
+var supabaseAdminChannel = null;
+
+const getSupabaseAdmin = () => {
+    return window.supabaseClient || window.supabase || (typeof window.supabase !== 'undefined' ? window.supabase : null);
+};
 
 // 👑 1. ADMIN PANEL OPEN
 function openAdminModule() {
@@ -16,43 +21,62 @@ function openAdminModule() {
     }
 
     if (typeof hideAllSections === "function") hideAllSections();
-    setDisplay("admin-section", "block");
+    if (typeof setDisplay === "function") {
+        setDisplay("admin-section", "block");
+    } else {
+        var el = document.getElementById("admin-section");
+        if (el) el.style.display = "block";
+    }
 
     renderAdminUsersTable();
     fetchAndListenAdminUsers();
 }
 
-// 🌐 2. FIREBASE REALTIME LISTENER
-function fetchAndListenAdminUsers(callback) {
-    if (typeof db === "undefined" || !db) {
-        if (typeof callback === "function") callback(false, "Firebase DB not connected");
+// 🌐 2. SUPABASE REALTIME LISTENER & FETCH
+async function fetchAndListenAdminUsers(callback) {
+    var sb = getSupabaseAdmin();
+    if (!sb) {
+        if (typeof callback === "function") callback(false, "Supabase DB not connected");
         return;
     }
 
-    db.ref("app_users").on("value", function(snap) {
-        var v = snap.val();
-        var arr = [];
+    try {
+        const { data, error } = await sb
+            .from('karkhana_users')
+            .select('*')
+            .order('created_at', { ascending: false });
 
-        if (v && typeof v === "object") {
-            for (var key in v) {
-                if (v[key] && typeof v[key] === "object") {
-                    var userObj = v[key];
-                    userObj.id = userObj.id || key;
-                    userObj.name = userObj.name || key;
-                    arr.push(userObj);
-                }
-            }
+        if (error) throw error;
+
+        var arr = [];
+        if (data && Array.isArray(data)) {
+            data.forEach(function(row) {
+                arr.push({
+                    id: row.user_id,
+                    name: row.full_name || row.user_id,
+                    mobile: row.mobile || "-",
+                    email: row.email || "",
+                    pass: row.password || "-",
+                    pin: row.pin || "",
+                    role: row.role || "owner",
+                    status: row.status || "active",
+                    date: row.created_at ? row.created_at.split('T')[0] : "2026-01-01",
+                    expiryDate: row.validity_date || ""
+                });
+            });
         }
 
+        // Ensure Farhan Master Admin is present
         if (!arr.some(function(u) { return String(u.id).toLowerCase() === "farhan"; })) {
-            arr.push({
+            arr.unshift({
                 id: "farhan",
                 name: "Farhan jawed",
                 mobile: "7065572191",
                 pass: "97438090641154",
                 role: "admin",
                 status: "active",
-                date: "2026-01-01"
+                date: "2026-01-01",
+                expiryDate: ""
             });
         }
 
@@ -69,10 +93,24 @@ function fetchAndListenAdminUsers(callback) {
 
         renderAdminUsersTable();
         if (typeof callback === "function") callback(true, arr);
-    }, function(error) {
-        console.error("Firebase fetch error:", error);
-        if (typeof callback === "function") callback(false, error.message);
-    });
+
+        // Attach Realtime Listener for Instant Live Approval Requests
+        if (!supabaseAdminChannel) {
+            supabaseAdminChannel = sb.channel('admin-users-live')
+                .on(
+                    'postgres_changes',
+                    { event: '*', schema: 'public', table: 'karkhana_users' },
+                    function() {
+                        fetchAndListenAdminUsers();
+                    }
+                )
+                .subscribe();
+        }
+
+    } catch (err) {
+        console.error("[Admin] Supabase fetch error:", err);
+        if (typeof callback === "function") callback(false, err.message);
+    }
 }
 
 // 📊 3. TABLE & APPROVAL BANNER RENDERER
@@ -230,45 +268,59 @@ function renderAdminUsersTable() {
     }
 }
 
-// 🔄 4. FIXED REFRESH BUTTON (With Live Visual Feedback & Exact Count Alert)
-function refreshAdminUsersList() {
+// 🔄 4. REFRESH BUTTON (SUPABASE)
+async function refreshAdminUsersList() {
     var btn = document.getElementById("admin-refresh-users-btn");
     if (btn) btn.textContent = "⏳ Syncing...";
 
-    if (typeof db === "undefined" || !db) {
+    var sb = getSupabaseAdmin();
+    if (!sb) {
         if (btn) btn.textContent = "🔄 Refresh List";
-        return alert("⚠️ Firebase connect nahi hai!");
+        return alert("⚠️ Supabase connect nahi hai!");
     }
 
-    db.ref("app_users").once("value").then(function(snap) {
-        var v = snap.val();
+    try {
+        const { data, error } = await sb
+            .from('karkhana_users')
+            .select('*')
+            .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
         var arr = [];
         var pendingCount = 0;
 
-        if (v && typeof v === "object") {
-            for (var key in v) {
-                if (v[key] && typeof v[key] === "object") {
-                    var u = v[key];
-                    u.id = u.id || key;
-                    u.name = u.name || key;
-                    var st = String(u.status || "").toLowerCase().trim();
-                    if (st === "pending" || st === "pending_approval" || st === "waiting") {
-                        pendingCount++;
-                    }
-                    arr.push(u);
+        if (data && Array.isArray(data)) {
+            data.forEach(function(row) {
+                var st = String(row.status || "").toLowerCase().trim();
+                if (st === "pending" || st === "pending_approval" || st === "waiting") {
+                    pendingCount++;
                 }
-            }
+                arr.push({
+                    id: row.user_id,
+                    name: row.full_name || row.user_id,
+                    mobile: row.mobile || "-",
+                    email: row.email || "",
+                    pass: row.password || "-",
+                    pin: row.pin || "",
+                    role: row.role || "owner",
+                    status: row.status || "active",
+                    date: row.created_at ? row.created_at.split('T')[0] : "2026-01-01",
+                    expiryDate: row.validity_date || ""
+                });
+            });
         }
 
         if (!arr.some(function(u) { return String(u.id).toLowerCase() === "farhan"; })) {
-            arr.push({
+            arr.unshift({
                 id: "farhan",
                 name: "Farhan jawed",
                 mobile: "7065572191",
                 pass: "97438090641154",
                 role: "admin",
                 status: "active",
-                date: "2026-01-01"
+                date: "2026-01-01",
+                expiryDate: ""
             });
         }
 
@@ -280,87 +332,146 @@ function refreshAdminUsersList() {
         renderAdminUsersTable();
         if (btn) btn.textContent = "🔄 Refresh List";
 
-        // 📢 Exact Status Alert!
         alert("✅ Refresh Ho Gaya!\n\n📊 Kul Users: " + arr.length + "\n⏳ Approval Pending: " + pendingCount + "\n🟢 Active: " + (arr.length - pendingCount));
-    }).catch(function(err) {
+
+    } catch (err) {
         if (btn) btn.textContent = "🔄 Refresh List";
         alert("❌ Refresh Error: " + err.message);
-    });
+    }
 }
 
-// ✅ 5. ACTIONS
-function approveUserByAdmin(uid) {
+// ✅ 5. ADMIN ACTIONS (SUPABASE POSTGRESQL MUTATIONS)
+
+async function approveUserByAdmin(uid) {
     var exp = new Date();
     exp.setDate(exp.getDate() + 30);
     var formattedExp = exp.toISOString().split("T")[0];
 
-    if (typeof db !== "undefined" && db) {
-        db.ref("app_users/" + uid).update({
-            status: "active",
-            expiryDate: formattedExp
-        }).then(function() {
-            alert("🎉 User '" + uid + "' APPROVE ho gaya!\nAb wo turant login kar sakta hai.");
-            refreshAdminUsersList();
-        });
+    var sb = getSupabaseAdmin();
+    if (!sb) return alert("Supabase connect nahi hai!");
+
+    try {
+        const { error } = await sb
+            .from('karkhana_users')
+            .update({
+                status: 'active',
+                validity_date: formattedExp
+            })
+            .eq('user_id', uid);
+
+        if (error) throw error;
+
+        alert("🎉 User '" + uid + "' APPROVE ho gaya!\nAb wo turant login kar sakta hai.");
+        refreshAdminUsersList();
+    } catch (err) {
+        alert("Approve error: " + err.message);
     }
 }
 
-function updateUserExpiryDate(uid, dateVal) {
-    if (typeof db !== "undefined" && db) {
-        db.ref("app_users/" + uid + "/expiryDate").set(dateVal);
+async function updateUserExpiryDate(uid, dateVal) {
+    var sb = getSupabaseAdmin();
+    if (!sb) return;
+
+    try {
+        await sb
+            .from('karkhana_users')
+            .update({ validity_date: dateVal })
+            .eq('user_id', uid);
+    } catch (err) {
+        console.error("Expiry update error:", err);
     }
 }
 
-function extendValidity(uid, days) {
+async function extendValidity(uid, days) {
     var u = (window.adminUsersData || []).find(function(x) { return String(x.id) === String(uid); });
     var base = (u && u.expiryDate && new Date(u.expiryDate) > new Date()) ? new Date(u.expiryDate) : new Date();
     base.setDate(base.getDate() + days);
     var formatted = base.toISOString().split("T")[0];
 
-    if (typeof db !== "undefined" && db) {
-        db.ref("app_users/" + uid).update({
-            expiryDate: formatted,
-            status: "active"
-        }).then(function() {
-            alert("✅ Validity 30 din badh gayi!");
-            refreshAdminUsersList();
-        });
+    var sb = getSupabaseAdmin();
+    if (!sb) return alert("Supabase connect nahi hai!");
+
+    try {
+        const { error } = await sb
+            .from('karkhana_users')
+            .update({
+                validity_date: formatted,
+                status: 'active'
+            })
+            .eq('user_id', uid);
+
+        if (error) throw error;
+
+        alert("✅ Validity 30 din badh gayi!");
+        refreshAdminUsersList();
+    } catch (err) {
+        alert("Validity update error: " + err.message);
     }
 }
 
-function resetUserPasswordByAdmin(uid) {
+async function resetUserPasswordByAdmin(uid) {
     var newPass = prompt("Naya password daalein:", Math.floor(100000 + Math.random() * 900000).toString());
     if (!newPass || !newPass.trim()) return;
 
-    if (typeof db !== "undefined" && db) {
-        db.ref("app_users/" + uid + "/pass").set(newPass.trim()).then(function() {
-            alert("✅ Password update ho gaya!");
-            refreshAdminUsersList();
-        });
+    var sb = getSupabaseAdmin();
+    if (!sb) return alert("Supabase connect nahi hai!");
+
+    try {
+        const { error } = await sb
+            .from('karkhana_users')
+            .update({ password: newPass.trim() })
+            .eq('user_id', uid);
+
+        if (error) throw error;
+
+        alert("✅ Password update ho gaya!");
+        refreshAdminUsersList();
+    } catch (err) {
+        alert("Password reset error: " + err.message);
     }
 }
 
-function toggleUserBlockStatus(uid) {
+async function toggleUserBlockStatus(uid) {
     if (String(uid).toLowerCase() === "farhan") return alert("⛔ Master Admin block nahi ho sakta!");
     var u = (window.adminUsersData || []).find(function(x) { return String(x.id) === String(uid); });
     var nextStatus = (u && u.status === "blocked") ? "active" : "blocked";
 
-    if (typeof db !== "undefined" && db) {
-        db.ref("app_users/" + uid + "/status").set(nextStatus).then(function() {
-            refreshAdminUsersList();
-        });
+    var sb = getSupabaseAdmin();
+    if (!sb) return alert("Supabase connect nahi hai!");
+
+    try {
+        const { error } = await sb
+            .from('karkhana_users')
+            .update({ status: nextStatus })
+            .eq('user_id', uid);
+
+        if (error) throw error;
+
+        refreshAdminUsersList();
+    } catch (err) {
+        alert("Block/Unblock error: " + err.message);
     }
 }
 
-function deleteUserByAdmin(uid) {
+async function deleteUserByAdmin(uid) {
     if (String(uid).toLowerCase() === "farhan") return alert("⛔ Master Admin delete nahi ho sakta!");
     if (!confirm("Kya aap sach me is User ko delete/reject karna chahte hain?")) return;
 
-    if (typeof db !== "undefined" && db) {
-        db.ref("app_users/" + uid).remove().then(function() {
-            alert("🗑️ User delete ho gaya!");
-            refreshAdminUsersList();
-        });
+    var sb = getSupabaseAdmin();
+    if (!sb) return alert("Supabase connect nahi hai!");
+
+    try {
+        const { error } = await sb
+            .from('karkhana_users')
+            .delete()
+            .eq('user_id', uid);
+
+        if (error) throw error;
+
+        alert("🗑️ User delete ho gaya!");
+        refreshAdminUsersList();
+    } catch (err) {
+        alert("Delete error: " + err.message);
     }
 }
 
