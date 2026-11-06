@@ -91,15 +91,8 @@
     /* ========================================================================
        3. NON-BLOCKING DATA EXPORT ENGINE
        ------------------------------------------------------------------------
-       1000+ Karigers aur hazaron sheets ko bina mobile screen hang kiye
-       asynchronously compile karta hai.
     ======================================================================== */
 
-    /**
-     * Compiles complete user snapshot asynchronously
-     * @param {Function} [onProgress] - Progress callback
-     * @returns {Promise<Object>} Formatted backup JSON package
-     */
     const exportUserFullDataAsync = async (onProgress) => {
         const sess = (typeof window.getActiveFinancialSession === 'function') 
             ? window.getActiveFinancialSession() 
@@ -183,9 +176,6 @@
         return backupPackage;
     };
 
-    /**
-     * Backward-Compatible Synchronous Wrapper
-     */
     const exportUserFullData = () => {
         const sess = (typeof window.getActiveFinancialSession === 'function') ? window.getActiveFinancialSession() : '2026-2027';
         const uId = (typeof window.getEffectiveUserId === 'function') ? window.getEffectiveUserId() : (window.currentUserId || 'app');
@@ -254,7 +244,6 @@
 
             const fileName = `${window.currentUserId}_${sess}_Backup_${todayStr}.json`;
 
-            // Stream Blob Creation
             const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json;charset=utf-8' });
             const downloadUrl = window.URL.createObjectURL(blob);
 
@@ -281,18 +270,12 @@
     };
 
     /* ========================================================================
-       5. READ-ONLY BACKUP VIEWER ENGINE (ZERO-OVERWRITE SAFETY)
+       5. READ-ONLY BACKUP VIEWER ENGINE
        ------------------------------------------------------------------------
-       Puraane backup files ko khol kar dekhne ke liye live data chhede bina
-       read-only preview provide karta hai.
     ======================================================================== */
 
-    /**
-     * Schema validation helper
-     */
     const validateBackupPackage = (pkg) => {
         if (!pkg || typeof pkg !== 'object') return false;
-        // Must contain data dictionary or sheets collection
         const hasData = pkg.data && typeof pkg.data === 'object';
         const hasSheets = pkg.sheets && typeof pkg.sheets === 'object';
         const hasJw = pkg.jobwork_sheets && typeof pkg.jobwork_sheets === 'object';
@@ -316,7 +299,6 @@
                     return alert('⚠️ Galat backup file format! Is file me valid Simplicity ERP data nahi hai.');
                 }
 
-                // Activate Read-Only Preview State
                 window.isBackupPreviewMode = true;
                 window.PREVIEW_BACKUP_DATA = parsed;
 
@@ -327,7 +309,7 @@
                 if (dateText) {
                     const sLabel = parsed.session ? `${parsed.session} • ` : '';
                     const dLabel = parsed.exportDate 
-                        ? formatDisplay(String(parsed.exportDate).substring(0, 10)) 
+                        ? (typeof window.formatDateDisplay === 'function' ? window.formatDateDisplay(String(parsed.exportDate).substring(0, 10)) : String(parsed.exportDate).substring(0, 10))
                         : 'Purana Backup';
                     dateText.textContent = `${sLabel}${dLabel}`;
                 }
@@ -350,7 +332,7 @@
         };
 
         reader.readAsText(file);
-        e.target.value = ''; // Reset input to permit re-selection
+        e.target.value = '';
     };
 
     const exitBackupPreviewMode = () => {
@@ -376,10 +358,8 @@
     };
 
     /* ========================================================================
-       6. ATOMIC FULL SYSTEM RESTORE (TIME-SLICED BATCHES)
+       6. ATOMIC FULL SYSTEM RESTORE (SUPABASE SYNCED)
        ------------------------------------------------------------------------
-       Puraane data ko replace karte waqt L1 Memory, L3 IndexedDB aur L4 Cloud
-       ko bina connection timeout kiye atomically commit karta hai.
     ======================================================================== */
 
     const restoreBackupFile = (e) => {
@@ -404,8 +384,10 @@
                     return alert('⚠️ Galat backup file format! Restore canceled.');
                 }
 
-                // 1. Mute Cloud Listeners to avoid feedback loops
-                if (typeof window.detachFirebaseLiveListeners === 'function') {
+                // 1. ✅ Detach Realtime
+                if (typeof window.detachSupabaseRealtime === 'function') {
+                    window.detachSupabaseRealtime();
+                } else if (typeof window.detachFirebaseLiveListeners === 'function') {
                     window.detachFirebaseLiveListeners();
                 }
 
@@ -477,8 +459,10 @@
                 if (typeof window.invalidateZariCalcCache === 'function') window.invalidateZariCalcCache();
                 if (typeof window.invalidateSanchaCalcCache === 'function') window.invalidateSanchaCalcCache();
 
-                // 7. Re-bind live sync listeners
-                if (typeof window.initFirebaseLiveListeners === 'function') {
+                // 7. ✅ Re-bind Supabase live sync
+                if (typeof window.initSupabaseRealtime === 'function') {
+                    window.initSupabaseRealtime();
+                } else if (typeof window.initFirebaseLiveListeners === 'function') {
                     window.initFirebaseLiveListeners();
                 }
 
@@ -518,15 +502,12 @@
         restoreBackupFile
     };
 
-    // Attach to global window object for legacy callers
     Object.keys(backupAPI).forEach((fnName) => {
         window[fnName] = backupAPI[fnName];
     });
 
-    // Dedicated namespace
     window.BackupEngine = backupAPI;
 
-    // Unit test export
     if (typeof module !== 'undefined' && module.exports) {
         module.exports = backupAPI;
     }
