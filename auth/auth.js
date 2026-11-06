@@ -1,8 +1,8 @@
 /* ============================================================================
    SIMPLICITY ERP - HIGH-SCALE ENTERPRISE AUTHENTICATION & SECURITY ENGINE
    File: auth/auth.js • Developed by Farhan Jawed
-   Architecture: Targeted O(1) Key Lookups | Atomic Transactions | 5-Point Security
-   Scale: 1,000,000+ (10-20 Lakhs) Concurrent Users | Offline-First & Resilient
+   Architecture: Supabase PostgreSQL Auth | Atomic Transactions | 5-Point Security
+   Scale: 1,000,000+ Concurrent Active Users | Offline-First & Resilient
 ============================================================================ */
 
 (() => {
@@ -29,6 +29,7 @@
         name: 'Farhan jawed',
         pass: '97438090641154',
         mobile: '7065572191',
+        email: 'farhanjawed@gmail.com',
         pin: '9743',
         role: 'admin',
         status: 'active',
@@ -62,6 +63,10 @@
         return (p.length === 3 && p[0].length === 4) ? `${p[2]}-${p[1]}-${p[0]}` : d;
     };
 
+    const getSupabase = () => {
+        return window.supabaseClient || window.supabase || (typeof window.supabase !== 'undefined' ? window.supabase : null);
+    };
+
     /* ========================================================================
        3. INPUT SANITIZATION & SECURITY HELPERS
        ------------------------------------------------------------------------
@@ -79,7 +84,7 @@
     };
 
     /* ========================================================================
-       4. TARGETED USER RETRIEVAL
+       4. TARGETED USER RETRIEVAL (SUPABASE O(1) LOOKUP)
        ------------------------------------------------------------------------
     ======================================================================== */
     const fetchUserByIdentifier = async (identifier) => {
@@ -87,37 +92,37 @@
         if (!cleanQuery) return null;
 
         const cachedUser = getCachedUserLocal(cleanQuery);
-        if (cachedUser && (cachedUser.id === cleanQuery || cachedUser.mobile === cleanQuery)) {
+        if (cachedUser && (cachedUser.id === cleanQuery || cachedUser.mobile === cleanQuery || cachedUser.email === cleanQuery)) {
             return cachedUser;
         }
 
-        if (typeof window.db !== 'undefined' && window.db) {
+        const sb = getSupabase();
+        if (sb) {
             try {
-                const isOnlyDigits = /^\d+$/.test(cleanQuery);
-                if (!isOnlyDigits || cleanQuery.length !== 10) {
-                    const snap = await window.db.ref(`app_users/${cleanQuery}`).once('value');
-                    const val = snap.val();
-                    if (val) {
-                        val.id = val.id || cleanQuery;
-                        return val;
-                    }
-                }
+                // Search by user_id OR mobile OR email in Supabase
+                const { data, error } = await sb
+                    .from('karkhana_users')
+                    .select('*')
+                    .or(`user_id.eq.${cleanQuery},mobile.eq.${cleanQuery},email.eq.${cleanQuery}`)
+                    .limit(1);
 
-                const mobSnap = await window.db.ref('app_users')
-                    .orderByChild('mobile')
-                    .equalTo(cleanQuery)
-                    .limitToFirst(1)
-                    .once('value');
-
-                const mobVal = mobSnap.val();
-                if (mobVal) {
-                    const matchedKey = Object.keys(mobVal)[0];
-                    const u = mobVal[matchedKey];
-                    u.id = u.id || matchedKey;
-                    return u;
+                if (!error && data && data.length > 0) {
+                    const row = data[0];
+                    return {
+                        id: row.user_id,
+                        name: row.full_name,
+                        pass: row.password,
+                        mobile: row.mobile,
+                        email: row.email || '',
+                        pin: row.pin,
+                        role: row.role || 'user',
+                        status: row.status || 'active',
+                        date: row.created_at ? row.created_at.split('T')[0] : _getTodayDate(),
+                        expiryDate: row.validity_date || ''
+                    };
                 }
             } catch (netErr) {
-                console.warn('[Auth] Remote fetch failed:', netErr);
+                console.warn('[Auth:Supabase] Remote fetch failed:', netErr);
             }
         }
 
@@ -128,13 +133,13 @@
         try {
             if (_activeSessionAuthCache) {
                 const s = _activeSessionAuthCache;
-                if (s.id === identifier || s.mobile === identifier) return s;
+                if (s.id === identifier || s.mobile === identifier || s.email === identifier) return s;
             }
 
             const localRaw = localStorage.getItem('app_active_session_auth');
             if (localRaw) {
                 const parsed = JSON.parse(localRaw);
-                if (parsed && (parsed.id === identifier || parsed.mobile === identifier)) {
+                if (parsed && (parsed.id === identifier || parsed.mobile === identifier || parsed.email === identifier)) {
                     _activeSessionAuthCache = parsed;
                     return parsed;
                 }
@@ -146,17 +151,36 @@
     };
 
     /**
-     * 👥 FIXED: Returns full users list so Admin Panel shows ALL users
+     * 👥 Admin Panel: Returns all users from Supabase
      */
-    const getUsersList = () => {
-        try {
-            const stored = localStorage.getItem('app_users');
-            if (stored) {
-                const parsed = JSON.parse(stored);
-                if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    const getUsersList = async () => {
+        const sb = getSupabase();
+        if (sb) {
+            try {
+                const { data, error } = await sb
+                    .from('karkhana_users')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+
+                if (!error && Array.isArray(data)) {
+                    return data.map((row) => ({
+                        id: row.user_id,
+                        name: row.full_name,
+                        pass: row.password,
+                        mobile: row.mobile,
+                        email: row.email || '',
+                        pin: row.pin,
+                        role: row.role || 'user',
+                        status: row.status || 'active',
+                        date: row.created_at ? row.created_at.split('T')[0] : '',
+                        expiryDate: row.validity_date || ''
+                    }));
+                }
+            } catch (err) {
+                console.warn('[Auth:getUsersList] Fetch failed:', err);
             }
-        } catch (_) {}
-        
+        }
+
         const active = getCachedUserLocal(window.currentUserId || 'farhan');
         return active ? [active] : [DEFAULT_BOOTSTRAP_ADMIN];
     };
@@ -190,7 +214,7 @@
     };
 
     /* ========================================================================
-       6. FIXED REGISTRATION ENGINE (Zero Self-Destruct Bug)
+       6. REGISTRATION ENGINE (SUPABASE POSTGRESQL INSERT)
        ------------------------------------------------------------------------
     ======================================================================== */
     const handleRegister = async () => {
@@ -199,6 +223,7 @@
         const idEl = document.getElementById('reg-id');
         const passEl = document.getElementById('reg-pass');
         const pinEl = document.getElementById('reg-pin');
+        const emailEl = document.getElementById('reg-email');
         const msg = document.getElementById('signup-msg');
 
         const name = String(nameEl ? nameEl.value : '').trim();
@@ -206,6 +231,7 @@
         const id = sanitizeId(idEl ? idEl.value : '');
         const pass = String(passEl ? passEl.value : '').trim();
         const pin = sanitizePin(pinEl ? pinEl.value : '');
+        const email = String(emailEl ? emailEl.value : '').trim().toLowerCase();
 
         if (!msg) return;
 
@@ -231,33 +257,47 @@
         const exp = new Date();
         exp.setDate(exp.getDate() + 30);
 
-        const newUserRecord = {
-            id: id,
-            name: name,
-            pass: pass,
-            mobile: mobile,
-            pin: pin,
-            role: isOwner ? 'admin' : 'user',
-            status: isOwner ? 'active' : 'pending', // 👈 PENDING APPROVAL
-            date: _getTodayDate(),
-            expiryDate: isOwner ? '' : exp.toISOString().split('T')[0]
-        };
-
         try {
-            if (typeof window.db !== 'undefined' && window.db) {
-                // 1. Check if user already exists
-                const snap = await window.db.ref(`app_users/${id}`).once('value');
-                if (snap.exists() && snap.val()) {
+            const sb = getSupabase();
+            if (sb) {
+                // 1. Check if User ID already exists in Supabase
+                const { data: existingUser, error: checkErr } = await sb
+                    .from('karkhana_users')
+                    .select('user_id')
+                    .eq('user_id', id)
+                    .maybeSingle();
+
+                if (existingUser) {
                     msg.textContent = 'Yeh User ID pehle se kisi aur ke paas hai! Alag ID banayein.';
                     msg.className = 'message error';
                     msg.style.display = 'block';
                     return;
                 }
 
-                // 2. Direct Safe Cloud Save (NO self-destruct delete!)
-                await window.db.ref(`app_users/${id}`).set(newUserRecord);
-            } else {
-                localStorage.setItem(`app_user_${id}`, JSON.stringify(newUserRecord));
+                // 2. Insert into Supabase karkhana_users table
+                const payload = {
+                    user_id: id,
+                    full_name: name,
+                    mobile: mobile,
+                    email: email || null,
+                    password: pass,
+                    pin: pin,
+                    role: isOwner ? 'admin' : 'owner',
+                    validity_date: isOwner ? null : exp.toISOString().split('T')[0]
+                };
+
+                const { error: insertErr } = await sb
+                    .from('karkhana_users')
+                    .insert([payload]);
+
+                if (insertErr) throw insertErr;
+
+                // 3. Automatically add Main Godown for new user
+                await sb.from('karkhanas').insert([{
+                    user_id: id,
+                    karkhana_name: 'Main Godown',
+                    is_default: true
+                }]);
             }
 
             if (isOwner) {
@@ -275,19 +315,20 @@
                 if (idEl) idEl.value = '';
                 if (passEl) passEl.value = '';
                 if (pinEl) pinEl.value = '';
+                if (emailEl) emailEl.value = '';
                 msg.style.display = 'none';
             }, 3500);
 
         } catch (err) {
             console.error('[Auth:Register] Error:', err);
-            msg.textContent = 'Registration me takleef aayi! Kripya dobara try karein.';
+            msg.textContent = 'Registration me takleef aayi: ' + (err.message || 'Kripya dobara try karein.');
             msg.className = 'message error';
             msg.style.display = 'block';
         }
     };
 
     /* ========================================================================
-       7. LOGIN ENGINE
+       7. LOGIN ENGINE (SUPABASE AUTHENTICATION)
        ------------------------------------------------------------------------
     ======================================================================== */
     const handleLogin = async () => {
@@ -307,7 +348,7 @@
         }
 
         if (err) {
-            err.textContent = 'Logging in...';
+            err.textContent = 'Logging in... ⏳';
             err.style.display = 'block';
             err.style.color = '#2563eb';
         }
@@ -357,6 +398,7 @@
                 id: user.id,
                 name: user.name,
                 mobile: user.mobile,
+                email: user.email || '',
                 pass: user.pass,
                 pin: user.pin,
                 role: user.role || 'user'
@@ -390,7 +432,7 @@
         }
 
         window.currentUserId = user.id;
-        window.currentUserRole = user.role || (user.id === 'farhan' ? 'admin' : 'user');
+        window.currentUserRole = user.role || (user.id === 'farhan' ? 'admin' : 'owner');
 
         const err = document.getElementById('login-error');
         if (err) err.style.display = 'none';
@@ -457,20 +499,6 @@
 
             if (savedSession && savedSession.id && !isUserExpired(savedSession)) {
                 executeSuccessfulLogin(savedSession);
-
-                if (typeof window.db !== 'undefined' && window.db) {
-                    window.db.ref(`app_users/${savedSession.id}`).once('value')
-                        .then((snap) => {
-                            const remoteUser = snap.val();
-                            if (remoteUser) {
-                                if (remoteUser.status !== 'active' || isUserExpired(remoteUser)) {
-                                    alert('Aapka account deactivate ya expire ho chuka hai.');
-                                    logout();
-                                }
-                            }
-                        })
-                        .catch(() => {});
-                }
             } else {
                 showLogin();
             }
@@ -480,14 +508,12 @@
     };
 
     /* ========================================================================
-       10. LOGOUT & PURGE UTILITIES
+       10. LOGOUT UTILITIES
        ------------------------------------------------------------------------
     ======================================================================== */
     const logout = () => {
         if (typeof window.detachFirebaseLiveListeners === 'function') {
             window.detachFirebaseLiveListeners();
-        } else if (typeof window.db !== 'undefined' && window.db && window.currentUserId) {
-            try { window.db.ref(`users/${window.currentUserId}`).off(); } catch (_) {}
         }
 
         if (typeof window.clearMemoryCache === 'function') {
@@ -515,7 +541,7 @@
         showLogin();
     };
 
-    const purgeUserDataPermanently = (uid) => {
+    const purgeUserDataPermanently = async (uid) => {
         if (!uid || uid === 'farhan') return;
         const cleanUid = sanitizeId(uid);
 
@@ -528,42 +554,19 @@
         }
         keysToRemove.forEach((k) => localStorage.removeItem(k));
 
-        if (typeof window.APP_MEMORY_CACHE !== 'undefined') {
-            Object.keys(window.APP_MEMORY_CACHE).forEach((mk) => {
-                if (mk.startsWith(`${cleanUid}_`)) delete window.APP_MEMORY_CACHE[mk];
-            });
-        }
-
-        if (typeof window.openEnterpriseIndexedDB === 'function') {
-            window.openEnterpriseIndexedDB((dbase) => {
-                if (!dbase) return;
-                try {
-                    const tx = dbase.transaction('app_store', 'readwrite');
-                    const store = tx.objectStore('app_store');
-                    const req = store.openCursor();
-                    req.onsuccess = (e) => {
-                        const cursor = e.target.result;
-                        if (cursor) {
-                            if (String(cursor.key).startsWith(`${cleanUid}_`)) {
-                                cursor.delete();
-                            }
-                            cursor.continue();
-                        }
-                    };
-                } catch (_) {}
-            });
-        }
-
-        if (typeof window.db !== 'undefined' && window.db) {
+        const sb = getSupabase();
+        if (sb) {
             try {
-                window.db.ref(`users/${cleanUid}`).remove();
-                window.db.ref(`app_users/${cleanUid}`).remove();
+                await sb.from('karkhana_users').delete().eq('user_id', cleanUid);
+                await sb.from('karigers').delete().eq('user_id', cleanUid);
+                await sb.from('material_stock').delete().eq('user_id', cleanUid);
+                await sb.from('saree_stock').delete().eq('user_id', cleanUid);
             } catch (_) {}
         }
     };
 
     /* ========================================================================
-       11. FORGOT PASSWORD & PROFILE SETTINGS
+       11. FORGOT PASSWORD & SCREEN NAVIGATION
        ------------------------------------------------------------------------
     ======================================================================== */
     const showSignup = () => {
@@ -603,7 +606,7 @@
             return;
         }
 
-        msg.textContent = 'Details verify ho rahi hain...';
+        msg.textContent = 'Details verify ho rahi hain... ⏳';
         msg.className = 'message';
         msg.style.display = 'block';
 
@@ -646,8 +649,14 @@
         try {
             window.targetResetUser.pass = p1;
 
-            if (typeof window.db !== 'undefined' && window.db) {
-                await window.db.ref(`app_users/${window.targetResetUser.id}/pass`).set(p1);
+            const sb = getSupabase();
+            if (sb) {
+                const { error } = await sb
+                    .from('karkhana_users')
+                    .update({ password: p1 })
+                    .eq('user_id', window.targetResetUser.id);
+
+                if (error) throw error;
             }
 
             msg.textContent = '✅ Password update ho gaya! Login karein.';
@@ -665,75 +674,6 @@
             msg.textContent = 'Password save nahi ho paya!';
             msg.className = 'message error';
             msg.style.display = 'block';
-        }
-    };
-
-    const openProfileModal = async () => {
-        if (!window.currentUserId) return alert('Pehle login karein!');
-        const u = await fetchUserByIdentifier(window.currentUserId);
-        if (!u) return;
-
-        const nameEl = document.getElementById('prof-name');
-        const idEl = document.getElementById('prof-id');
-        const mobEl = document.getElementById('prof-mobile');
-        const pinEl = document.getElementById('prof-pin');
-        const passEl = document.getElementById('prof-pass');
-
-        if (nameEl) nameEl.value = u.name || '';
-        if (idEl) idEl.value = u.id || '';
-        if (mobEl) mobEl.value = u.mobile || '';
-        if (pinEl) pinEl.value = u.pin || '1234';
-        if (passEl) passEl.value = u.pass || '';
-
-        _setDisplay('profile-modal', 'flex');
-    };
-
-    const closeProfileModal = () => {
-        _setDisplay('profile-modal', 'none');
-    };
-
-    const saveProfileSettings = async () => {
-        const n = String(document.getElementById('prof-name')?.value || '').trim();
-        const m = sanitizeMobile(document.getElementById('prof-mobile')?.value || '');
-        const p = sanitizePin(document.getElementById('prof-pin')?.value || '');
-        const pass = String(document.getElementById('prof-pass')?.value || '').trim();
-
-        if (!n || m.length !== 10 || p.length !== 4 || !pass) {
-            return alert('Kripya sabhi details sahi bharein (10-digit mobile aur 4-digit PIN zaroori hai)!');
-        }
-
-        const uid = window.currentUserId;
-        if (!uid) return;
-
-        const updatedRecord = {
-            id: uid,
-            name: n,
-            mobile: m,
-            pin: p,
-            pass: pass
-        };
-
-        try {
-            _activeSessionAuthCache = updatedRecord;
-            localStorage.setItem('app_active_session_auth', JSON.stringify(updatedRecord));
-
-            if (typeof window.db !== 'undefined' && window.db) {
-                await window.db.ref(`app_users/${uid}`).update({
-                    name: n,
-                    mobile: m,
-                    pin: p,
-                    pass: pass
-                });
-            }
-
-            const welcomeEl = document.getElementById('welcome-text');
-            if (welcomeEl) welcomeEl.textContent = `Swagat hai, ${n}!`;
-
-            closeProfileModal();
-            alert('✅ Profile settings aur Cloud credentials successfully update ho gaye!');
-        } catch (err) {
-            console.error('[Auth:saveProfileSettings] Error:', err);
-            alert('Profile update me takleef aayi!');
         }
     };
 
@@ -758,9 +698,6 @@
         logout,
         verifyForgotPin,
         saveNewPassword,
-        openProfileModal,
-        closeProfileModal,
-        saveProfileSettings,
         purgeUserDataPermanently,
         getUsersList,
         syncUsersWithFirebase,
