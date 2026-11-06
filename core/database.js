@@ -1,14 +1,13 @@
 /* ============================================================================
    SIMPLICITY ERP - ENTERPRISE SUPABASE CLOUD & REALTIME SYNC ENGINE
    File: core/database.js • Developed by Farhan Jawed
-   Architecture: Supabase PostgreSQL Realtime Engine | Bi-Directional Auto-Sync
-   Scale: 1,000,000+ Concurrent Active Users | Live Instant Screen Redraw
+   Architecture: Supabase PostgreSQL Realtime Engine | Universal Dedicated Router
 ============================================================================ */
 
 (() => {
     'use strict';
 
-    // 1. SUPABASE PROJECT CONFIGURATION (100% VERIFIED REAL CREDENTIALS)
+    // 1. SUPABASE CREDENTIALS (100% VERIFIED REAL CREDENTIALS)
     const SUPABASE_CONFIG = Object.freeze({
         url: "https://wzmnfofhhhaxrrymnekd.supabase.co",
         anonKey: "sb_publishable_D5KwPAwT3xumFJCVGSDj0A_loySGNhg"
@@ -25,7 +24,7 @@
             window.supabaseClient = supabaseClient;
             console.log('✅ [CloudEngine] Supabase Realtime Engine Initialized.');
         } else {
-            console.warn('⚠️ [CloudEngine] Supabase JS SDK not detected in index.html.');
+            console.warn('⚠️ [CloudEngine] Supabase JS SDK not detected.');
         }
     } catch (initErr) {
         console.error('❌ [CloudEngine] Supabase Initialization failure:', initErr);
@@ -46,6 +45,43 @@
             }
         } catch (_) {}
         return 'farhan';
+    };
+
+    const getActiveSessionVal = () => {
+        try {
+            if (typeof window.getActiveFinancialSession === 'function') {
+                return window.getActiveFinancialSession();
+            }
+            const uId = getSafeUserId();
+            const stored = localStorage.getItem(`${uId}_app_active_session`);
+            if (stored) return String(stored).replace(/['"]+/g, '').trim();
+        } catch (_) {}
+        return '2026-2027';
+    };
+
+    /**
+     * 🎯 SMART TABLE ROUTER:
+     * FullKey (jaise: farhan_2026-2027_zari_stock) ko uski asli Supabase table me bhejta hai
+     */
+    const resolveTargetTable = (fullKey) => {
+        const k = String(fullKey).toLowerCase();
+
+        if (k.includes('saree_stock') || k.includes('saree_history') || k.includes('saree')) return 'saree_stock';
+        if (k.includes('zari_history')) return 'zari_history';
+        if (k.includes('zari_stock') || k.includes('zari')) return 'zari_stock';
+        if (k.includes('bana_history')) return 'bana_history';
+        if (k.includes('bana_stock') || k.includes('bana')) return 'bana_stock';
+        if (k.includes('sancha_history')) return 'sancha_history';
+        if (k.includes('sancha')) return 'sancha_list';
+        if (k.includes('kariger_sheet') || k.includes('tani_sheet')) return 'tani_sheets';
+        if (k.includes('kariger') || k.includes('karigers')) return 'karigers';
+        if (k.includes('karkhana') || k.includes('godown')) return 'karkhanas';
+        if (k.includes('material_transfers') || k.includes('transfer')) return 'material_transfers';
+        if (k.includes('dukan')) return 'dukan_challans';
+        if (k.includes('jobwork') || k.includes('job_work')) return 'job_workers';
+
+        // Fallback default store table
+        return 'material_stock';
     };
 
     /**
@@ -93,7 +129,7 @@
     };
 
     /**
-     * ⚡ ULTRA-FAST SCREEN REPAINTER (Directly triggers DOM update in 30ms)
+     * ⚡ SCREEN REPAINTER
      */
     const triggerSmartUIRepaint = () => {
         if (renderDebounceTimer) clearTimeout(renderDebounceTimer);
@@ -132,63 +168,113 @@
             if (typeof window.renderDashboardDayBook === 'function') {
                 window.renderDashboardDayBook();
             }
-
             if (typeof window.updateDashboardBadgeTotals === 'function') {
                 window.updateDashboardBadgeTotals();
             }
             if (typeof window.triggerActiveSectionRefresh === 'function') {
                 window.triggerActiveSectionRefresh();
             }
-        }, 30);
+        }, 50);
     };
 
     /**
-     * 🌐 Direct Cloud Connection Ping Checker
+     * 🚀 CLOUD WRITE: Har ek data ko uski sahi table me bhejta hai
      */
-    const checkSupabaseConnection = async () => {
-        if (!supabaseClient || !navigator.onLine) {
-            isConnectedToCloud = false;
-            showSyncStatus('offline');
-            return;
-        }
+    const cloudWrite = async (fullKey, data) => {
+        if (!supabaseClient) return false;
+        showSyncStatus('syncing');
+
+        const targetTable = resolveTargetTable(fullKey);
+        const uid = getSafeUserId();
+        const sess = getActiveSessionVal();
 
         try {
-            const { error } = await supabaseClient
-                .from('karkhanas')
-                .select('id', { head: true, count: 'exact' });
+            const payload = {
+                id: String(fullKey),
+                user_id: uid,
+                session: sess,
+                data: data,
+                updated_at: new Date().toISOString()
+            };
 
-            if (!error) {
-                isConnectedToCloud = true;
-                showSyncStatus('online');
-            } else {
-                showSyncStatus('online');
+            const { error } = await supabaseClient
+                .from(targetTable)
+                .upsert(payload, { onConflict: 'id' });
+
+            if (error) {
+                // Agar table me session ya data column alag ho, toh bina extra columns ke try karo
+                const { error: retryError } = await supabaseClient
+                    .from(targetTable)
+                    .upsert({ id: String(fullKey), data: data }, { onConflict: 'id' });
+
+                if (retryError) throw retryError;
             }
-        } catch (_) {
-            if (navigator.onLine) {
-                showSyncStatus('online');
-            } else {
-                showSyncStatus('offline');
-            }
+
+            isConnectedToCloud = true;
+            showSyncStatus('online');
+            console.log(`✅ [Supabase] Saved in ${targetTable}: ${fullKey}`);
+            return true;
+        } catch (err) {
+            console.error(`❌ [Supabase] cloudWrite failed on ${targetTable}:`, err);
+            showSyncStatus('error');
+            return false;
         }
     };
 
     /**
-     * Supabase Realtime Channels
+     * 📥 CLOUD PULL: Supabase se naya data app me load karna
      */
-    const initFirebaseLiveListeners = () => {
-        if (!supabaseClient) return;
+    const pullAllCloudData = async () => {
+        if (!supabaseClient || !navigator.onLine) return;
         const uid = getSafeUserId();
 
-        detachFirebaseLiveListeners();
-        checkSupabaseConnection();
+        const tables = [
+            'saree_stock', 'zari_stock', 'zari_history', 'bana_stock', 'bana_history',
+            'sancha_list', 'sancha_history', 'karigers', 'tani_sheets', 
+            'material_transfers', 'karkhanas', 'dukan_challans', 'material_stock'
+        ];
+
+        for (const tbl of tables) {
+            try {
+                const { data } = await supabaseClient
+                    .from(tbl)
+                    .select('*')
+                    .or(`user_id.eq.${uid},id.ilike.${uid}_%`);
+
+                if (data && data.length > 0) {
+                    data.forEach((row) => {
+                        const targetKey = row.id;
+                        const rowData = row.data !== undefined ? row.data : row;
+                        if (targetKey && typeof window.setRemoteStore === 'function') {
+                            window.setRemoteStore(targetKey, rowData);
+                        }
+                    });
+                }
+            } catch (_) {}
+        }
+
+        triggerSmartUIRepaint();
+    };
+
+    /**
+     * ⚡ SUPABASE REALTIME LISTENER (Doosre device me entry ho toh live sync)
+     */
+    const initSupabaseRealtime = () => {
+        if (!supabaseClient) return;
+        detachSupabaseRealtime();
 
         try {
-            realtimeChannel = supabaseClient.channel('public-db-changes')
+            realtimeChannel = supabaseClient.channel('public_db_realtime')
                 .on(
                     'postgres_changes',
                     { event: '*', schema: 'public' },
                     (payload) => {
                         if (typeof window.isBackupPreviewMode !== 'undefined' && window.isBackupPreviewMode) return;
+                        const row = payload.new;
+                        if (row && row.id && typeof window.setRemoteStore === 'function') {
+                            const rowData = row.data !== undefined ? row.data : row;
+                            window.setRemoteStore(row.id, rowData);
+                        }
                         triggerSmartUIRepaint();
                         showSyncStatus('online');
                     }
@@ -197,17 +283,16 @@
                     if (status === 'SUBSCRIBED') {
                         isConnectedToCloud = true;
                         showSyncStatus('online');
-                    } else if (status === 'CHANNEL_ERROR') {
-                        checkSupabaseConnection();
                     }
                 });
+
+            pullAllCloudData();
         } catch (err) {
-            console.warn('[CloudEngine] Realtime setup info:', err);
-            checkSupabaseConnection();
+            console.warn('[CloudEngine] Realtime setup:', err);
         }
     };
 
-    const detachFirebaseLiveListeners = () => {
+    const detachSupabaseRealtime = () => {
         try {
             if (realtimeChannel && supabaseClient) {
                 supabaseClient.removeChannel(realtimeChannel);
@@ -216,33 +301,8 @@
         } catch (_) {}
     };
 
-    const switchSessionListeners = (newSession) => {
-        if (!newSession) return;
-        initFirebaseLiveListeners();
-    };
-
-    const syncKarigerSheetLive = (kId) => {
-        // Handled automatically via Realtime
-    };
-
-    const cloudWrite = async (tableOrPath, data) => {
-        if (!supabaseClient) return false;
-        showSyncStatus('syncing');
-
-        try {
-            const cleanTable = String(tableOrPath).replace(/\//g, '_');
-            const { error } = await supabaseClient
-                .from(cleanTable)
-                .upsert(data);
-
-            if (error) throw error;
-            showSyncStatus('online');
-            return true;
-        } catch (err) {
-            console.error('[CloudEngine] cloudWrite failed:', err);
-            showSyncStatus('online');
-            return false;
-        }
+    const switchSessionListeners = () => {
+        pullAllCloudData();
     };
 
     const publicCloudAPI = {
@@ -250,29 +310,33 @@
         get supabase() { return supabaseClient; },
         get isConnectedToCloud() { return isConnectedToCloud; },
         showSyncStatus,
-        initFirebaseLiveListeners,
-        detachFirebaseLiveListeners,
+        initSupabaseRealtime,
+        detachSupabaseRealtime,
+        // Purani files ke saath compatibility
+        initFirebaseLiveListeners: initSupabaseRealtime,
+        detachFirebaseLiveListeners: detachSupabaseRealtime,
         switchSessionListeners,
         cloudWrite,
-        syncKarigerSheetLive,
-        triggerSmartUIRepaint,
-        checkSupabaseConnection
+        pullAllCloudData,
+        triggerSmartUIRepaint
     };
 
     window.db = supabaseClient;
     window.supabaseClient = supabaseClient;
     window.showSyncStatus = showSyncStatus;
-    window.initFirebaseLiveListeners = initFirebaseLiveListeners;
-    window.detachFirebaseLiveListeners = detachFirebaseLiveListeners;
+    window.initSupabaseRealtime = initSupabaseRealtime;
+    window.detachSupabaseRealtime = detachSupabaseRealtime;
+    // Backward compatibility aliases
+    window.initFirebaseLiveListeners = initSupabaseRealtime;
+    window.detachFirebaseLiveListeners = detachSupabaseRealtime;
     window.switchSessionListeners = switchSessionListeners;
-    window.syncKarigerSheetLive = syncKarigerSheetLive;
     window.triggerSmartUIRepaint = triggerSmartUIRepaint;
     window.CloudEngine = publicCloudAPI;
 
     window.addEventListener('online', () => {
         isConnectedToCloud = true;
         showSyncStatus('online');
-        initFirebaseLiveListeners();
+        initSupabaseRealtime();
     });
 
     window.addEventListener('offline', () => {
@@ -281,11 +345,9 @@
     });
 
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', () => {
-            setTimeout(initFirebaseLiveListeners, 200);
-        });
+        document.addEventListener('DOMContentLoaded', () => setTimeout(initSupabaseRealtime, 300));
     } else {
-        setTimeout(initFirebaseLiveListeners, 200);
+        setTimeout(initSupabaseRealtime, 300);
     }
 
     if (typeof module !== 'undefined' && module.exports) {
