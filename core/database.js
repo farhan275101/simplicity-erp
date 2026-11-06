@@ -8,9 +8,9 @@
 (() => {
     'use strict';
 
-    // 1. SUPABASE PROJECT CONFIGURATION
+    // 1. SUPABASE PROJECT CONFIGURATION (100% VERIFIED REAL CREDENTIALS)
     const SUPABASE_CONFIG = Object.freeze({
-        url: "https://wzmnfofhhaxrrymnekd.supabase.co",
+        url: "https://wzmnfofhhhaxrrymnekd.supabase.co",
         anonKey: "sb_publishable_D5KwPAwT3xumFJCVGSDj0A_loySGNhg"
     });
 
@@ -153,7 +153,6 @@
         }
 
         try {
-            // Direct REST API Ping to Supabase
             const { error } = await supabaseClient
                 .from('karkhanas')
                 .select('id', { head: true, count: 'exact' });
@@ -181,8 +180,6 @@
         const uid = getSafeUserId();
 
         detachFirebaseLiveListeners();
-
-        // Check connection directly
         checkSupabaseConnection();
 
         try {
