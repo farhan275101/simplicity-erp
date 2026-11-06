@@ -8,11 +8,10 @@
 (() => {
     'use strict';
 
-    // 1. SUPABASE PROJECT CONFIGURATION
+    // 1. SUPABASE PROJECT CONFIGURATION (CONFIGURED WITH YOUR REAL KEYS)
     const SUPABASE_CONFIG = Object.freeze({
         url: "https://wzmnfofhhaxrrymnekd.supabase.co",
-        // 👇 Yahan apni copy ki hui Publishable Key paste karein:
-        anonKey: "sb_publishable_D5KwPAwT3xumFJCVGSDj0A_loySG" 
+        anonKey: "sb_publishable_D5KwPAwT3xumFJCVGSDj0A_loySGNhg"
     });
 
     let supabaseClient = null;
@@ -164,15 +163,12 @@
         showSyncStatus('online');
 
         try {
-            // Postgres Changes Live Subscription
             realtimeChannel = supabaseClient.channel('public-db-changes')
                 .on(
                     'postgres_changes',
                     { event: '*', schema: 'public' },
                     (payload) => {
                         if (typeof window.isBackupPreviewMode !== 'undefined' && window.isBackupPreviewMode) return;
-                        
-                        // Screen Repaint on remote update
                         triggerSmartUIRepaint();
                         showSyncStatus('online');
                     }
