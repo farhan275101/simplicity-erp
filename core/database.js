@@ -1,7 +1,7 @@
 /* ============================================================================
-   SIMPLICITY ERP - ENTERPRISE SUPABASE CLOUD & DUAL-LAYER REALTIME ENGINE
+   SIMPLICITY ERP - ENTERPRISE AUTO-POLLING & LIVE REALTIME ENGINE
    File: core/database.js • Developed by Farhan Jawed
-   Architecture: Postgres Changes + Instant Live Broadcast (<50ms Auto-Sync)
+   Architecture: Zero-Refresh Live Auto-Sync (5s Heartbeat + Focus Detection)
 ============================================================================ */
 
 (() => {
@@ -17,6 +17,8 @@
     let isConnectedToCloud = false;
     let renderDebounceTimer = null;
     let realtimeChannel = null;
+    let autoSyncIntervalTimer = null;
+    let lastPulledHash = '';
 
     try {
         if (typeof window.supabase !== 'undefined' && typeof window.supabase.createClient === 'function') {
@@ -165,7 +167,7 @@
     };
 
     /**
-     * 🚀 CLOUD WRITE (Database Save + Instant WebSocket Broadcast)
+     * 🚀 CLOUD WRITE
      */
     const cloudWrite = async (fullKey, data) => {
         if (!supabaseClient) return false;
@@ -184,16 +186,6 @@
                 updated_at: new Date().toISOString()
             };
 
-            // 1. Instant WebSocket Broadcast (Doosre device ko 50ms me bhej do)
-            if (realtimeChannel) {
-                realtimeChannel.send({
-                    type: 'broadcast',
-                    event: 'erp_live_data_sync',
-                    payload: { key: String(fullKey), data: data, user_id: uid }
-                }).catch(() => {});
-            }
-
-            // 2. Database me save karo
             const { error } = await supabaseClient
                 .from(targetTable)
                 .upsert(payload, { onConflict: 'id' });
@@ -217,9 +209,9 @@
     };
 
     /**
-     * 📥 CLOUD PULL
+     * 📥 ULTRA-FAST CLOUD PULL (Bina Page Refresh Kiye Data Kheenchne Wala)
      */
-    const pullAllCloudData = async () => {
+    const pullAllCloudData = async (silent = true) => {
         if (!supabaseClient || !navigator.onLine) return;
         const uid = getSafeUserId();
 
@@ -229,11 +221,13 @@
             'material_transfers', 'karkhanas', 'dukan_challans', 'app_store'
         ];
 
+        let hasNewData = false;
+
         for (const tbl of tables) {
             try {
                 const { data, error } = await supabaseClient
                     .from(tbl)
-                    .select('*')
+                    .select('id, data, updated_at')
                     .eq('user_id', uid);
 
                 if (!error && data && data.length > 0) {
@@ -242,65 +236,65 @@
                         const rowData = row.data !== undefined ? row.data : row;
                         if (targetKey && typeof window.setRemoteStore === 'function') {
                             window.setRemoteStore(targetKey, rowData);
+                            hasNewData = true;
                         }
                     });
                 }
             } catch (_) {}
         }
 
-        triggerSmartUIRepaint();
+        if (hasNewData || !silent) {
+            triggerSmartUIRepaint();
+            showSyncStatus('online');
+        }
     };
 
     /**
-     * ⚡ DUAL REALTIME LISTENER (Broadcast + Postgres Changes)
+     * ⚡ 5-SECOND BACKGROUND LIVE SYNC (NO REFRESH NEEDED)
+     */
+    const startLiveAutoSyncHeartbeat = () => {
+        if (autoSyncIntervalTimer) clearInterval(autoSyncIntervalTimer);
+
+        // Har 4 second me background me check karega
+        autoSyncIntervalTimer = setInterval(() => {
+            if (navigator.onLine && !document.hidden) {
+                pullAllCloudData(true);
+            }
+        }, 4000);
+    };
+
+    /**
+     * ⚡ REALTIME LISTENER + SCREEN FOCUS AUTO-SYNC
      */
     const initSupabaseRealtime = () => {
         if (!supabaseClient) return;
         detachSupabaseRealtime();
 
-        const uid = getSafeUserId();
-
         try {
-            realtimeChannel = supabaseClient.channel('erp_global_live_room', {
-                config: { broadcast: { self: false } }
-            })
-            // ⚡ A. Instant Live Broadcast Listener (<50ms auto-update)
-            .on(
-                'broadcast',
-                { event: 'erp_live_data_sync' },
-                (eventPayload) => {
-                    if (typeof window.isBackupPreviewMode !== 'undefined' && window.isBackupPreviewMode) return;
-                    const p = eventPayload.payload;
-                    if (p && p.key && p.user_id === uid && typeof window.setRemoteStore === 'function') {
-                        window.setRemoteStore(p.key, p.data);
+            realtimeChannel = supabaseClient.channel('public_db_realtime')
+                .on(
+                    'postgres_changes',
+                    { event: '*', schema: 'public' },
+                    (payload) => {
+                        if (typeof window.isBackupPreviewMode !== 'undefined' && window.isBackupPreviewMode) return;
+                        const row = payload.new;
+                        if (row && row.id && typeof window.setRemoteStore === 'function') {
+                            const rowData = row.data !== undefined ? row.data : row;
+                            window.setRemoteStore(row.id, rowData);
+                        }
                         triggerSmartUIRepaint();
                         showSyncStatus('online');
                     }
-                }
-            )
-            // ⚡ B. Postgres Database Change Listener
-            .on(
-                'postgres_changes',
-                { event: '*', schema: 'public' },
-                (payload) => {
-                    if (typeof window.isBackupPreviewMode !== 'undefined' && window.isBackupPreviewMode) return;
-                    const row = payload.new;
-                    if (row && row.id && typeof window.setRemoteStore === 'function') {
-                        const rowData = row.data !== undefined ? row.data : row;
-                        window.setRemoteStore(row.id, rowData);
+                )
+                .subscribe((status) => {
+                    if (status === 'SUBSCRIBED') {
+                        isConnectedToCloud = true;
+                        showSyncStatus('online');
                     }
-                    triggerSmartUIRepaint();
-                    showSyncStatus('online');
-                }
-            )
-            .subscribe((status) => {
-                if (status === 'SUBSCRIBED') {
-                    isConnectedToCloud = true;
-                    showSyncStatus('online');
-                }
-            });
+                });
 
-            pullAllCloudData();
+            pullAllCloudData(false);
+            startLiveAutoSyncHeartbeat();
         } catch (err) {
             console.warn('[CloudEngine] Realtime setup:', err);
         }
@@ -312,12 +306,29 @@
                 supabaseClient.removeChannel(realtimeChannel);
                 realtimeChannel = null;
             }
+            if (autoSyncIntervalTimer) {
+                clearInterval(autoSyncIntervalTimer);
+                autoSyncIntervalTimer = null;
+            }
         } catch (_) {}
     };
 
     const switchSessionListeners = () => {
-        pullAllCloudData();
+        pullAllCloudData(false);
     };
+
+    // 📱 PHONE TOUCH & TAB FOCUS DETECTOR: Jaise hi phone screen on ho, turant sync karo!
+    document.addEventListener('visibilitychange', () => {
+        if (!document.hidden && navigator.onLine) {
+            pullAllCloudData(false);
+        }
+    });
+
+    window.addEventListener('focus', () => {
+        if (navigator.onLine) {
+            pullAllCloudData(false);
+        }
+    });
 
     const publicCloudAPI = {
         get db() { return supabaseClient; },
