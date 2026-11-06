@@ -147,7 +147,10 @@
 
         const uId = getSafeUserId();
 
-        if (typeof window.detachFirebaseLiveListeners === 'function') {
+        // ✅ Detach Realtime cleanly
+        if (typeof window.detachSupabaseRealtime === 'function') {
+            window.detachSupabaseRealtime();
+        } else if (typeof window.detachFirebaseLiveListeners === 'function') {
             window.detachFirebaseLiveListeners();
         }
 
