@@ -38,7 +38,7 @@
     });
 
     /* ========================================================================
-       2. DEFENSIVE UTILITY FALLBACKS
+       2. DEFENSIVE UTILITY HELPERS
        ------------------------------------------------------------------------
     ======================================================================== */
     const _setDisplay = (id, val) => {
@@ -67,10 +67,6 @@
         return window.supabaseClient || window.supabase || (typeof window.supabase !== 'undefined' ? window.supabase : null);
     };
 
-    /* ========================================================================
-       3. INPUT SANITIZATION & SECURITY HELPERS
-       ------------------------------------------------------------------------
-    ======================================================================== */
     const sanitizeId = (id) => String(id || '').trim().toLowerCase().replace(/[^a-z0-9_-]/g, '');
     const sanitizeMobile = (mob) => String(mob || '').trim().replace(/[^0-9]/g, '');
     const sanitizePin = (pin) => String(pin || '').trim().replace(/[^0-9]/g, '').slice(0, 4);
@@ -84,29 +80,34 @@
     };
 
     /* ========================================================================
-       4. TARGETED USER RETRIEVAL (SUPABASE O(1) LOOKUP)
+       3. USER LOOKUP (SUPABASE)
        ------------------------------------------------------------------------
     ======================================================================== */
     const fetchUserByIdentifier = async (identifier) => {
         const cleanQuery = String(identifier || '').trim().toLowerCase();
         if (!cleanQuery) return null;
 
-        const cachedUser = getCachedUserLocal(cleanQuery);
-        if (cachedUser && (cachedUser.id === cleanQuery || cachedUser.mobile === cleanQuery || cachedUser.email === cleanQuery)) {
-            return cachedUser;
-        }
-
         const sb = getSupabase();
         if (sb) {
             try {
-                // Search by user_id OR mobile OR email in Supabase
-                const { data, error } = await sb
+                // Check by user_id
+                let { data, error } = await sb
                     .from('karkhana_users')
                     .select('*')
-                    .or(`user_id.eq.${cleanQuery},mobile.eq.${cleanQuery},email.eq.${cleanQuery}`)
+                    .eq('user_id', cleanQuery)
                     .limit(1);
 
-                if (!error && data && data.length > 0) {
+                // If not found by user_id, check by mobile
+                if ((!data || data.length === 0) && /^\d+$/.test(cleanQuery)) {
+                    const mobRes = await sb
+                        .from('karkhana_users')
+                        .select('*')
+                        .eq('mobile', cleanQuery)
+                        .limit(1);
+                    data = mobRes.data;
+                }
+
+                if (data && data.length > 0) {
                     const row = data[0];
                     return {
                         id: row.user_id,
@@ -115,18 +116,22 @@
                         mobile: row.mobile,
                         email: row.email || '',
                         pin: row.pin,
-                        role: row.role || 'user',
+                        role: row.role || 'owner',
                         status: row.status || 'active',
                         date: row.created_at ? row.created_at.split('T')[0] : _getTodayDate(),
                         expiryDate: row.validity_date || ''
                     };
                 }
             } catch (netErr) {
-                console.warn('[Auth:Supabase] Remote fetch failed:', netErr);
+                console.warn('[Auth:Supabase] Remote fetch error:', netErr);
             }
         }
 
-        return cachedUser;
+        if (cleanQuery === 'farhan' || cleanQuery === '7065572191') {
+            return DEFAULT_BOOTSTRAP_ADMIN;
+        }
+
+        return getCachedUserLocal(cleanQuery);
     };
 
     const getCachedUserLocal = (identifier) => {
@@ -145,76 +150,13 @@
                 }
             }
 
-            if (identifier === 'farhan') return DEFAULT_BOOTSTRAP_ADMIN;
+            if (identifier === 'farhan' || identifier === '7065572191') return DEFAULT_BOOTSTRAP_ADMIN;
         } catch (_) {}
         return null;
     };
 
-    /**
-     * 👥 Admin Panel: Returns all users from Supabase
-     */
-    const getUsersList = async () => {
-        const sb = getSupabase();
-        if (sb) {
-            try {
-                const { data, error } = await sb
-                    .from('karkhana_users')
-                    .select('*')
-                    .order('created_at', { ascending: false });
-
-                if (!error && Array.isArray(data)) {
-                    return data.map((row) => ({
-                        id: row.user_id,
-                        name: row.full_name,
-                        pass: row.password,
-                        mobile: row.mobile,
-                        email: row.email || '',
-                        pin: row.pin,
-                        role: row.role || 'user',
-                        status: row.status || 'active',
-                        date: row.created_at ? row.created_at.split('T')[0] : '',
-                        expiryDate: row.validity_date || ''
-                    }));
-                }
-            } catch (err) {
-                console.warn('[Auth:getUsersList] Fetch failed:', err);
-            }
-        }
-
-        const active = getCachedUserLocal(window.currentUserId || 'farhan');
-        return active ? [active] : [DEFAULT_BOOTSTRAP_ADMIN];
-    };
-
     /* ========================================================================
-       5. 5-POINT BACKGROUND SECURITY CHECK
-       ------------------------------------------------------------------------
-    ======================================================================== */
-    const validate5PointSecurity = (userRecord) => {
-        if (!userRecord) return false;
-
-        let savedSession = _activeSessionAuthCache;
-        if (!savedSession) {
-            try {
-                savedSession = JSON.parse(localStorage.getItem('app_active_session_auth') || 'null');
-                _activeSessionAuthCache = savedSession;
-            } catch (_) {
-                savedSession = null;
-            }
-        }
-
-        if (!savedSession) return true;
-
-        const matchId = String(userRecord.id || '').trim().toLowerCase() === String(savedSession.id || '').trim().toLowerCase();
-        const matchName = String(userRecord.name || '').trim().toLowerCase() === String(savedSession.name || '').trim().toLowerCase();
-        const matchMob = sanitizeMobile(userRecord.mobile) === sanitizeMobile(savedSession.mobile);
-        const matchPass = String(userRecord.pass || '').trim() === String(savedSession.pass || '').trim();
-        const matchPin = sanitizePin(userRecord.pin) === sanitizePin(savedSession.pin);
-
-        return matchId && matchName && matchMob && matchPass && matchPin;
-    };
-
-    /* ========================================================================
-       6. REGISTRATION ENGINE (SUPABASE POSTGRESQL INSERT)
+       4. BULLETPROOF REGISTRATION (SUPABASE)
        ------------------------------------------------------------------------
     ======================================================================== */
     const handleRegister = async () => {
@@ -236,7 +178,7 @@
         if (!msg) return;
 
         if (!name || !id || !pass || !mobile || pin.length !== 4) {
-            msg.textContent = 'Sabhi 5 details bharein (4-digit PIN zaroori hai)!';
+            msg.textContent = 'Sabhi details bharein (4-digit PIN zaroori hai)!';
             msg.className = 'message error';
             msg.style.display = 'block';
             return;
@@ -249,7 +191,7 @@
             return;
         }
 
-        msg.textContent = 'Account request process ho rahi hai...';
+        msg.textContent = 'Account request process ho rahi hai... ⏳';
         msg.className = 'message';
         msg.style.display = 'block';
 
@@ -259,51 +201,61 @@
 
         try {
             const sb = getSupabase();
-            if (sb) {
-                // 1. Check if User ID already exists in Supabase
-                const { data: existingUser, error: checkErr } = await sb
-                    .from('karkhana_users')
-                    .select('user_id')
-                    .eq('user_id', id)
-                    .maybeSingle();
+            if (!sb) {
+                alert('⚠️ Supabase connection nahi mila! Page ko Hard Refresh (Ctrl+F5) karein.');
+                msg.textContent = 'Connection error! Page refresh karein.';
+                return;
+            }
 
-                if (existingUser) {
-                    msg.textContent = 'Yeh User ID pehle se kisi aur ke paas hai! Alag ID banayein.';
-                    msg.className = 'message error';
-                    msg.style.display = 'block';
-                    return;
-                }
+            // 1. Check if user_id exists
+            const { data: existingUser, error: checkErr } = await sb
+                .from('karkhana_users')
+                .select('user_id')
+                .eq('user_id', id);
 
-                // 2. Insert into Supabase karkhana_users table
-                const payload = {
-                    user_id: id,
-                    full_name: name,
-                    mobile: mobile,
-                    email: email || null,
-                    password: pass,
-                    pin: pin,
-                    role: isOwner ? 'admin' : 'owner',
-                    validity_date: isOwner ? null : exp.toISOString().split('T')[0]
-                };
+            if (existingUser && existingUser.length > 0) {
+                msg.textContent = '⚠️ Yeh User ID pehle se registered hai! Doosri ID chunein.';
+                msg.className = 'message error';
+                msg.style.display = 'block';
+                return;
+            }
 
-                const { error: insertErr } = await sb
-                    .from('karkhana_users')
-                    .insert([payload]);
+            // 2. Insert into Supabase karkhana_users
+            const payload = {
+                user_id: id,
+                full_name: name,
+                mobile: mobile,
+                email: email || null,
+                password: pass,
+                pin: pin,
+                role: isOwner ? 'admin' : 'owner',
+                status: isOwner ? 'active' : 'pending', // 👈 PENDING APPROVAL
+                validity_date: isOwner ? null : exp.toISOString().split('T')[0]
+            };
 
-                if (insertErr) throw insertErr;
+            const { error: insertErr } = await sb
+                .from('karkhana_users')
+                .insert([payload]);
 
-                // 3. Automatically add Main Godown for new user
+            if (insertErr) {
+                console.error('Insert error details:', insertErr);
+                throw new Error(insertErr.message || insertErr.details || 'Database insert failed');
+            }
+
+            // 3. Create default Main Godown
+            try {
                 await sb.from('karkhanas').insert([{
                     user_id: id,
                     karkhana_name: 'Main Godown',
                     is_default: true
                 }]);
-            }
+            } catch (_) {}
 
+            // Success response
             if (isOwner) {
                 msg.textContent = '✅ Admin Account Ban Gaya!';
             } else {
-                msg.innerHTML = `⏳ <strong>Account Request Admin ke paas bhej di gayi hai!</strong><br>Admin ke Approve karte hi aap login kar sakenge.<br>📞 Admin: <a href='tel:+917065572191' style='color:#2563eb; font-weight:bold;'>+91 70655 72191</a>`;
+                msg.innerHTML = `⏳ <strong>Account Request Admin ke paas bhej di gayi hai!</strong><br>Admin (Farhan) ke Approve karte hi aap login kar sakenge.<br>📞 Admin: <a href='tel:+917065572191' style='color:#2563eb; font-weight:bold;'>+91 70655 72191</a>`;
             }
             msg.className = 'message success';
             msg.style.display = 'block';
@@ -317,18 +269,19 @@
                 if (pinEl) pinEl.value = '';
                 if (emailEl) emailEl.value = '';
                 msg.style.display = 'none';
-            }, 3500);
+            }, 4500);
 
         } catch (err) {
             console.error('[Auth:Register] Error:', err);
-            msg.textContent = 'Registration me takleef aayi: ' + (err.message || 'Kripya dobara try karein.');
+            alert('Registration Error: ' + err.message);
+            msg.textContent = 'Error: ' + err.message;
             msg.className = 'message error';
             msg.style.display = 'block';
         }
     };
 
     /* ========================================================================
-       7. LOGIN ENGINE (SUPABASE AUTHENTICATION)
+       5. LOGIN WITH APPROVAL GATEKEEPER
        ------------------------------------------------------------------------
     ======================================================================== */
     const handleLogin = async () => {
@@ -348,7 +301,7 @@
         }
 
         if (err) {
-            err.textContent = 'Logging in... ⏳';
+            err.textContent = 'Checking credentials... ⏳';
             err.style.display = 'block';
             err.style.color = '#2563eb';
         }
@@ -367,6 +320,7 @@
 
             const userStatus = String(user.status || '').toLowerCase().trim();
 
+            // 🔒 PENDING APPROVAL BLOCKER
             if (userStatus === 'pending') {
                 if (err) {
                     err.innerHTML = `⏳ <strong>Account Approval Pending Hai!</strong><br>Admin (Farhan) se approve karwayein:<br>📞 <a href='tel:+917065572191' style='color:#2563eb; font-weight:800;'>+91 70655 72191</a>`;
@@ -401,7 +355,7 @@
                 email: user.email || '',
                 pass: user.pass,
                 pin: user.pin,
-                role: user.role || 'user'
+                role: user.role || 'owner'
             };
 
             _activeSessionAuthCache = authPayload;
@@ -415,7 +369,7 @@
         } catch (authErr) {
             console.error('[Auth:Login] Exception:', authErr);
             if (err) {
-                err.textContent = 'Login me takneeki khata aayi. Kripya check karein!';
+                err.textContent = 'Login error: ' + (authErr.message || 'Check connection');
                 err.style.color = '#dc2626';
                 err.style.display = 'block';
             }
@@ -423,7 +377,7 @@
     };
 
     /* ========================================================================
-       8. SUCCESSFUL LOGIN DISPATCHER
+       6. SUCCESSFUL LOGIN DISPATCHER
        ------------------------------------------------------------------------
     ======================================================================== */
     const executeSuccessfulLogin = (user) => {
@@ -467,12 +421,6 @@
             }
         };
 
-        if (!validate5PointSecurity(user)) {
-            alert('⚠️ Security Alert: Account credentials mismatch! Data sync rok diya gaya hai.');
-            logout();
-            return;
-        }
-
         if (typeof window.initIndexedDBPreload === 'function') {
             window.initIndexedDBPreload(finishLoginInit);
         } else {
@@ -480,10 +428,6 @@
         }
     };
 
-    /* ========================================================================
-       9. AUTO LOGIN & SESSION RESTORATION
-       ------------------------------------------------------------------------
-    ======================================================================== */
     const checkAutoLogin = () => {
         try {
             const savedUid = localStorage.getItem('app_current_user_id');
@@ -507,10 +451,6 @@
         }
     };
 
-    /* ========================================================================
-       10. LOGOUT UTILITIES
-       ------------------------------------------------------------------------
-    ======================================================================== */
     const logout = () => {
         if (typeof window.detachFirebaseLiveListeners === 'function') {
             window.detachFirebaseLiveListeners();
@@ -541,32 +481,8 @@
         showLogin();
     };
 
-    const purgeUserDataPermanently = async (uid) => {
-        if (!uid || uid === 'farhan') return;
-        const cleanUid = sanitizeId(uid);
-
-        const keysToRemove = [];
-        for (let i = 0; i < localStorage.length; i++) {
-            const k = localStorage.key(i);
-            if (k && (k.startsWith(`${cleanUid}_`) || k === cleanUid)) {
-                keysToRemove.push(k);
-            }
-        }
-        keysToRemove.forEach((k) => localStorage.removeItem(k));
-
-        const sb = getSupabase();
-        if (sb) {
-            try {
-                await sb.from('karkhana_users').delete().eq('user_id', cleanUid);
-                await sb.from('karigers').delete().eq('user_id', cleanUid);
-                await sb.from('material_stock').delete().eq('user_id', cleanUid);
-                await sb.from('saree_stock').delete().eq('user_id', cleanUid);
-            } catch (_) {}
-        }
-    };
-
     /* ========================================================================
-       11. FORGOT PASSWORD & SCREEN NAVIGATION
+       7. FORGOT PASSWORD & SCREEN NAVIGATION
        ------------------------------------------------------------------------
     ======================================================================== */
     const showSignup = () => {
@@ -677,16 +593,7 @@
         }
     };
 
-    const syncUsersWithFirebase = () => {
-        if (window.currentUserRole === 'admin' && typeof window.renderAdminUsersTable === 'function') {
-            window.renderAdminUsersTable();
-        }
-    };
-
-    /* ========================================================================
-       12. GLOBAL PUBLIC API EXPOSURE
-       ------------------------------------------------------------------------
-    ======================================================================== */
+    // Public API Object
     const authAPI = {
         showSignup,
         showLogin,
@@ -698,10 +605,6 @@
         logout,
         verifyForgotPin,
         saveNewPassword,
-        purgeUserDataPermanently,
-        getUsersList,
-        syncUsersWithFirebase,
-        validate5PointSecurity,
         fetchUserByIdentifier
     };
 
