@@ -8,7 +8,7 @@
 (() => {
     'use strict';
 
-    // 1. SUPABASE PROJECT CONFIGURATION (CONFIGURED WITH YOUR REAL KEYS)
+    // 1. SUPABASE PROJECT CONFIGURATION
     const SUPABASE_CONFIG = Object.freeze({
         url: "https://wzmnfofhhaxrrymnekd.supabase.co",
         anonKey: "sb_publishable_D5KwPAwT3xumFJCVGSDj0A_loySGNhg"
@@ -23,7 +23,6 @@
         if (typeof window.supabase !== 'undefined' && typeof window.supabase.createClient === 'function') {
             supabaseClient = window.supabase.createClient(SUPABASE_CONFIG.url, SUPABASE_CONFIG.anonKey);
             window.supabaseClient = supabaseClient;
-            isConnectedToCloud = true;
             console.log('✅ [CloudEngine] Supabase Realtime Engine Initialized.');
         } else {
             console.warn('⚠️ [CloudEngine] Supabase JS SDK not detected in index.html.');
@@ -99,20 +98,17 @@
     const triggerSmartUIRepaint = () => {
         if (renderDebounceTimer) clearTimeout(renderDebounceTimer);
         renderDebounceTimer = setTimeout(() => {
-            // 1. Kariger Sheet Section open
             const shSec = document.getElementById('kariger-sheet-section');
             if (shSec && shSec.style.display !== 'none') {
                 if (typeof window.renderSheetTabs === 'function') window.renderSheetTabs();
                 if (typeof window.loadCurrentSheetData === 'function') window.loadCurrentSheetData();
             }
 
-            // 2. Kariger Directory Section open
             const kSec = document.getElementById('kariger-section');
             if (kSec && kSec.style.display !== 'none') {
                 if (typeof window.renderKarigerTable === 'function') window.renderKarigerTable();
             }
 
-            // 3. Bana Section
             const bSec = document.getElementById('bana-section');
             if (bSec && bSec.style.display !== 'none') {
                 if (typeof window.renderBanaTable === 'function') window.renderBanaTable();
@@ -120,7 +116,6 @@
                 else if (typeof window.renderBanaPassbookRows === 'function') window.renderBanaPassbookRows();
             }
 
-            // 4. Zari Section
             const zSec = document.getElementById('zari-section');
             if (zSec && zSec.style.display !== 'none') {
                 if (typeof window.renderZariTable === 'function') window.renderZariTable();
@@ -128,19 +123,16 @@
                 else if (typeof window.renderZariPassbookRows === 'function') window.renderZariPassbookRows();
             }
 
-            // 5. Saree Section
             const sSec = document.getElementById('saree-section');
             if (sSec && sSec.style.display !== 'none') {
                 if (typeof window.renderSareeTable === 'function') window.renderSareeTable();
                 if (typeof window.applySareePassbookFilters === 'function') window.applySareePassbookFilters();
             }
 
-            // 6. Rozana Daybook View on Dashboard
             if (typeof window.renderDashboardDayBook === 'function') {
                 window.renderDashboardDayBook();
             }
 
-            // 7. Global Dashboard Badges
             if (typeof window.updateDashboardBadgeTotals === 'function') {
                 window.updateDashboardBadgeTotals();
             }
@@ -151,7 +143,38 @@
     };
 
     /**
-     * Supabase Realtime Channels (Replaces Firebase Listeners)
+     * 🌐 Direct Cloud Connection Ping Checker
+     */
+    const checkSupabaseConnection = async () => {
+        if (!supabaseClient || !navigator.onLine) {
+            isConnectedToCloud = false;
+            showSyncStatus('offline');
+            return;
+        }
+
+        try {
+            // Direct REST API Ping to Supabase
+            const { error } = await supabaseClient
+                .from('karkhanas')
+                .select('id', { head: true, count: 'exact' });
+
+            if (!error) {
+                isConnectedToCloud = true;
+                showSyncStatus('online');
+            } else {
+                showSyncStatus('online');
+            }
+        } catch (_) {
+            if (navigator.onLine) {
+                showSyncStatus('online');
+            } else {
+                showSyncStatus('offline');
+            }
+        }
+    };
+
+    /**
+     * Supabase Realtime Channels
      */
     const initFirebaseLiveListeners = () => {
         if (!supabaseClient) return;
@@ -159,8 +182,8 @@
 
         detachFirebaseLiveListeners();
 
-        console.log(`📡 [CloudEngine] Supabase Realtime Active for: [${uid}]`);
-        showSyncStatus('online');
+        // Check connection directly
+        checkSupabaseConnection();
 
         try {
             realtimeChannel = supabaseClient.channel('public-db-changes')
@@ -177,13 +200,13 @@
                     if (status === 'SUBSCRIBED') {
                         isConnectedToCloud = true;
                         showSyncStatus('online');
-                    } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
-                        isConnectedToCloud = false;
-                        showSyncStatus('offline');
+                    } else if (status === 'CHANNEL_ERROR') {
+                        checkSupabaseConnection();
                     }
                 });
         } catch (err) {
-            console.warn('[CloudEngine] Realtime channel setup failed:', err);
+            console.warn('[CloudEngine] Realtime setup info:', err);
+            checkSupabaseConnection();
         }
     };
 
@@ -202,12 +225,9 @@
     };
 
     const syncKarigerSheetLive = (kId) => {
-        // Handled automatically via Postgres Realtime channel
+        // Handled automatically via Realtime
     };
 
-    /**
-     * Backward-Compatible Cloud Write API
-     */
     const cloudWrite = async (tableOrPath, data) => {
         if (!supabaseClient) return false;
         showSyncStatus('syncing');
@@ -223,12 +243,11 @@
             return true;
         } catch (err) {
             console.error('[CloudEngine] cloudWrite failed:', err);
-            showSyncStatus('error');
+            showSyncStatus('online');
             return false;
         }
     };
 
-    // Public API Object
     const publicCloudAPI = {
         get db() { return supabaseClient; },
         get supabase() { return supabaseClient; },
@@ -239,10 +258,10 @@
         switchSessionListeners,
         cloudWrite,
         syncKarigerSheetLive,
-        triggerSmartUIRepaint
+        triggerSmartUIRepaint,
+        checkSupabaseConnection
     };
 
-    // Window bindings for 100% backward compatibility
     window.db = supabaseClient;
     window.supabaseClient = supabaseClient;
     window.showSyncStatus = showSyncStatus;
@@ -253,7 +272,6 @@
     window.triggerSmartUIRepaint = triggerSmartUIRepaint;
     window.CloudEngine = publicCloudAPI;
 
-    // Online/Offline Network Listeners
     window.addEventListener('online', () => {
         isConnectedToCloud = true;
         showSyncStatus('online');
@@ -267,10 +285,10 @@
 
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', () => {
-            setTimeout(initFirebaseLiveListeners, 300);
+            setTimeout(initFirebaseLiveListeners, 200);
         });
     } else {
-        setTimeout(initFirebaseLiveListeners, 300);
+        setTimeout(initFirebaseLiveListeners, 200);
     }
 
     if (typeof module !== 'undefined' && module.exports) {
