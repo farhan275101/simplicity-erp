@@ -1,7 +1,7 @@
 /* ============================================================================
-   SIMPLICITY ERP - ENTERPRISE AUTO-POLLING & LIVE REALTIME ENGINE
+   SIMPLICITY ERP - ENTERPRISE AUTO-POLLING & LIVE REALTIME ENGINE (SAFE SELECT)
    File: core/database.js • Developed by Farhan Jawed
-   Architecture: Zero-Refresh Live Auto-Sync (5s Heartbeat + Focus Detection)
+   Architecture: Zero-Error Safe Select | Auto-Sync Heartbeat
 ============================================================================ */
 
 (() => {
@@ -18,7 +18,6 @@
     let renderDebounceTimer = null;
     let realtimeChannel = null;
     let autoSyncIntervalTimer = null;
-    let lastPulledHash = '';
 
     try {
         if (typeof window.supabase !== 'undefined' && typeof window.supabase.createClient === 'function') {
@@ -209,7 +208,7 @@
     };
 
     /**
-     * 📥 ULTRA-FAST CLOUD PULL (Bina Page Refresh Kiye Data Kheenchne Wala)
+     * 📥 SAFE CLOUD PULL (.select('*') Se Kabhi 400 Error Nahi Aata)
      */
     const pullAllCloudData = async (silent = true) => {
         if (!supabaseClient || !navigator.onLine) return;
@@ -225,9 +224,10 @@
 
         for (const tbl of tables) {
             try {
+                // ✅ Safe select: Koi column miss hone par bhi crash nahi hoga
                 const { data, error } = await supabaseClient
                     .from(tbl)
-                    .select('id, data, updated_at')
+                    .select('*')
                     .eq('user_id', uid);
 
                 if (!error && data && data.length > 0) {
@@ -250,21 +250,20 @@
     };
 
     /**
-     * ⚡ 5-SECOND BACKGROUND LIVE SYNC (NO REFRESH NEEDED)
+     * ⚡ 5-SECOND BACKGROUND LIVE SYNC
      */
     const startLiveAutoSyncHeartbeat = () => {
         if (autoSyncIntervalTimer) clearInterval(autoSyncIntervalTimer);
 
-        // Har 4 second me background me check karega
         autoSyncIntervalTimer = setInterval(() => {
             if (navigator.onLine && !document.hidden) {
                 pullAllCloudData(true);
             }
-        }, 4000);
+        }, 5000);
     };
 
     /**
-     * ⚡ REALTIME LISTENER + SCREEN FOCUS AUTO-SYNC
+     * ⚡ REALTIME LISTENER
      */
     const initSupabaseRealtime = () => {
         if (!supabaseClient) return;
@@ -317,7 +316,6 @@
         pullAllCloudData(false);
     };
 
-    // 📱 PHONE TOUCH & TAB FOCUS DETECTOR: Jaise hi phone screen on ho, turant sync karo!
     document.addEventListener('visibilitychange', () => {
         if (!document.hidden && navigator.onLine) {
             pullAllCloudData(false);
