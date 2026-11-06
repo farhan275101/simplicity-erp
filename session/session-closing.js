@@ -1,7 +1,7 @@
 /* ============================================================================
    SIMPLICITY ERP - 5-STAGE ENTERPRISE BULLETPROOF YEAR CLOSING ENGINE
    File: session/session-closing.js • Developed by Farhan Jawed
-   Architecture: Zero-Leakage Consolidated Stock & Branch Reconcile Engine
+   Architecture: Supabase PostgreSQL & Multi-Branch Reconcile Engine
    (100% Exact Match: Bana 2347 Kg, Zari 2821 Kg, Sancha 2467/1483 Kg)
 ============================================================================ */
 
@@ -149,8 +149,6 @@
 
         if (typeof window.detachFirebaseLiveListeners === 'function') {
             window.detachFirebaseLiveListeners();
-        } else if (typeof window.db !== 'undefined' && window.db && uId) {
-            try { window.db.ref(`users/${uId}`).off(); } catch (_) {}
         }
 
         if (typeof window.closeSessionClosingModal === 'function') {
@@ -331,7 +329,7 @@
     };
 
     /* ========================================================================
-       STAGE 3: BANA & ZARI STOCK (100% RECONCILE - 2347 Kg & 2821 Kg MATCH)
+       STAGE 3: BANA & ZARI STOCK (100% RECONCILE)
        ======================================================================== */
     const runStage3_BanaZariStockAsync = async (curSess, newSess) => {
         let karkhanas = (typeof window.getKarkhanasSafe === 'function') 
@@ -342,13 +340,12 @@
         const todayStr = (typeof window.getTodayDate === 'function') ? window.getTodayDate() : '';
         let bSeq = 0, zSeq = 0;
 
-        // 1. BANA SCANNING (Full Reconcile with 1547 Kg Karishma)
+        // 1. BANA SCANNING
         const rawBana = window.safeArray ? window.safeArray(window.getStore('bana_stock')) : [];
         const rawBHist = window.safeArray ? window.safeArray(window.getStore('bana_history')) : [];
         const uniqueBanaNames = getUniqueItemNamesCaseInsensitive([...rawBana, ...rawBHist]);
 
         for (const bName of uniqueBanaNames) {
-            // Business Total (Sabhi Karkhane Total)
             const statsAll = (typeof window.getBanaItemStats === 'function') 
                 ? window.getBanaItemStats(bName, 'all') 
                 : { bacha: 0 };
@@ -358,7 +355,6 @@
 
             let distributedBacha = 0;
 
-            // Har branch ka bacha wazan
             for (const k of karkhanas) {
                 const statsK = (typeof window.getBanaItemStats === 'function') 
                     ? window.getBanaItemStats(bName, k.id) 
@@ -395,7 +391,6 @@
                 }
             }
 
-            // 🌟 110 Kg RECONCILE LOCK: Agar kisi transfer ya branch discrepancy se wazan bacha tha, use Main Godown me jod kar 100% pura karo!
             const remainingGap = safeNum(totalTargetBacha - distributedBacha);
             if (remainingGap > 0.05) {
                 const mainItem = pipelineState.stage3_newBanaStock.find(x => x.name.toLowerCase() === bName.toLowerCase() && x.karkhanaId === 'k_main');
@@ -428,7 +423,7 @@
             await yieldThread();
         }
 
-        // 2. ZARI SCANNING (100% Exact Reconcile)
+        // 2. ZARI SCANNING
         const rawZari = window.safeArray ? window.safeArray(window.getStore('zari_stock')) : [];
         const rawZHist = window.safeArray ? window.safeArray(window.getStore('zari_history')) : [];
         const uniqueZariNames = getUniqueItemNamesCaseInsensitive([...rawZari, ...rawZHist]);
@@ -509,19 +504,18 @@
             await yieldThread();
         }
 
-        updateProgressUI(3, `✅ Bana (2347 Kg) & Zari (2821 Kg) 100% Reconciled`, 100, 60, true);
+        updateProgressUI(3, `✅ Bana & Zari Reconciled`, 100, 60, true);
         await yieldThread(50);
     };
 
     /* ========================================================================
-       STAGE 4: SANCHA (TANI & CHUKKA - EXACT 2467 / 1483 Kg MATCH)
+       STAGE 4: SANCHA (TANI & CHUKKA) & JOB WORK
        ======================================================================== */
     const runStage4_SanchaAndJobworkAsync = async (curSess, newSess) => {
         const todayStr = (typeof window.getTodayDate === 'function') ? window.getTodayDate() : '';
         const rawSancha = window.safeArray ? window.safeArray(window.getStore('sancha_items')) : [];
         let sSeq = 0;
 
-        // 🌟 SANCHA DIRECT ITEM MATCH: Jisse 2467 Kg Tani aur 1483 Kg Chukka 1-1 gram exact match hoga
         rawSancha.forEach((s) => {
             if (!s || !s.name) return;
             const bacha = safeNum(s.bacha !== undefined ? s.bacha : s.aaya);
@@ -560,7 +554,6 @@
             });
         });
 
-        // Job Work Workers carry forward
         const rawWorkers = window.safeArray ? window.safeArray(window.getStore('jobwork_workers')) : [];
         pipelineState.stage4_oldJwWorkers = rawWorkers;
 
@@ -584,12 +577,12 @@
             await yieldThread();
         }
 
-        updateProgressUI(4, '✅ Sancha Exact (2467 / 1483 Kg) Ready', 100, 80, true);
+        updateProgressUI(4, '✅ Sancha & Job Work Ready', 100, 80, true);
         await yieldThread(50);
     };
 
     /* ========================================================================
-       STAGE 5: ATOMIC COMMIT
+       STAGE 5: ATOMIC COMMIT (SUPABASE ALIGNED)
        ======================================================================== */
     const runStage5_FinalizeCommitAsync = async (curSess, newSess, uId) => {
         updateProgressUI(5, '⏳ Storing Core Data...', 10, 82);
@@ -606,8 +599,8 @@
         }
 
         if (typeof window.idbPut === 'function') {
-            window.idbPut(`${uId}_app_sessions_list`, sessions);
-            window.idbPut(`${uId}_app_active_session`, newSess);
+            await window.idbPut(`${uId}_app_sessions_list`, sessions);
+            await window.idbPut(`${uId}_app_active_session`, newSess);
         }
 
         const persistGeneralStore = (key, data) => {
@@ -615,6 +608,11 @@
             if (window.APP_MEMORY_CACHE) window.APP_MEMORY_CACHE[fullKey] = data;
             if (typeof window.idbPut === 'function') window.idbPut(fullKey, data);
             safeSetLocalStorage(fullKey, data, uId, curSess, newSess);
+
+            // Cloud sync to Supabase
+            if (typeof window.CloudEngine?.cloudWrite === 'function') {
+                window.CloudEngine.cloudWrite(fullKey, data);
+            }
         };
 
         persistGeneralStore('kariger_list', pipelineState.stage1_oldKarigers);
@@ -640,46 +638,11 @@
         persistGeneralStore('payment_records', []);
         persistGeneralStore('dukan_records', []);
 
-        if (typeof window.db !== 'undefined' && window.db && uId) {
-            try {
-                const baseBatch = {
-                    app_active_session: newSess,
-                    app_sessions_list: sessions,
-                    [`${newSess}_kariger_list`]: pipelineState.stage1_oldKarigers,
-                    [`${newSess}_saree_stock`]: pipelineState.stage2_newSareeStock,
-                    [`${newSess}_saree_history`]: pipelineState.stage2_newSareeHistory,
-                    [`${newSess}_bana_stock`]: pipelineState.stage3_newBanaStock,
-                    [`${newSess}_bana_history`]: pipelineState.stage3_newBanaHistory,
-                    [`${newSess}_zari_stock`]: pipelineState.stage3_newZariStock,
-                    [`${newSess}_zari_history`]: pipelineState.stage3_newZariHistory,
-                    [`${newSess}_sancha_items`]: pipelineState.stage4_newSanchaItems,
-                    [`${newSess}_sancha_history`]: pipelineState.stage4_newSanchaHistory,
-                    [`${newSess}_jobwork_workers`]: pipelineState.stage4_oldJwWorkers,
-                    [`${newSess}_material_transfers`]: [],
-                    [`${newSess}_jw_bills_list`]: [],
-                    [`${newSess}_jw_payments_list`]: [],
-                    [`${newSess}_dukan_transfer_history`]: [],
-                    [`${newSess}_daybook_records`]: [],
-                    [`${newSess}_payment_records`]: [],
-                    [`${newSess}_dukan_records`]: []
-                };
-
-                for (const cWId in pipelineState.stage4_newJwSheetsMap) {
-                    baseBatch[`${newSess}_jobwork_sheets_${cWId}`] = pipelineState.stage4_newJwSheetsMap[cWId];
-                }
-
-                await window.db.ref(`users/${uId}`).update(baseBatch);
-            } catch (cloudBaseErr) {
-                console.warn('[SessionClosing] Cloud base batch warning:', cloudBaseErr);
-            }
-        }
-
         const karigerKeys = Object.keys(pipelineState.stage1_newKarigerSheetsMap);
         const totalKarigers = karigerKeys.length;
 
         for (let i = 0; i < totalKarigers; i += STAGE5_KARIGER_COMMIT_BATCH) {
             const end = Math.min(i + STAGE5_KARIGER_COMMIT_BATCH, totalKarigers);
-            const cloudMiniBatch = {};
 
             for (let j = i; j < end; j++) {
                 const kId = karigerKeys[j];
@@ -690,13 +653,9 @@
                 if (typeof window.idbPut === 'function') window.idbPut(fullKey, sheetData);
                 safeSetLocalStorage(fullKey, sheetData, uId, curSess, newSess);
 
-                cloudMiniBatch[`${newSess}_kariger_sheets_${kId}`] = sheetData;
-            }
-
-            if (typeof window.db !== 'undefined' && window.db && uId) {
-                try {
-                    await window.db.ref(`users/${uId}`).update(cloudMiniBatch);
-                } catch (_) {}
+                if (typeof window.CloudEngine?.cloudWrite === 'function') {
+                    window.CloudEngine.cloudWrite(fullKey, sheetData);
+                }
             }
 
             const pct = totalKarigers > 0 ? Math.floor((end / totalKarigers) * 100) : 100;
@@ -755,8 +714,8 @@
         if (window.APP_MEMORY_CACHE) window.APP_MEMORY_CACHE[`${uId}_app_active_session`] = s;
         if (typeof window.idbPut === 'function') window.idbPut(`${uId}_app_active_session`, s);
 
-        if (typeof window.db !== 'undefined' && window.db && uId) {
-            try { window.db.ref(`users/${uId}/app_active_session`).set(s); } catch (_) {}
+        if (typeof window.CloudEngine?.cloudWrite === 'function') {
+            window.CloudEngine.cloudWrite(`${uId}_app_active_session`, s);
         }
 
         if (typeof window.populateSessionDropdown === 'function') {
