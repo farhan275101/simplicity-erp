@@ -17,12 +17,11 @@
     <!-- Stylesheets with Cache-Busting Version 3.0 -->
     <link rel="stylesheet" href="style.css?v=3.0">
 
-    <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
-    <link rel="preconnect" href="https://simplicity-erp-default-rtdb.firebaseio.com" crossorigin>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://wzmnfofhhaxrrymnekd.supabase.co" crossorigin>
 
-    <!-- Firebase Compatibility SDKs -->
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+    <!-- ✅ Supabase Modern JS SDK v2 (Firebase Replaced) -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <style>
         .module-section {
@@ -71,8 +70,8 @@
             <p class="card-subtitle">Karkhana Business Management Portal</p>
             
             <div class="input-group">
-                <label for="login-id">User ID ya Mobile No.</label>
-                <input type="text" id="login-id" placeholder="User ID ya Mobile Number" autocomplete="username">
+                <label for="login-id">User ID, Mobile ya Gmail</label>
+                <input type="text" id="login-id" placeholder="User ID / Mobile / Gmail" autocomplete="username">
             </div>
             <div class="input-group">
                 <label for="login-pass">Password</label>
@@ -92,6 +91,7 @@
             <h2>Naya Account</h2>
             <div class="input-group"><label for="reg-name">Naam</label><input type="text" id="reg-name" placeholder="Aapka Pura Naam"></div>
             <div class="input-group"><label for="reg-mobile">Mobile</label><input type="tel" id="reg-mobile" placeholder="10-digit Mobile Number"></div>
+            <div class="input-group"><label for="reg-email">Gmail / Email ID</label><input type="email" id="reg-email" placeholder="example@gmail.com"></div>
             <div class="input-group"><label for="reg-id">User ID</label><input type="text" id="reg-id" placeholder="Unique User ID"></div>
             <div class="input-group"><label for="reg-pass">Password</label><input type="password" id="reg-pass" placeholder="Password"></div>
             <div class="input-group"><label for="reg-pin" style="color:#b91c1c;">4-Digit PIN</label><input type="password" maxlength="4" id="reg-pin" placeholder="Security PIN"></div>
@@ -106,7 +106,7 @@
         <div class="card" id="forgot-box" style="display:none;">
             <h2>Password Reset</h2>
             <div id="forgot-step-1">
-                <div class="input-group"><label for="forgot-query">User ID / Mobile</label><input type="text" id="forgot-query"></div>
+                <div class="input-group"><label for="forgot-query">User ID / Mobile / Gmail</label><input type="text" id="forgot-query"></div>
                 <div class="input-group"><label for="forgot-pin">4-Digit PIN</label><input type="password" maxlength="4" id="forgot-pin"></div>
                 <button type="button" class="btn" onclick="verifyForgotPin()">Verify PIN</button>
             </div>
@@ -1041,6 +1041,7 @@
                 <div class="input-group"><label>Naam</label><input type="text" id="prof-name"></div>
                 <div class="input-group"><label>User ID</label><input type="text" id="prof-id" readonly></div>
                 <div class="input-group"><label>Mobile</label><input type="tel" id="prof-mobile"></div>
+                <div class="input-group"><label>Gmail ID</label><input type="email" id="prof-email" placeholder="example@gmail.com"></div>
                 <div class="input-group"><label>Password</label><input type="password" id="prof-pass"></div>
                 <div class="input-group"><label>PIN</label><input type="password" maxlength="4" id="prof-pin"></div>
                 <button type="button" id="prof-save-btn" class="btn" onclick="saveProfileSettings()">Save Settings</button>
