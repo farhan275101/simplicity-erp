@@ -900,10 +900,9 @@
     };
 
     /* ========================================================================
-       🔹 BULLETPROOF SPA VIEW TOGGLING (DAYBOOK ISOLATION FIX)
+       🔹 SPA VIEW TOGGLING (DAYBOOK ISOLATION)
        ======================================================================== */
     const hideAllSections = () => {
-        // Hide every module section on the entire screen
         document.querySelectorAll('.module-section').forEach((el) => {
             el.style.display = 'none';
         });
@@ -986,10 +985,6 @@
         }
         renderDashboardDayBook();
         updateDashboardBadgeTotals();
-
-        if (typeof window.syncUsersWithFirebase === 'function') {
-            window.syncUsersWithFirebase();
-        }
     };
 
     const bootstrapAppStartup = () => {
@@ -1004,10 +999,6 @@
 
         if (idInp) idInp.addEventListener('keypress', triggerEnterLogin);
         if (passInp) passInp.addEventListener('keypress', triggerEnterLogin);
-
-        if (typeof window.syncUsersWithFirebase === 'function') {
-            window.syncUsersWithFirebase();
-        }
 
         if (typeof window.checkAutoLogin === 'function') {
             window.checkAutoLogin();
