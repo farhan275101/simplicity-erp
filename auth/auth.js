@@ -229,7 +229,7 @@
                 password: pass,
                 pin: pin,
                 role: isOwner ? 'admin' : 'owner',
-                status: isOwner ? 'active' : 'pending', // 👈 PENDING APPROVAL
+                status: isOwner ? 'active' : 'pending',
                 validity_date: isOwner ? null : exp.toISOString().split('T')[0]
             };
 
@@ -320,7 +320,6 @@
 
             const userStatus = String(user.status || '').toLowerCase().trim();
 
-            // 🔒 PENDING APPROVAL BLOCKER
             if (userStatus === 'pending') {
                 if (err) {
                     err.innerHTML = `⏳ <strong>Account Approval Pending Hai!</strong><br>Admin (Farhan) se approve karwayein:<br>📞 <a href='tel:+917065572191' style='color:#2563eb; font-weight:800;'>+91 70655 72191</a>`;
@@ -404,7 +403,10 @@
         _setDisplay('nav-admin-btn', window.currentUserRole === 'admin' ? 'inline-block' : 'none');
 
         const finishLoginInit = () => {
-            if (typeof window.initFirebaseLiveListeners === 'function') {
+            // ✅ Supabase Realtime Listener connected
+            if (typeof window.initSupabaseRealtime === 'function') {
+                window.initSupabaseRealtime();
+            } else if (typeof window.initFirebaseLiveListeners === 'function') {
                 window.initFirebaseLiveListeners();
             }
             if (typeof window.populateNavbarKarkhanaDropdown === 'function') {
@@ -452,7 +454,10 @@
     };
 
     const logout = () => {
-        if (typeof window.detachFirebaseLiveListeners === 'function') {
+        // ✅ Supabase Realtime Detached
+        if (typeof window.detachSupabaseRealtime === 'function') {
+            window.detachSupabaseRealtime();
+        } else if (typeof window.detachFirebaseLiveListeners === 'function') {
             window.detachFirebaseLiveListeners();
         }
 
