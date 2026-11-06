@@ -1,8 +1,8 @@
 /* ============================================================================
    SIMPLICITY ERP - SECURE USER PROFILE & SETTINGS ENGINE
    File: auth/profile.js • Developed by Farhan Jawed
-   Architecture: 5-Point Session Sync | Duplicate Phone Guard | Multi-Tier Cache
-   Scale: 1,000,000+ (10-20 Lakhs) Concurrent Users | Offline-First & Resilient
+   Architecture: Supabase PostgreSQL Profile Sync | Duplicate Phone Guard
+   Scale: 1,000,000+ Concurrent Active Users | Offline-First & Resilient
 ============================================================================ */
 
 (() => {
@@ -15,6 +15,10 @@
     const sanitizeText = (val) => String(val || '').trim();
     const sanitizeMobile = (mob) => String(mob || '').trim().replace(/[^0-9]/g, '');
     const sanitizePin = (pin) => String(pin || '').trim().replace(/[^0-9]/g, '').slice(0, 4);
+
+    const getSupabase = () => {
+        return window.supabaseClient || window.supabase || (typeof window.supabase !== 'undefined' ? window.supabase : null);
+    };
 
     /**
      * Safe helper to toggle element display
@@ -80,6 +84,7 @@
             const mobEl = document.getElementById('prof-mobile');
             const pinEl = document.getElementById('prof-pin');
             const passEl = document.getElementById('prof-pass');
+            const emailEl = document.getElementById('prof-email');
 
             // Populate form
             if (nameEl) nameEl.value = user.name || '';
@@ -92,6 +97,7 @@
             if (mobEl) mobEl.value = user.mobile || '';
             if (pinEl) pinEl.value = user.pin || '1234';
             if (passEl) passEl.value = user.pass || '';
+            if (emailEl) emailEl.value = user.email || '';
 
             // Reset save button state
             const saveBtn = document.getElementById('prof-save-btn') || document.querySelector('#profile-modal button[onclick*="saveProfileSettings"]');
@@ -117,10 +123,10 @@
     /* ========================================================================
        3. CONCURRENT-SAFE PROFILE SETTINGS UPDATE ENGINE
        ------------------------------------------------------------------------
-       1. Duplicate Mobile Check across millions of accounts
+       1. Duplicate Mobile Check across Supabase accounts
        2. Multi-tier Local Cache Consistency (L1 RAM + L2 LS + L3 IDB)
        3. 5-Point Session Synchronization (`app_active_session_auth`)
-       4. Realtime Cloud Sync with Offline Fallback
+       4. Realtime Cloud Sync with Supabase PostgreSQL
     ======================================================================== */
 
     /**
@@ -137,6 +143,7 @@
         const mobEl = document.getElementById('prof-mobile');
         const pinEl = document.getElementById('prof-pin');
         const passEl = document.getElementById('prof-pass');
+        const emailEl = document.getElementById('prof-email');
         const saveBtn = document.getElementById('prof-save-btn') || document.querySelector('#profile-modal button[onclick*="saveProfileSettings"]');
 
         // Form values extraction
@@ -144,6 +151,7 @@
         const mobile = sanitizeMobile(mobEl?.value);
         const pin = sanitizePin(pinEl?.value);
         const pass = sanitizeText(passEl?.value);
+        const email = sanitizeText(emailEl?.value).toLowerCase();
 
         // Strict Validations
         if (!name || name.length < 2) {
@@ -177,25 +185,24 @@
         }
 
         try {
-            // Step 1: Duplicate Mobile Conflict Check across millions of users
-            if (typeof window.db !== 'undefined' && window.db && navigator.onLine) {
-                const mobQuery = await window.db.ref('app_users')
-                    .orderByChild('mobile')
-                    .equalTo(mobile)
-                    .limitToFirst(1)
-                    .once('value');
+            const sb = getSupabase();
 
-                const existingUsers = mobQuery.val();
-                if (existingUsers) {
-                    const matchedKey = Object.keys(existingUsers)[0];
-                    if (String(matchedKey).toLowerCase() !== String(uid).toLowerCase()) {
-                        alert('⚠️ Yeh Mobile Number pehle se kisi aur account me registered hai! Alag number darj karein.');
-                        if (saveBtn) {
-                            saveBtn.disabled = false;
-                            saveBtn.textContent = 'Settings Save Karein';
-                        }
-                        return;
+            // Step 1: Duplicate Mobile Conflict Check in Supabase
+            if (sb && navigator.onLine) {
+                const { data: existingUsers, error: checkErr } = await sb
+                    .from('karkhana_users')
+                    .select('user_id')
+                    .eq('mobile', mobile)
+                    .neq('user_id', uid)
+                    .limit(1);
+
+                if (!checkErr && existingUsers && existingUsers.length > 0) {
+                    alert('⚠️ Yeh Mobile Number pehle se kisi aur account me registered hai! Alag number darj karein.');
+                    if (saveBtn) {
+                        saveBtn.disabled = false;
+                        saveBtn.textContent = 'Settings Save Karein';
                     }
+                    return;
                 }
             }
 
@@ -204,9 +211,10 @@
                 id: uid,
                 name: name,
                 mobile: mobile,
+                email: email || '',
                 pin: pin,
                 pass: pass,
-                role: window.currentUserRole || 'user',
+                role: window.currentUserRole || 'owner',
                 updatedAt: new Date().toISOString()
             };
 
@@ -215,6 +223,7 @@
                 id: uid,
                 name: name,
                 mobile: mobile,
+                email: email || '',
                 pass: pass,
                 pin: pin,
                 role: updatedProfile.role
@@ -224,7 +233,6 @@
             localStorage.setItem('app_active_session_auth', JSON.stringify(activeSessionAuth));
 
             // Step 4: Multi-Tier Storage Consistency (L1 RAM + L2 LocalStorage + L3 IndexedDB)
-            // L1 & L2:
             try {
                 localStorage.setItem(`app_user_${uid}`, JSON.stringify(updatedProfile));
             } catch (_) {}
@@ -233,22 +241,26 @@
                 window.APP_MEMORY_CACHE[`app_user_${uid}`] = updatedProfile;
             }
 
-            // L3: IndexedDB
             if (typeof window.idbPut === 'function') {
                 window.idbPut(`app_user_${uid}`, updatedProfile);
             }
 
-            // Step 5: Realtime Cloud Sync
-            if (typeof window.db !== 'undefined' && window.db) {
+            // Step 5: Realtime Cloud Sync with Supabase
+            if (sb) {
                 if (typeof window.showSyncStatus === 'function') window.showSyncStatus('syncing');
 
-                await window.db.ref(`app_users/${uid}`).update({
-                    name: name,
-                    mobile: mobile,
-                    pin: pin,
-                    pass: pass,
-                    updatedAt: updatedProfile.updatedAt
-                });
+                const { error: updateErr } = await sb
+                    .from('karkhana_users')
+                    .update({
+                        full_name: name,
+                        mobile: mobile,
+                        email: email || null,
+                        pin: pin,
+                        password: pass
+                    })
+                    .eq('user_id', uid);
+
+                if (updateErr) throw updateErr;
 
                 if (typeof window.showSyncStatus === 'function') window.showSyncStatus('online');
             }
@@ -267,7 +279,7 @@
 
         } catch (saveErr) {
             console.error('[ProfileEngine:saveProfileSettings] Save failure:', saveErr);
-            alert('Settings update karte waqt takleef aayi. Kripya connection check karein!');
+            alert('Settings update karte waqt takleef aayi: ' + (saveErr.message || 'Kripya connection check karein!'));
             if (typeof window.showSyncStatus === 'function') window.showSyncStatus('error');
         } finally {
             if (saveBtn) {
