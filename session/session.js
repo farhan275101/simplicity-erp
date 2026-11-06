@@ -110,7 +110,10 @@
         const uId = getEffectiveUserId();
 
         try {
-            if (typeof window.detachFirebaseLiveListeners === 'function') {
+            // ✅ Detach Supabase Realtime Listener cleanly
+            if (typeof window.detachSupabaseRealtime === 'function') {
+                window.detachSupabaseRealtime();
+            } else if (typeof window.detachFirebaseLiveListeners === 'function') {
                 window.detachFirebaseLiveListeners();
             }
 
