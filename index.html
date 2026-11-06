@@ -14,13 +14,13 @@
     <meta name="apple-mobile-web-app-title" content="Simplicity ERP">
     <link rel="apple-touch-icon" href="icon-192.png">
 
-    <!-- Stylesheets with Cache-Busting Version 3.0 -->
-    <link rel="stylesheet" href="style.css?v=3.0">
+    <!-- Stylesheets with Cache-Busting Version 3.1 -->
+    <link rel="stylesheet" href="style.css?v=3.1">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://wzmnfofhhaxrrymnekd.supabase.co" crossorigin>
 
-    <!-- ✅ Supabase Modern JS SDK v2 (Firebase Replaced) -->
+    <!-- ✅ Supabase Modern JS SDK v2 (Official Engine) -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <style>
@@ -1083,45 +1083,45 @@
     <datalist id="dl-karigers-list"></datalist>
 
     <!-- ==================================================================== -->
-    <!-- 4. MODULAR SCRIPTS (BUMPED TO VERSION v3.0 FOR FORCED CACHE CLEAR)   -->
+    <!-- 4. MODULAR SCRIPTS (BUMPED TO VERSION v3.1 FOR HARD CACHE CLEAR)     -->
     <!-- ==================================================================== -->
-    <script src="core/utils.js?v=3.0"></script>
-    <script src="core/storage.js?v=3.0"></script>
-    <script src="core/database.js?v=3.0"></script>
-    <script src="core/karkhana.js?v=3.0"></script>
+    <script src="core/utils.js?v=3.1"></script>
+    <script src="core/storage.js?v=3.1"></script>
+    <script src="core/database.js?v=3.1"></script>
+    <script src="core/karkhana.js?v=3.1"></script>
 
-    <script src="auth/auth.js?v=3.0"></script>
-    <script src="auth/profile.js?v=3.0"></script>
+    <script src="auth/auth.js?v=3.1"></script>
+    <script src="auth/profile.js?v=3.1"></script>
 
-    <script src="session/session.js?v=3.0"></script>
-    <script src="session/session-closing.js?v=3.0"></script>
+    <script src="session/session.js?v=3.1"></script>
+    <script src="session/session-closing.js?v=3.1"></script>
 
-    <script src="kariger/kariger-calc.js?v=3.0"></script>
-    <script src="bana/bana-calc.js?v=3.0"></script>
-    <script src="zari/zari-calc.js?v=3.0"></script>
-    <script src="sancha/sancha-calc.js?v=3.0"></script>
-    <script src="saree/saree-calc.js?v=3.0"></script>
-    <script src="cutting/cutting-calc.js?v=3.0"></script>
-    <script src="calender/calender-calc.js?v=3.0"></script>
+    <script src="kariger/kariger-calc.js?v=3.1"></script>
+    <script src="bana/bana-calc.js?v=3.1"></script>
+    <script src="zari/zari-calc.js?v=3.1"></script>
+    <script src="sancha/sancha-calc.js?v=3.1"></script>
+    <script src="saree/saree-calc.js?v=3.1"></script>
+    <script src="cutting/cutting-calc.js?v=3.1"></script>
+    <script src="calender/calender-calc.js?v=3.1"></script>
 
-    <script src="kariger/kariger-ui.js?v=3.0"></script>
-    <script src="bana/bana-ui.js?v=3.0"></script>
-    <script src="zari/zari-ui.js?v=3.0"></script>
-    <script src="sancha/sancha-ui.js?v=3.0"></script>
-    <script src="saree/saree-ui.js?v=3.0"></script>
-    <script src="cutting/cutting-ui.js?v=3.0"></script>
-    <script src="calender/calender-ui.js?v=3.0"></script>
-    <script src="dukan/dukan.js?v=3.0"></script>
-    <script src="payment/payment.js?v=3.0"></script>
-    <script src="jobwork.js?v=3.0"></script>
-    <script src="daybook/daybook.js?v=3.0"></script>
+    <script src="kariger/kariger-ui.js?v=3.1"></script>
+    <script src="bana/bana-ui.js?v=3.1"></script>
+    <script src="zari/zari-ui.js?v=3.1"></script>
+    <script src="sancha/sancha-ui.js?v=3.1"></script>
+    <script src="saree/saree-ui.js?v=3.1"></script>
+    <script src="cutting/cutting-ui.js?v=3.1"></script>
+    <script src="calender/calender-ui.js?v=3.1"></script>
+    <script src="dukan/dukan.js?v=3.1"></script>
+    <script src="payment/payment.js?v=3.1"></script>
+    <script src="jobwork.js?v=3.1"></script>
+    <script src="daybook/daybook.js?v=3.1"></script>
 
-    <script src="admin/admin.js?v=3.0"></script>
-    <script src="backup/backup.js?v=3.0"></script>
+    <script src="admin/admin.js?v=3.1"></script>
+    <script src="backup/backup.js?v=3.1"></script>
 
     <!-- ⚡ EXPRESS MODULES -->
-    <script src="kariger-express/kariger-express.js?v=3.0"></script>
-    <script src="stock-express/stock-express.js?v=3.0"></script>
+    <script src="kariger-express/kariger-express.js?v=3.1"></script>
+    <script src="stock-express/stock-express.js?v=3.1"></script>
 
     <!-- 5. APPLICATION INITIALIZER -->
     <script>
@@ -1184,7 +1184,7 @@
 
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('sw.js?v=3.0')
+                navigator.serviceWorker.register('sw.js?v=3.1')
                     .then(() => console.log('✅ [PWA] Service Worker Active.'))
                     .catch((err) => console.warn('⚠️ [PWA] SW Registration failed:', err));
             });
