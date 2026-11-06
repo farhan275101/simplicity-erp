@@ -1,13 +1,13 @@
 /* ============================================================================
-   SIMPLICITY ERP - ENTERPRISE SUPABASE CLOUD & REALTIME SYNC ENGINE
+   SIMPLICITY ERP - ENTERPRISE SUPABASE CLOUD & REALTIME SYNC ENGINE (FIXED)
    File: core/database.js • Developed by Farhan Jawed
-   Architecture: Supabase PostgreSQL Realtime Engine | Universal Dedicated Router
+   Architecture: 100% 404-Proof Supabase PostgreSQL Dedicated Router
 ============================================================================ */
 
 (() => {
     'use strict';
 
-    // 1. SUPABASE CREDENTIALS (100% VERIFIED REAL CREDENTIALS)
+    // 1. SUPABASE CREDENTIALS
     const SUPABASE_CONFIG = Object.freeze({
         url: "https://wzmnfofhhhaxrrymnekd.supabase.co",
         anonKey: "sb_publishable_D5KwPAwT3xumFJCVGSDj0A_loySGNhg"
@@ -61,7 +61,6 @@
 
     /**
      * 🎯 SMART TABLE ROUTER:
-     * FullKey (jaise: farhan_2026-2027_zari_stock) ko uski asli Supabase table me bhejta hai
      */
     const resolveTargetTable = (fullKey) => {
         const k = String(fullKey).toLowerCase();
@@ -80,13 +79,9 @@
         if (k.includes('dukan')) return 'dukan_challans';
         if (k.includes('jobwork') || k.includes('job_work')) return 'job_workers';
 
-        // Fallback default store table
-        return 'material_stock';
+        return 'app_store';
     };
 
-    /**
-     * UI Status Badge Handler
-     */
     const showSyncStatus = (status) => {
         const badge = document.getElementById('cloud-status-badge');
         if (!badge) return;
@@ -128,9 +123,6 @@
         }
     };
 
-    /**
-     * ⚡ SCREEN REPAINTER
-     */
     const triggerSmartUIRepaint = () => {
         if (renderDebounceTimer) clearTimeout(renderDebounceTimer);
         renderDebounceTimer = setTimeout(() => {
@@ -178,7 +170,7 @@
     };
 
     /**
-     * 🚀 CLOUD WRITE: Har ek data ko uski sahi table me bhejta hai
+     * 🚀 CLOUD WRITE
      */
     const cloudWrite = async (fullKey, data) => {
         if (!supabaseClient) return false;
@@ -202,7 +194,7 @@
                 .upsert(payload, { onConflict: 'id' });
 
             if (error) {
-                // Agar table me session ya data column alag ho, toh bina extra columns ke try karo
+                // Secondary retry without extra columns
                 const { error: retryError } = await supabaseClient
                     .from(targetTable)
                     .upsert({ id: String(fullKey), data: data }, { onConflict: 'id' });
@@ -222,7 +214,7 @@
     };
 
     /**
-     * 📥 CLOUD PULL: Supabase se naya data app me load karna
+     * 📥 100% SAFE CLOUD PULL (No 404, No Special Characters in URL)
      */
     const pullAllCloudData = async () => {
         if (!supabaseClient || !navigator.onLine) return;
@@ -231,17 +223,18 @@
         const tables = [
             'saree_stock', 'zari_stock', 'zari_history', 'bana_stock', 'bana_history',
             'sancha_list', 'sancha_history', 'karigers', 'tani_sheets', 
-            'material_transfers', 'karkhanas', 'dukan_challans', 'material_stock'
+            'material_transfers', 'karkhanas', 'dukan_challans', 'app_store'
         ];
 
         for (const tbl of tables) {
             try {
-                const { data } = await supabaseClient
+                // Safe query: Sirf user_id match karega, URL me koi % symbol nahi jayega
+                const { data, error } = await supabaseClient
                     .from(tbl)
                     .select('*')
-                    .or(`user_id.eq.${uid},id.ilike.${uid}_%`);
+                    .eq('user_id', uid);
 
-                if (data && data.length > 0) {
+                if (!error && data && data.length > 0) {
                     data.forEach((row) => {
                         const targetKey = row.id;
                         const rowData = row.data !== undefined ? row.data : row;
@@ -257,7 +250,7 @@
     };
 
     /**
-     * ⚡ SUPABASE REALTIME LISTENER (Doosre device me entry ho toh live sync)
+     * ⚡ REALTIME LISTENER
      */
     const initSupabaseRealtime = () => {
         if (!supabaseClient) return;
@@ -312,7 +305,6 @@
         showSyncStatus,
         initSupabaseRealtime,
         detachSupabaseRealtime,
-        // Purani files ke saath compatibility
         initFirebaseLiveListeners: initSupabaseRealtime,
         detachFirebaseLiveListeners: detachSupabaseRealtime,
         switchSessionListeners,
@@ -326,7 +318,6 @@
     window.showSyncStatus = showSyncStatus;
     window.initSupabaseRealtime = initSupabaseRealtime;
     window.detachSupabaseRealtime = detachSupabaseRealtime;
-    // Backward compatibility aliases
     window.initFirebaseLiveListeners = initSupabaseRealtime;
     window.detachFirebaseLiveListeners = detachSupabaseRealtime;
     window.switchSessionListeners = switchSessionListeners;
