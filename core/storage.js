@@ -1,7 +1,7 @@
 /* ============================================================================
    SIMPLICITY ERP - HIGH-PERFORMANCE OFFLINE-FIRST STORAGE ENGINE
    File: core/storage.js • Developed by Farhan Jawed
-   Architecture: 4-Tier L1-RAM / L2-LS / L3-IDB / L4-Cloud Queue
+   Architecture: 4-Tier L1-RAM / L2-LS / L3-IDB / L4-Supabase Cloud Queue
    [FIXED: Instant DOM Startup Preload & Multi-Session Isolation]
 ============================================================================ */
 
@@ -34,6 +34,10 @@
         STORE_APP: 'app_store',
         STORE_QUEUE: 'sync_queue'
     });
+
+    const getSupabase = () => {
+        return window.supabaseClient || window.supabase || (typeof window.supabase !== 'undefined' ? window.supabase : null);
+    };
 
     const clearMemoryCache = () => {
         APP_MEMORY_CACHE = Object.create(null);
@@ -90,12 +94,12 @@
             try {
                 const req = window.indexedDB.open(DB_CONFIG.NAME, DB_CONFIG.VERSION);
                 req.onupgradeneeded = (e) => {
-                    const db = e.target.result;
-                    if (!db.objectStoreNames.contains(DB_CONFIG.STORE_APP)) {
-                        db.createObjectStore(DB_CONFIG.STORE_APP);
+                    const dbase = e.target.result;
+                    if (!dbase.objectStoreNames.contains(DB_CONFIG.STORE_APP)) {
+                        dbase.createObjectStore(DB_CONFIG.STORE_APP);
                     }
-                    if (!db.objectStoreNames.contains(DB_CONFIG.STORE_QUEUE)) {
-                        db.createObjectStore(DB_CONFIG.STORE_QUEUE, { keyPath: 'id' });
+                    if (!dbase.objectStoreNames.contains(DB_CONFIG.STORE_QUEUE)) {
+                        dbase.createObjectStore(DB_CONFIG.STORE_QUEUE, { keyPath: 'id' });
                     }
                 };
                 req.onsuccess = (e) => {
@@ -111,48 +115,49 @@
     };
 
     const openEnterpriseIndexedDB = (callback) => {
-        getIndexedDBPromise().then((db) => {
-            if (typeof callback === 'function') callback(db);
+        getIndexedDBPromise().then((dbase) => {
+            if (typeof callback === 'function') callback(dbase);
         });
     };
 
     const idbPut = async (key, value) => {
         try {
-            const db = await getIndexedDBPromise();
-            if (!db) return;
-            const tx = db.transaction(DB_CONFIG.STORE_APP, 'readwrite');
+            const dbase = await getIndexedDBPromise();
+            if (!dbase) return;
+            const tx = dbase.transaction(DB_CONFIG.STORE_APP, 'readwrite');
             tx.objectStore(DB_CONFIG.STORE_APP).put(value, key);
         } catch (_) {}
     };
 
     const idbDelete = async (key) => {
         try {
-            const db = await getIndexedDBPromise();
-            if (!db) return;
-            const tx = db.transaction(DB_CONFIG.STORE_APP, 'readwrite');
+            const dbase = await getIndexedDBPromise();
+            if (!dbase) return;
+            const tx = dbase.transaction(DB_CONFIG.STORE_APP, 'readwrite');
             tx.objectStore(DB_CONFIG.STORE_APP).delete(key);
         } catch (_) {}
     };
 
     const enqueueSyncMutation = async (mutation) => {
         try {
-            const db = await getIndexedDBPromise();
-            if (!db) return;
-            const tx = db.transaction(DB_CONFIG.STORE_QUEUE, 'readwrite');
+            const dbase = await getIndexedDBPromise();
+            if (!dbase) return;
+            const tx = dbase.transaction(DB_CONFIG.STORE_QUEUE, 'readwrite');
             tx.objectStore(DB_CONFIG.STORE_QUEUE).put(mutation);
         } catch (_) {}
     };
 
     const flushSyncQueue = async () => {
         if (isSyncQueueFlushing || !navigator.onLine) return;
-        if (typeof window.db === 'undefined' || !window.db) return;
+        const sb = getSupabase();
+        if (!sb) return;
 
         isSyncQueueFlushing = true;
         try {
-            const db = await getIndexedDBPromise();
-            if (!db) { isSyncQueueFlushing = false; return; }
+            const dbase = await getIndexedDBPromise();
+            if (!dbase) { isSyncQueueFlushing = false; return; }
 
-            const tx = db.transaction(DB_CONFIG.STORE_QUEUE, 'readonly');
+            const tx = dbase.transaction(DB_CONFIG.STORE_QUEUE, 'readonly');
             const req = tx.objectStore(DB_CONFIG.STORE_QUEUE).getAll();
 
             req.onsuccess = async () => {
@@ -163,12 +168,10 @@
 
                 for (const item of queue) {
                     try {
-                        if (item.action === 'SET') {
-                            await window.db.ref(item.fbPath).set(item.data);
-                        } else if (item.action === 'REMOVE') {
-                            await window.db.ref(item.fbPath).remove();
+                        if (typeof window.CloudEngine?.cloudWrite === 'function') {
+                            await window.CloudEngine.cloudWrite(item.targetKey, item.data);
                         }
-                        const deleteTx = db.transaction(DB_CONFIG.STORE_QUEUE, 'readwrite');
+                        const deleteTx = dbase.transaction(DB_CONFIG.STORE_QUEUE, 'readwrite');
                         deleteTx.objectStore(DB_CONFIG.STORE_QUEUE).delete(item.id);
                     } catch (_) {
                         break;
@@ -186,13 +189,14 @@
 
     window.addEventListener('online', () => { flushSyncQueue(); });
 
+    /**
+     * Supabase Cloud Sync Engine (Debounced)
+     */
     const dispatchCloudSync = (fullKey, toSave, action = 'SET') => {
         const uid = getEffectiveUserId();
         if (isRemoteUpdating || !uid) return;
 
-        const fbKey = fullKey.replace(`${uid}_`, '');
-        const fbPath = `users/${uid}/${fbKey}`;
-        const queueId = `${uid}_${fbKey}`;
+        const queueId = `${uid}_${fullKey}`;
 
         if (SYNC_DEBOUNCE_TIMERS.has(fullKey)) {
             clearTimeout(SYNC_DEBOUNCE_TIMERS.get(fullKey));
@@ -201,11 +205,12 @@
         const timer = setTimeout(async () => {
             SYNC_DEBOUNCE_TIMERS.delete(fullKey);
 
-            if (!navigator.onLine || typeof window.db === 'undefined' || !window.db) {
+            const sb = getSupabase();
+            if (!navigator.onLine || !sb) {
                 await enqueueSyncMutation({
                     id: queueId,
                     action,
-                    fbPath,
+                    targetKey: fullKey,
                     data: toSave,
                     timestamp: Date.now()
                 });
@@ -216,10 +221,8 @@
             try {
                 if (typeof window.showSyncStatus === 'function') window.showSyncStatus('syncing');
 
-                if (action === 'SET') {
-                    await window.db.ref(fbPath).set(toSave);
-                } else if (action === 'REMOVE') {
-                    await window.db.ref(fbPath).remove();
+                if (typeof window.CloudEngine?.cloudWrite === 'function') {
+                    await window.CloudEngine.cloudWrite(fullKey, toSave);
                 }
 
                 if (typeof window.showSyncStatus === 'function') window.showSyncStatus('online');
@@ -227,7 +230,7 @@
                 await enqueueSyncMutation({
                     id: queueId,
                     action,
-                    fbPath,
+                    targetKey: fullKey,
                     data: toSave,
                     timestamp: Date.now()
                 });
@@ -262,14 +265,14 @@
     const initIndexedDBPreload = async (callback) => {
         const uid = getEffectiveUserId();
         try {
-            const db = await getIndexedDBPromise();
-            if (!db) {
+            const dbase = await getIndexedDBPromise();
+            if (!dbase) {
                 migrateLocalStorageToCache();
                 if (typeof callback === 'function') callback();
                 return;
             }
 
-            const tx = db.transaction(DB_CONFIG.STORE_APP, 'readonly');
+            const tx = dbase.transaction(DB_CONFIG.STORE_APP, 'readonly');
             const req = tx.objectStore(DB_CONFIG.STORE_APP).openCursor();
 
             req.onsuccess = (e) => {
