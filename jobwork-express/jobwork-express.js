@@ -3,12 +3,11 @@
    Folder: jobwork-express / File: jobwork-express.js
    Developed for: Farhan Jawed
    Features:
-   - Bada Wide Screen (880px Counter Layout like Stock Express)
-   - Fixed Shortcuts: F1 (Cutting), F2 (Calender), F3 (Dukan)
-   - F4 Toggle: Fresh Stock se ⟷ Cutting Stock se
-   - F5 Toggle: Saree Gayi (Jane Wali) ⟷ Wapas Aayi (Aane Wali)
-   - Live Batch Table (Farhan 10, Asif 20, Imran 15)
-   - Live Godown Stock Display & Instant A6 Challan Print
+   - Fixed Layout (Balanced 880px Counter like Stock Express)
+   - Strict Keyboard Capture (F1, F2, F3, F4, F5 no conflict with Kariger Express)
+   - Live Dynamic Datalist (Shows only available stock for selected F4 source)
+   - Rapid Enter Chaining (Maker ➔ Enter ➔ Qty ➔ Enter ➔ Added!)
+   - Instant A6 Thermal Challan Print
 ============================================================================ */
 
 (() => {
@@ -74,8 +73,83 @@
             : (d || '-');
     };
 
+    const normText = (txt, fallback = '') => {
+        return String(txt || fallback).trim().toUpperCase();
+    };
+
+    const normGodownId = (kid) => {
+        if (!kid || kid === 'all') return 'all';
+        const clean = String(kid).trim();
+        return (!clean || clean === 'k_main') ? 'k_main' : clean;
+    };
+
     /* ========================================================================
-       2. OPEN BADA JOBWORK EXPRESS MODAL (880px COUNTER LAYOUT)
+       2. DYNAMIC DATALIST: LIVE STOCK-BASED SAREE & MAKER OPTIONS
+       ------------------------------------------------------------------------
+       F4 (Cutting vs Fresh) ke hisaab se live stock calculate karke sirf
+       maujooda kariger aur unki bachi hui saree dropdown me dikhata hai!
+    ======================================================================== */
+    const updateExpressMakerDatalist = () => {
+        const dl = document.getElementById('jw-exp-maker-dl');
+        if (!dl) return;
+
+        const sH = toArray(getFromStore('saree_history'));
+        const allKars = toArray(getFromStore('kariger_list'));
+        const targetKid = (typeof window.getActiveKarkhanaId === 'function') 
+            ? window.getActiveKarkhanaId() 
+            : (window.currentDashboardKarkhanaFilter || 'k_main');
+
+        let targetStage = 'cutting';
+        if (activeCategory === 'dukan') {
+            targetStage = 'finished';
+        } else if (activeCategory === 'cutting') {
+            targetStage = 'fresh';
+        } else if (activeCategory === 'calender') {
+            targetStage = (movementType === 'gayi') ? stockSource : 'cutting';
+        }
+
+        const stockMap = new Map();
+        sH.forEach((h) => {
+            if (!h || String(h.type || '').toLowerCase() !== targetStage) return;
+            const kid = normGodownId(h.karkhanaId);
+            if (targetKid !== 'all' && kid !== targetKid) return;
+
+            const sName = normText(h.sareeName || h.name, 'GENERAL SAREE');
+            const kName = normText(h.karigerName || h.kariger, 'KARKHANA');
+            const key = `${kName}___${sName}`;
+
+            const isGai = (h.isOut === true) || (safeNum(h.gai) > 0);
+            const inQ = isGai ? 0 : safeNum(h.aai !== undefined ? h.aai : h.pcs);
+            const outQ = isGai ? safeNum(h.gai !== undefined ? h.gai : h.pcs) : 0;
+
+            if (!stockMap.has(key)) {
+                stockMap.set(key, { kName, sName, bachi: 0 });
+            }
+            const item = stockMap.get(key);
+            item.bachi += (inQ - outQ);
+        });
+
+        let opts = '';
+        stockMap.forEach((val) => {
+            if (val.bachi > 0) {
+                opts += `<option value="${esc(val.kName)}">${esc(val.kName)} — 🥻 ${esc(val.sName)} (Stock: ${val.bachi} Pcs)</option>`;
+            }
+        });
+
+        allKars.forEach((k) => {
+            if (!k || !k.name) return;
+            const kn = k.name.trim().toUpperCase();
+            const alreadyAdded = [...stockMap.values()].some(v => v.kName === kn);
+            if (!alreadyAdded) {
+                opts += `<option value="${esc(kn)}">${esc(kn)} — 🥻 ${esc(k.saree || 'Saree')}</option>`;
+            }
+        });
+
+        dl.innerHTML = opts;
+    };
+
+    /* ========================================================================
+       3. OPEN MODAL (CLEAN 880px COUNTER LAYOUT)
        ------------------------------------------------------------------------
     ======================================================================== */
     window.openJobWorkExpressModal = () => {
@@ -118,13 +192,13 @@
                     <!-- 3 BADE PROCESS TABS (F1, F2, F3) -->
                     <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; margin-bottom:12px;">
                         <button type="button" id="jw-exp-cat-cutting" onclick="switchJobWorkCategory('cutting')" style="background:#f1f5f9; color:#475569; border:1px solid #cbd5e1; padding:12px 8px; border-radius:8px; font-weight:900; font-size:14px; cursor:pointer; display:flex; justify-content:center; align-items:center; gap:6px;">
-                            ✂️ 1. CUTTING [F1 / Alt+1]
+                            ✂️ 1. CUTTING [F1]
                         </button>
                         <button type="button" id="jw-exp-cat-calender" onclick="switchJobWorkCategory('calender')" style="background:#0284c7; color:#fff; border:none; padding:12px 8px; border-radius:8px; font-weight:900; font-size:14px; cursor:pointer; display:flex; justify-content:center; align-items:center; gap:6px; box-shadow:0 2px 4px rgba(0,0,0,0.1);">
-                            🎛️ 2. CALENDER [F2 / Alt+2]
+                            🎛️ 2. CALENDER [F2]
                         </button>
                         <button type="button" id="jw-exp-cat-dukan" onclick="switchJobWorkCategory('dukan')" style="background:#f1f5f9; color:#475569; border:1px solid #cbd5e1; padding:12px 8px; border-radius:8px; font-weight:900; font-size:14px; cursor:pointer; display:flex; justify-content:center; align-items:center; gap:6px;">
-                            🏪 3. DUKAN [F3 / Alt+3]
+                            🏪 3. DUKAN [F3]
                         </button>
                     </div>
 
@@ -132,13 +206,13 @@
                     <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:8px 12px; margin-bottom:14px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
                         <div style="display:flex; gap:8px; align-items:center;">
                             <span style="font-size:12px; font-weight:bold; color:#334155;">लेन-देन:</span>
-                            <button type="button" id="jw-exp-btn-movement" onclick="toggleMovementType()" style="background:#dc2626; color:#fff; border:none; padding:6px 14px; border-radius:6px; font-weight:bold; font-size:12px; cursor:pointer;">
+                            <button type="button" id="jw-exp-btn-movement" onclick="toggleMovementType()" style="background:#dc2626; color:#fff; border:none; padding:7px 16px; border-radius:6px; font-weight:bold; font-size:12px; cursor:pointer;">
                                 📤 Saree Gayi (Bheja) [F5]
                             </button>
                         </div>
                         <div id="jw-exp-source-container" style="display:flex; gap:8px; align-items:center;">
                             <span style="font-size:12px; font-weight:bold; color:#334155;">स्टॉक सोर्स:</span>
-                            <button type="button" id="jw-exp-btn-source" onclick="toggleStockSource()" style="background:#0284c7; color:#fff; border:none; padding:6px 14px; border-radius:6px; font-weight:bold; font-size:12px; cursor:pointer;">
+                            <button type="button" id="jw-exp-btn-source" onclick="toggleStockSource()" style="background:#0284c7; color:#fff; border:none; padding:7px 16px; border-radius:6px; font-weight:bold; font-size:12px; cursor:pointer;">
                                 ✂️ Cutting Stock se [F4]
                             </button>
                         </div>
@@ -147,39 +221,49 @@
                         </div>
                     </div>
 
-                    <!-- 2-COLUMN BADA LAYOUT -->
-                    <div style="display:grid; grid-template-columns:1.2fr 1fr; gap:14px;">
+                    <!-- 2-COLUMN BALANCED COUNTER LAYOUT -->
+                    <div style="display:grid; grid-template-columns:1.15fr 1fr; gap:14px;">
                         
                         <!-- COLUMN 1: WORKER, DATE & FAST BATCH ENTRY LOOP -->
-                        <div style="background:#f8fafc; border:1.5px solid #cbd5e1; border-radius:10px; padding:14px;">
+                        <div style="background:#f8fafc; border:1.5px solid #cbd5e1; border-radius:10px; padding:14px; display:flex; flex-direction:column; justify-content:space-between;">
                             
-                            <div style="display:grid; grid-template-columns:1.4fr 1fr; gap:8px; margin-bottom:10px;">
-                                <div id="jw-exp-worker-box">
-                                    <label id="jw-exp-lbl-worker" style="font-size:11px; font-weight:bold; color:#1e3a8a;">जॉब वर्कर (Kariger):</label>
-                                    <select id="jw-exp-worker" style="width:100%; padding:8px; border:1.5px solid #cbd5e1; border-radius:6px; font-weight:bold; font-size:13px; margin-top:2px;"></select>
+                            <!-- Worker & Date Clean Flexbox Row (Zero squish) -->
+                            <div style="display:flex; gap:10px; margin-bottom:12px;">
+                                <div style="flex:1.6; min-width:0;">
+                                    <label id="jw-exp-lbl-worker" style="font-size:11px; font-weight:bold; color:#1e3a8a; display:block; margin-bottom:3px;">
+                                        Calender Kariger:
+                                    </label>
+                                    <select id="jw-exp-worker" style="width:100%; box-sizing:border-box; padding:9px 10px; border:1.5px solid #cbd5e1; border-radius:6px; font-weight:bold; font-size:13px; background:#ffffff;"></select>
                                 </div>
-                                <div>
-                                    <label style="font-size:11px; font-weight:bold; color:#475569;">तारीख (Date):</label>
-                                    <input type="date" id="jw-exp-date" value="${today}" style="width:100%; padding:7px; border:1.5px solid #cbd5e1; border-radius:6px; font-size:12px; font-weight:bold; margin-top:2px; box-sizing:border-box;">
+                                <div style="flex:1; min-width:0;">
+                                    <label style="font-size:11px; font-weight:bold; color:#475569; display:block; margin-bottom:3px;">
+                                        तारीख (Date):
+                                    </label>
+                                    <input type="date" id="jw-exp-date" value="${today}" style="width:100%; box-sizing:border-box; padding:8px 8px; border:1.5px solid #cbd5e1; border-radius:6px; font-size:12px; font-weight:bold;">
                                 </div>
                             </div>
 
                             <!-- Fast Batch Loop Input Box -->
-                            <div style="background:#eff6ff; border:2px solid #93c5fd; padding:12px; border-radius:8px; margin-bottom:10px;">
-                                <div style="font-weight:800; color:#1e40af; font-size:12px; margin-bottom:6px; display:flex; justify-content:space-between;">
-                                    <span>📦 Saree Batch Entry (Type & Press Enter):</span>
-                                    <span id="jw-exp-live-stock-hint" style="color:#0284c7; font-weight:bold;"></span>
+                            <div style="background:#eff6ff; border:2px solid #93c5fd; padding:12px; border-radius:8px; margin-bottom:12px;">
+                                <div style="font-weight:800; color:#1e40af; font-size:12px; margin-bottom:6px; display:flex; justify-content:space-between; align-items:center;">
+                                    <span>📦 Batch Entry (1-2 Akshar Likhein):</span>
+                                    <span id="jw-exp-live-stock-hint" style="color:#0284c7; font-weight:bold; font-size:11px;"></span>
                                 </div>
 
                                 <div style="margin-bottom:8px;">
-                                    <label style="font-size:11px; font-weight:bold; color:#1e3a8a;">बुन्ने वाला (Maker Kariger):</label>
-                                    <input type="text" id="jw-exp-maker-input" list="dl-karigers-list" placeholder="Farhan / Asif / Imran..." autocomplete="off" style="width:100%; padding:9px 12px; border:2px solid #0284c7; border-radius:6px; font-size:15px; font-weight:bold; box-sizing:border-box; background:#ffffff;">
+                                    <label style="font-size:11px; font-weight:bold; color:#1e3a8a; display:block; margin-bottom:3px;">
+                                        बुन्ने वाला (Maker / Saree):
+                                    </label>
+                                    <input type="text" id="jw-exp-maker-input" list="jw-exp-maker-dl" placeholder="Farhan / Asif / Imran..." autocomplete="off" style="width:100%; box-sizing:border-box; padding:9px 12px; border:2px solid #0284c7; border-radius:6px; font-size:15px; font-weight:bold; background:#ffffff;">
+                                    <datalist id="jw-exp-maker-dl"></datalist>
                                 </div>
 
                                 <div style="display:grid; grid-template-columns:1.2fr 1fr; gap:8px;">
                                     <div>
-                                        <label style="font-size:11px; font-weight:bold; color:#1e3a8a;">Saree Qty (Pcs):</label>
-                                        <input type="number" id="jw-exp-qty-input" placeholder="10 / 20" min="1" style="width:100%; padding:9px 12px; border:2px solid #0284c7; border-radius:6px; font-size:16px; font-weight:900; color:#1e3a8a; box-sizing:border-box;">
+                                        <label style="font-size:11px; font-weight:bold; color:#1e3a8a; display:block; margin-bottom:3px;">
+                                            Saree Qty (Pcs):
+                                        </label>
+                                        <input type="number" id="jw-exp-qty-input" placeholder="10 / 20" min="1" style="width:100%; box-sizing:border-box; padding:9px 12px; border:2px solid #0284c7; border-radius:6px; font-size:16px; font-weight:900; color:#1e3a8a;">
                                     </div>
                                     <div style="display:flex; align-items:flex-end;">
                                         <button type="button" id="jw-exp-add-row-btn" onclick="addExpressBatchRow()" style="background:#0284c7; color:#fff; border:none; width:100%; padding:11px; border-radius:6px; font-weight:bold; font-size:13px; cursor:pointer;">
@@ -192,12 +276,12 @@
                             <!-- Damage & Note Inputs -->
                             <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
                                 <div>
-                                    <label style="font-size:11px; font-weight:bold; color:#ea580c;">⚠️ Damage Saree (Pcs):</label>
-                                    <input type="number" id="jw-exp-damage-pcs" placeholder="0" style="width:100%; padding:6px; border:1px solid #fed7aa; border-radius:4px; font-size:12px; box-sizing:border-box;">
+                                    <label style="font-size:11px; font-weight:bold; color:#ea580c; display:block; margin-bottom:3px;">⚠️ Damage Saree (Pcs):</label>
+                                    <input type="number" id="jw-exp-damage-pcs" placeholder="0" style="width:100%; box-sizing:border-box; padding:7px; border:1px solid #fed7aa; border-radius:4px; font-size:12px;">
                                 </div>
                                 <div>
-                                    <label style="font-size:11px; font-weight:bold; color:#dc2626;">Damage Fine / Kaat (₹):</label>
-                                    <input type="number" id="jw-exp-damage-amt" placeholder="0.00" style="width:100%; padding:6px; border:1px solid #fecaca; border-radius:4px; font-size:12px; box-sizing:border-box;">
+                                    <label style="font-size:11px; font-weight:bold; color:#dc2626; display:block; margin-bottom:3px;">Damage Fine / Kaat (₹):</label>
+                                    <input type="number" id="jw-exp-damage-amt" placeholder="0.00" style="width:100%; box-sizing:border-box; padding:7px; border:1px solid #fecaca; border-radius:4px; font-size:12px;">
                                 </div>
                             </div>
 
@@ -211,7 +295,7 @@
                                     <span id="jw-exp-batch-count-badge" style="color:#0284c7;">0 Items</span>
                                 </h4>
 
-                                <div class="table-responsive" style="max-height:230px; overflow-y:auto; border:1px solid #cbd5e1; border-radius:6px;">
+                                <div class="table-responsive" style="max-height:220px; overflow-y:auto; border:1px solid #cbd5e1; border-radius:6px;">
                                     <table style="margin:0; width:100%;">
                                         <thead>
                                             <tr style="background:#1e3a8a; color:white; font-size:11px;">
@@ -263,10 +347,11 @@
         updateCategoryStyles();
         populateExpressWorkers();
         updateSubBarState();
+        updateExpressMakerDatalist();
     };
 
     /* ========================================================================
-       3. KEYBOARD EVENT LISTENERS (F1, F2, F3, F4, F5 & ENTER LOOP)
+       4. KEYBOARD EVENT CAPTURE (NO CONFLICT WITH KARIGER EXPRESS)
        ------------------------------------------------------------------------
     ======================================================================== */
     const bindJobWorkExpressEvents = () => {
@@ -300,8 +385,9 @@
             });
         }
 
-        window.removeEventListener('keydown', handleJobWorkExpressGlobalKeydown);
-        window.addEventListener('keydown', handleJobWorkExpressGlobalKeydown);
+        // ⭐ CAPTURE PHASE USE KIYA HAI TAHO F1 KARIGER EXPRESS NA KHULE
+        window.removeEventListener('keydown', handleJobWorkExpressGlobalKeydown, true);
+        window.addEventListener('keydown', handleJobWorkExpressGlobalKeydown, true);
     };
 
     const handleJobWorkExpressGlobalKeydown = (e) => {
@@ -311,69 +397,85 @@
         // Escape -> Close
         if (e.key === 'Escape') {
             e.preventDefault();
+            e.stopPropagation();
+            e.stopImmediatePropagation();
             closeJobWorkExpressModal();
             return;
         }
 
-        // F1 or Alt+1 -> Cutting
+        // ⭐ F1 -> CUTTING (Kariger Express ko block kiya)
         if (e.key === 'F1' || (e.altKey && (e.key === '1' || e.code === 'Digit1' || e.code === 'Numpad1'))) {
             e.preventDefault();
+            e.stopPropagation();
+            e.stopImmediatePropagation();
             switchJobWorkCategory('cutting');
             return;
         }
 
-        // F2 or Alt+2 -> Calender
+        // ⭐ F2 -> CALENDER
         if (e.key === 'F2' || (e.altKey && (e.key === '2' || e.code === 'Digit2' || e.code === 'Numpad2'))) {
             e.preventDefault();
+            e.stopPropagation();
+            e.stopImmediatePropagation();
             switchJobWorkCategory('calender');
             return;
         }
 
-        // F3 or Alt+3 -> Dukan
+        // ⭐ F3 -> DUKAN
         if (e.key === 'F3' || (e.altKey && (e.key === '3' || e.code === 'Digit3' || e.code === 'Numpad3'))) {
             e.preventDefault();
+            e.stopPropagation();
+            e.stopImmediatePropagation();
             switchJobWorkCategory('dukan');
             return;
         }
 
-        // ⭐ F4 -> Toggle Stock Source (Fresh se ⟷ Cutting se)
+        // ⭐ F4 -> TOGGLE STOCK SOURCE (Fresh se ⟷ Cutting se)
         if (e.key === 'F4' || (e.altKey && (e.key === '4' || e.code === 'Digit4' || e.code === 'Numpad4'))) {
             e.preventDefault();
+            e.stopPropagation();
+            e.stopImmediatePropagation();
             toggleStockSource();
             return;
         }
 
-        // ⭐ F5 -> Toggle Movement Type (Saree Gayi ⟷ Wapas Aayi)
+        // ⭐ F5 -> TOGGLE MOVEMENT (Saree Gayi ⟷ Wapas Aayi)
         if (e.key === 'F5' || (e.altKey && (e.key === '5' || e.code === 'Digit5' || e.code === 'Numpad5'))) {
-            e.preventDefault(); // Browser refresh block
+            e.preventDefault(); // Browser reload stop
+            e.stopPropagation();
+            e.stopImmediatePropagation();
             toggleMovementType();
             return;
         }
 
-        // Ctrl + Enter -> Save & Print
+        // Ctrl + Enter -> Save Batch
         if (e.ctrlKey && e.key === 'Enter') {
             e.preventDefault();
+            e.stopPropagation();
+            e.stopImmediatePropagation();
             submitMasterJobWorkExpress(true);
             return;
         }
 
-        // Alt + P -> Print Last Challan
+        // Alt + P -> Print Challan
         if (e.altKey && (e.key === 'p' || e.key === 'P')) {
             e.preventDefault();
+            e.stopPropagation();
+            e.stopImmediatePropagation();
             printLastSavedJobWorkChallan();
             return;
         }
     };
 
     window.closeJobWorkExpressModal = () => {
-        window.removeEventListener('keydown', handleJobWorkExpressGlobalKeydown);
+        window.removeEventListener('keydown', handleJobWorkExpressGlobalKeydown, true);
         const modal = document.getElementById('master-jobwork-express-modal');
         if (modal) modal.remove();
         expressBatchItems = [];
     };
 
     /* ========================================================================
-       4. CATEGORY & TOGGLE CONTROLLERS (F1, F2, F3, F4, F5)
+       5. TOGGLE HANDLERS (F1, F2, F3, F4, F5)
        ------------------------------------------------------------------------
     ======================================================================== */
     window.switchJobWorkCategory = (cat) => {
@@ -381,18 +483,21 @@
         updateCategoryStyles();
         populateExpressWorkers();
         updateSubBarState();
+        updateExpressMakerDatalist();
         updateMakerLiveStockDisplay();
     };
 
     window.toggleStockSource = () => {
         stockSource = (stockSource === 'cutting') ? 'fresh' : 'cutting';
         updateSubBarState();
+        updateExpressMakerDatalist();
         updateMakerLiveStockDisplay();
     };
 
     window.toggleMovementType = () => {
         movementType = (movementType === 'gayi') ? 'aayi' : 'gayi';
         updateSubBarState();
+        updateExpressMakerDatalist();
         updateMakerLiveStockDisplay();
     };
 
@@ -418,17 +523,14 @@
         const btnMov = document.getElementById('jw-exp-btn-movement');
         const btnSrc = document.getElementById('jw-exp-btn-source');
         const srcContainer = document.getElementById('jw-exp-source-container');
-        const workerBox = document.getElementById('jw-exp-worker-box');
+        const lblWorker = document.getElementById('jw-exp-lbl-worker');
 
-        // Movement button styling (F5)
         if (btnMov) {
             if (activeCategory === 'dukan') {
-                movementType = 'gayi'; // Dukan is always Outward
+                movementType = 'gayi';
                 btnMov.style.background = '#15803d';
                 btnMov.innerHTML = '🏪 Dukan Bheja (Final Out)';
-                btnMov.disabled = true;
             } else {
-                btnMov.disabled = false;
                 if (movementType === 'gayi') {
                     btnMov.style.background = '#dc2626';
                     btnMov.innerHTML = '📤 Saree Gayi (Bheja) [F5]';
@@ -439,7 +541,6 @@
             }
         }
 
-        // Stock Source button styling (F4)
         if (srcContainer) {
             if (activeCategory === 'calender' && movementType === 'gayi') {
                 srcContainer.style.display = 'flex';
@@ -457,8 +558,6 @@
             }
         }
 
-        // Worker Box Label
-        const lblWorker = document.getElementById('jw-exp-lbl-worker');
         if (lblWorker) {
             if (activeCategory === 'dukan') {
                 lblWorker.textContent = 'Dukan / Receiver:';
@@ -479,17 +578,17 @@
         }
 
         const allWorkers = toArray(getFromStore('jobwork_workers'));
-        const filtered = allWorkers.filter((w) => String(w?.type || '').toLowerCase() === activeCategory);
+        const filtered = allWorkers.filter((w) => String(w?.type || '').toLowerCase().trim() === activeCategory);
 
         if (!filtered.length) {
-            wSel.innerHTML = '<option value="">Koi Kariger nahi mila</option>';
+            wSel.innerHTML = `<option value="">-- Koi ${activeCategory.toUpperCase()} Kariger nahi hai --</option>`;
             return;
         }
 
         filtered.forEach((w) => {
             const opt = document.createElement('option');
             opt.value = w.id;
-            opt.textContent = w.name;
+            opt.textContent = `${w.name}${w.mobile ? ` (${w.mobile})` : ''}`;
             wSel.appendChild(opt);
         });
     };
@@ -511,7 +610,7 @@
                 const avail = (stockSource === 'cutting') ? stock.cutting : stock.fresh;
                 hint.textContent = `(Stock me: ${avail} Pcs ${stockSource.toUpperCase()})`;
             } else if (activeCategory === 'cutting' && movementType === 'gayi') {
-                hint.textContent = `(Fresh Stock me: ${stock.fresh} Pcs)`;
+                hint.textContent = `(Fresh me: ${stock.fresh} Pcs)`;
             } else {
                 hint.textContent = `(Total: ${stock.total} Pcs)`;
             }
@@ -519,7 +618,7 @@
     };
 
     /* ========================================================================
-       5. BATCH BUILDER LOOP (FARHAN 10, ASIF 20, IMRAN 15)
+       6. BATCH ROW BUILDER (FARHAN 10, ASIF 20, IMRAN 15)
        ------------------------------------------------------------------------
     ======================================================================== */
     window.addExpressBatchRow = () => {
@@ -530,7 +629,7 @@
         const qty = safeInt(qInp?.value);
 
         if (!makerName) {
-            alert('कृपया बुन्ने वाले कारीगर का नाम लिखिए!');
+            alert('कृपया बुन्ने वाले कारीगर का नाम चुनिए!');
             mInp?.focus();
             return;
         }
@@ -553,7 +652,6 @@
 
         renderExpressBatchGrid();
 
-        // Clear and jump back immediately to Maker Input for next line
         if (mInp) mInp.value = '';
         if (qInp) qInp.value = '';
         if (mInp) mInp.focus();
@@ -575,7 +673,7 @@
         let html = '';
 
         if (!expressBatchItems.length) {
-            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:15px; color:#888;">Gatthi khali hai. Upar Kariger likhkar [Enter] dabayein.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:15px; color:#888;">Gatthi khali hai. Kariger likhkar [Enter] dabayein.</td></tr>';
             if (totalDisp) totalDisp.textContent = '0 Pcs';
             if (summaryDisp) summaryDisp.textContent = 'Batch khali hai';
             if (badge) badge.textContent = '0 Items';
@@ -602,7 +700,7 @@
     };
 
     /* ========================================================================
-       6. ATOMIC COMMIT (JOBWORK SHEETS + SAREE HISTORY + DUKAN)
+       7. ATOMIC COMMIT (JOBWORK SHEETS + SAREE HISTORY + DUKAN)
        ------------------------------------------------------------------------
     ======================================================================== */
     window.submitMasterJobWorkExpress = (doPrint = false) => {
@@ -632,7 +730,6 @@
         let totQty = 0;
         expressBatchItems.forEach((x) => { totQty += x.qty; });
 
-        // --- 1. COMMIT TO SAREE HISTORY ---
         let sH = [...toArray(getFromStore('saree_history'))];
         const allKars = toArray(getFromStore('kariger_list'));
         const targetLabel = isDukan ? '🏪 Apni Dukan' : (isCalender ? `${workerName} (Calender)` : `${workerName} (Cutting)`);
@@ -642,7 +739,6 @@
             const kGodown = foundKar?.karkhanaId || 'k_main';
 
             if (isDukan) {
-                // Dukan Outward
                 sH.push({
                     id: `sh_dukan_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
                     refId: batchRowId,
@@ -662,7 +758,6 @@
                     timestamp: Date.now()
                 });
             } else if (isGayi) {
-                // JobWork Outward
                 const effStockSource = isCalender ? stockSource : 'fresh';
                 sH.push({
                     id: `sh_diya_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
@@ -683,7 +778,6 @@
                     timestamp: Date.now()
                 });
             } else {
-                // JobWork Inward
                 const targetTab = isCalender ? 'finished' : 'cutting';
                 sH.push({
                     id: `sh_aayi_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
@@ -706,7 +800,6 @@
             }
         });
 
-        // Damage entry
         if (damagePcs > 0) {
             sH.push({
                 id: `sh_dmg_${Date.now()}`,
@@ -730,7 +823,6 @@
 
         setToStore('saree_history', sH);
 
-        // --- 2. COMMIT TO DUKAN OR JOBWORK SHEETS ---
         if (isDukan) {
             const dukList = [...toArray(getFromStore('dukan_transfer_history'))];
             expressBatchItems.forEach((it) => {
@@ -776,7 +868,6 @@
             setToStore(`jobwork_sheets_${workerId}`, sheets);
         }
 
-        // Cache for A6 Print Slip
         lastSavedExpressBatch = {
             category: activeCategory.toUpperCase(),
             worker: workerName,
@@ -787,7 +878,6 @@
             damagePcs: damagePcs
         };
 
-        // Cache Invalidation
         if (typeof window.invalidateJobWorkCache === 'function') window.invalidateJobWorkCache(workerId);
         if (typeof window.invalidateSareeCalcCache === 'function') window.invalidateSareeCalcCache();
         if (typeof window.invalidateCalenderCalcCache === 'function') window.invalidateCalenderCalcCache();
@@ -802,9 +892,9 @@
             printLastSavedJobWorkChallan();
         }
 
-        // Reset Batch List for next entry
         expressBatchItems = [];
         renderExpressBatchGrid();
+        updateExpressMakerDatalist();
 
         const statusMsg = document.getElementById('jw-exp-status-msg');
         if (statusMsg) {
@@ -816,7 +906,7 @@
     };
 
     /* ========================================================================
-       7. A6 THERMAL PRINT CHALLAN (BATCH BREAKDOWN)
+       8. A6 THERMAL CHALLAN PRINT ENGINE
        ------------------------------------------------------------------------
     ======================================================================== */
     window.printLastSavedJobWorkChallan = () => {
@@ -904,7 +994,7 @@
     };
 
     /* ========================================================================
-       8. GLOBAL EXPORT
+       9. GLOBAL EXPORT
        ------------------------------------------------------------------------
     ======================================================================== */
     window.JobWorkExpressEngine = {
