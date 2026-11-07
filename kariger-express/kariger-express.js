@@ -7,7 +7,7 @@
    - Tally Alt+C: On-The-Fly New Weaver Setup with Tani 1 & Rates
    - Tani Switcher Tabs (Tani 1, Tani 2) & [+ Nayi Tani] with Auto Carry-Forward
    - Tani & Chukka Sancha Dropdown from sancha_items with Auto-Stock Deduction
-   - Live Tani Progress Meter, 8 Colors Matching Badges & A6 Thermal Print
+   - Fixed Color Inputs (100% Box-Sizing & Zero-Overflow Frame)
 ============================================================================ */
 
 (() => {
@@ -183,7 +183,7 @@
     };
 
     /* ========================================================================
-       2. OPEN KARIGER EXPRESS COUNTER (WITH ALT+C & TANI TABS)
+       2. OPEN KARIGER EXPRESS COUNTER
        ------------------------------------------------------------------------
     ======================================================================== */
     window.openKarigerExpressModal = () => {
@@ -196,7 +196,7 @@
         prevDeliveredSarees = 0;
         lastSavedTransaction = null;
 
-        const { kOpts, bOpts, zOpts, taniOpts, chukkaOpts } = getKarigerExpressDatalists();
+        const { kOpts, bOpts, zOpts } = getKarigerExpressDatalists();
         const today = getToday();
 
         const modalHtml = `
@@ -247,7 +247,7 @@
                         </button>
                     </div>
 
-                    <!-- Live Weaver Snapshot Banner (Tani progress, Sancha & 8 Colors) -->
+                    <!-- Live Weaver Snapshot Banner -->
                     <div id="kexp-weaver-banner" style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:10px 14px; margin-bottom:14px;">
                         <span style="font-size:12px; color:#64748b;">कारीगर चुनिए, तानी का पूरा हिसाब और कलर यहाँ दिखेंगे...</span>
                     </div>
@@ -277,7 +277,7 @@
                             </div>
                         </div>
 
-                        <!-- COLUMN 2: BANA & ZARI ISSUE WITH LIVE STOCK BADGES -->
+                        <!-- COLUMN 2: BANA & ZARI ISSUE -->
                         <div style="background:#eff6ff; border:1.5px solid #bfdbfe; border-radius:8px; padding:12px;">
                             <h4 style="margin:0 0 10px 0; color:#1e40af; font-size:13px; border-bottom:1px solid #bfdbfe; padding-bottom:5px;">🧶 कच्चा माल दिया (Outward)</h4>
                             
@@ -424,12 +424,10 @@
         const rateBani = safeNum(currentActiveSheet.rateBani, 240);
         const totalTaniTarget = safeNum(currentActiveSheet.taniPcs, 72);
         
-        // Sancha details resolution
         const taniSancha = currentActiveSheet.taniSancha || 'N/A';
         const chukkaSancha = currentActiveSheet.chukkaSancha || 'N/A';
         const taniItem = currentActiveSheet.taniItem || 'Tani';
 
-        // 8 Colors Matching Badges
         const colorsArr = Array.isArray(currentActiveSheet.colors) ? currentActiveSheet.colors : [];
         let colorsHtml = '';
         if (colorsArr.length) {
@@ -441,7 +439,6 @@
         }
         if (!colorsHtml) colorsHtml = `<span style="color:#94a3b8; font-size:11px;">Color matching set nahi hai</span>`;
 
-        // Pre-fill sheet's default bana and zari
         if (currentActiveSheet.banaItem && !document.getElementById('kexp-bana-name').value) {
             document.getElementById('kexp-bana-name').value = currentActiveSheet.banaItem;
         }
@@ -479,7 +476,7 @@
     };
 
     /* ========================================================================
-       4. ⚡ ALT + C MODAL: CREATE NEW WEAVER WITH TANI 1 & SANCHA ON-THE-FLY
+       4. ⚡ ALT + C MODAL: FIXED COLOR INPUTS (ZERO OVERFLOW)
        ------------------------------------------------------------------------
     ======================================================================== */
     window.openAltCKarigerModal = () => {
@@ -541,7 +538,7 @@
                         </div>
                     </div>
 
-                    <!-- 2. Tani 1 Sancha Setup (Exact Match from kariger-ui) -->
+                    <!-- 2. Tani 1 Sancha Setup -->
                     <div style="background:#eff6ff; border:1.5px solid #bfdbfe; border-radius:8px; padding:10px; margin-bottom:12px;">
                         <div style="font-weight:800; color:#1e40af; font-size:12px; margin-bottom:6px;">🧵 2. ताना व साँचा सेटअप (Tani 1):</div>
                         <div style="display:grid; grid-template-columns:1.5fr 1fr 0.8fr 0.8fr; gap:6px; margin-bottom:8px;">
@@ -605,14 +602,22 @@
                         </div>
                     </div>
 
-                    <!-- 4. 8 Colors Setup Strip -->
-                    <div style="background:#fffbeb; border:1px solid #fde68a; border-radius:8px; padding:8px 10px;">
-                        <label style="font-size:11px; font-weight:bold; color:#b45309; display:block; margin-bottom:4px;">🎨 Tani Ke 8 Colors (Optional Matching):</label>
-                        <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:6px;">
-                            <input type="text" id="altc-col-1" placeholder="1. Rani" style="padding:4px 6px; font-size:11px; border:1px solid #cbd5e1; border-radius:4px;">
-                            <input type="text" id="altc-col-2" placeholder="2. Lal" style="padding:4px 6px; font-size:11px; border:1px solid #cbd5e1; border-radius:4px;">
-                            <input type="text" id="altc-col-3" placeholder="3. Mehendi" style="padding:4px 6px; font-size:11px; border:1px solid #cbd5e1; border-radius:4px;">
-                            <input type="text" id="altc-col-4" placeholder="4. Blue" style="padding:4px 6px; font-size:11px; border:1px solid #cbd5e1; border-radius:4px;">
+                    <!-- 4. ⭐ FIXED 8 COLORS SETUP STRIP (ZERO-OVERFLOW GUARANTEED) -->
+                    <div style="background:#fffbeb; border:1.5px solid #fde68a; border-radius:8px; padding:10px; box-sizing:border-box; width:100%;">
+                        <label style="font-size:11px; font-weight:bold; color:#b45309; display:block; margin-bottom:6px;">
+                            🎨 Tani Ke 8 Colors (Optional Matching):
+                        </label>
+                        <div style="display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); gap:6px; margin-bottom:6px;">
+                            <input type="text" id="altc-col-1" placeholder="1. Rani" style="width:100%; min-width:0; box-sizing:border-box; padding:5px 6px; font-size:11px; font-weight:bold; border:1px solid #cbd5e1; border-radius:4px; background:#ffffff;">
+                            <input type="text" id="altc-col-2" placeholder="2. Lal" style="width:100%; min-width:0; box-sizing:border-box; padding:5px 6px; font-size:11px; font-weight:bold; border:1px solid #cbd5e1; border-radius:4px; background:#ffffff;">
+                            <input type="text" id="altc-col-3" placeholder="3. Mehendi" style="width:100%; min-width:0; box-sizing:border-box; padding:5px 6px; font-size:11px; font-weight:bold; border:1px solid #cbd5e1; border-radius:4px; background:#ffffff;">
+                            <input type="text" id="altc-col-4" placeholder="4. Blue" style="width:100%; min-width:0; box-sizing:border-box; padding:5px 6px; font-size:11px; font-weight:bold; border:1px solid #cbd5e1; border-radius:4px; background:#ffffff;">
+                        </div>
+                        <div style="display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); gap:6px;">
+                            <input type="text" id="altc-col-5" placeholder="5. Peela" style="width:100%; min-width:0; box-sizing:border-box; padding:5px 6px; font-size:11px; font-weight:bold; border:1px solid #cbd5e1; border-radius:4px; background:#ffffff;">
+                            <input type="text" id="altc-col-6" placeholder="6. Wine" style="width:100%; min-width:0; box-sizing:border-box; padding:5px 6px; font-size:11px; font-weight:bold; border:1px solid #cbd5e1; border-radius:4px; background:#ffffff;">
+                            <input type="text" id="altc-col-7" placeholder="7. Firozi" style="width:100%; min-width:0; box-sizing:border-box; padding:5px 6px; font-size:11px; font-weight:bold; border:1px solid #cbd5e1; border-radius:4px; background:#ffffff;">
+                            <input type="text" id="altc-col-8" placeholder="8. Mungia" style="width:100%; min-width:0; box-sizing:border-box; padding:5px 6px; font-size:11px; font-weight:bold; border:1px solid #cbd5e1; border-radius:4px; background:#ffffff;">
                         </div>
                     </div>
 
@@ -682,7 +687,7 @@
         const chukkaWazan = safeNum(document.getElementById('altc-chukka-wazan')?.value, 0);
 
         const colors = [];
-        for (let i = 1; i <= 4; i++) {
+        for (let i = 1; i <= 8; i++) {
             const cVal = String(document.getElementById(`altc-col-${i}`)?.value || '').trim();
             if (cVal) colors.push(cVal);
         }
@@ -718,7 +723,6 @@
             setToStore(`kariger_sheets_${newKarigerId}`, sheets);
         }
 
-        // Deduct Sancha stock if wazan entered
         if (taniItem && taniWazan > 0) {
             deductSanchaStockItem(taniItem, 'tani', taniWazan, kGodown, `${newKarigerId}_tani_1_t`, name);
         }
@@ -742,7 +746,6 @@
         updateWeaverBannerSnapshot();
         calculateKarigerExpressLive();
 
-        // Focus jumps straight to Saree Qty for rapid entry!
         setTimeout(() => {
             const sareeInp = document.getElementById('kexp-saree-qty');
             if (sareeInp) sareeInp.focus();
@@ -752,7 +755,7 @@
     };
 
     /* ========================================================================
-       5. ➕ NAYI TANI MODAL (AUTO CARRY-FORWARD BANA, ZARI & BANI)
+       5. ➕ NAYI TANI MODAL
        ------------------------------------------------------------------------
     ======================================================================== */
     window.openExpressNewTaniModal = () => {
@@ -767,7 +770,6 @@
         const sheets = (typeof window.getKarigerSheets === 'function') ? window.getKarigerSheets(selectedKariger.id) : [];
         const nextNum = sheets.length + 1;
 
-        // Auto Calculate Pichli Closing
         const calc = (typeof window.calculateSheetTotals === 'function')
             ? window.calculateSheetTotals(currentActiveSheet)
             : { remainingBana: 0, remainingZari: 0, remainingAmt: 0 };
@@ -787,7 +789,6 @@
 
                 <div style="padding:14px; overflow-y:auto; flex:1;">
                     
-                    <!-- Pichla Hisab Auto Carry-Forward Banner -->
                     <div style="background:#f0fdf4; border:1px solid #86efac; border-radius:8px; padding:10px; margin-bottom:12px;">
                         <div style="font-size:11px; font-weight:bold; color:#15803d; margin-bottom:4px;">📦 Pichli Tani Se Aaya Baki Hisaab (Carry Forward):</div>
                         <div style="display:flex; justify-content:space-between; font-size:12px; font-weight:bold; color:#166534;">
@@ -797,7 +798,6 @@
                         </div>
                     </div>
 
-                    <!-- Tani Sancha Setup -->
                     <div style="background:#eff6ff; border:1px solid #bfdbfe; border-radius:8px; padding:10px; margin-bottom:10px;">
                         <div style="font-weight:bold; color:#1e40af; font-size:11.5px; margin-bottom:6px;">🧵 Naya Taana / Sancha Chunein:</div>
                         <div style="display:grid; grid-template-columns:1.5fr 1fr 0.8fr 0.8fr; gap:6px;">
@@ -821,7 +821,6 @@
                         </div>
                     </div>
 
-                    <!-- Rates Setup -->
                     <div style="background:#fff7ed; border:1px solid #fed7aa; border-radius:8px; padding:10px;">
                         <div style="font-weight:bold; color:#9a3412; font-size:11.5px; margin-bottom:6px;">💰 Mazdoori Rate:</div>
                         <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px;">
@@ -912,7 +911,6 @@
 
         closeExpressNewTaniModal();
 
-        // Switch to the new Tani
         activeSheetIndex = sheets.length - 1;
         currentActiveSheet = newSheetObj;
 
@@ -984,7 +982,6 @@
             }
         });
 
-        // ⭐ STRICT CAPTURE LISTENER (Prevents conflict with browser & other modules)
         window.removeEventListener('keydown', handleKarigerExpressKeydown, true);
         window.addEventListener('keydown', handleKarigerExpressKeydown, true);
     };
@@ -993,7 +990,7 @@
         const modal = document.getElementById('kariger-express-modal');
         if (!modal || modal.style.display === 'none') return;
 
-        // If Alt+C modal is open, let Alt+C handle Escape & Ctrl+Enter
+        // If Alt+C modal is open
         const altCModal = document.getElementById('alt-c-kariger-modal');
         if (altCModal) {
             if (e.key === 'Escape') {
@@ -1008,7 +1005,7 @@
                 saveAltCKariger();
                 return;
             }
-            return; // Let user type in Alt+C fields
+            return;
         }
 
         // Escape -> Close Kariger Express
@@ -1019,7 +1016,7 @@
             return;
         }
 
-        // ⭐ TALLY SHORTCUT: Alt + C -> Naya Kariger Form
+        // ⭐ Alt + C -> Naya Kariger Form
         if (e.altKey && (e.key === 'c' || e.key === 'C')) {
             e.preventDefault();
             e.stopImmediatePropagation();
@@ -1112,7 +1109,7 @@
     };
 
     /* ========================================================================
-       7. ATOMIC SUBMIT (SAVES TO ACTIVE TANI SHEET & RECONCILES ALL STOCKS)
+       7. ATOMIC SUBMIT
        ------------------------------------------------------------------------
     ======================================================================== */
     window.submitKarigerExpress = () => {
@@ -1150,7 +1147,6 @@
         const nZari = Math.max(0, zQty - topi);
         const rowId = `row_${Date.now()}`;
 
-        // Get sheets & ensure active sheet
         let sheets = (typeof window.getKarigerSheets === 'function') ? window.getKarigerSheets(kId) : [];
         if (!sheets || !sheets.length) {
             sheets = [{
@@ -1163,7 +1159,6 @@
             }];
         }
 
-        // Commit to CURRENT ACTIVE TANI SHEET
         const activeSheet = sheets[activeSheetIndex] || sheets[sheets.length - 1];
         if (banaItemName) activeSheet.banaItem = banaItemName;
         if (zariItemName) activeSheet.zariItem = zariItemName;
@@ -1195,7 +1190,6 @@
             setToStore(`kariger_sheets_${kId}`, sheets);
         }
 
-        // Update Saree History (Accurate Fresh vs Lott)
         const freshSaree = Math.max(0, saree - lott);
         let sHist = toArray(getFromStore('saree_history'));
 
@@ -1237,7 +1231,6 @@
         }
         setToStore('saree_history', sHist);
 
-        // Update Bana History
         if (banaItemName && (nBana > 0 || retB > 0)) {
             const bHist = toArray(getFromStore('bana_history'));
             bHist.push({
@@ -1255,7 +1248,6 @@
             setToStore('bana_history', bHist);
         }
 
-        // Update Zari History
         if (zariItemName && (nZari > 0 || retZ > 0)) {
             const zHist = toArray(getFromStore('zari_history'));
             zHist.push({
@@ -1273,7 +1265,6 @@
             setToStore('zari_history', zHist);
         }
 
-        // Update Payment History
         if (paid > 0) {
             const payList = toArray(getFromStore('payment_history'));
             payList.push({
@@ -1288,7 +1279,6 @@
             setToStore('payment_history', payList);
         }
 
-        // Prepare Transaction for A6 Thermal Slip
         const totalsAfter = (typeof window.calculateSheetTotals === 'function') 
             ? window.calculateSheetTotals(activeSheet) 
             : { remainingAmt: 0, totSaree: 0 };
@@ -1317,7 +1307,6 @@
 
         if (typeof window.updateDashboardBadgeTotals === 'function') window.updateDashboardBadgeTotals();
 
-        // Clear Inputs for Next Weaver
         document.getElementById('kexp-saree-qty').value = '';
         document.getElementById('kexp-saree-lott').value = '';
         document.getElementById('kexp-ret-bana').value = '';
@@ -1335,7 +1324,6 @@
 
         printLastSavedExpressSlip();
 
-        // Focus back to Kariger input for the next weaver
         const kInp = document.getElementById('kexp-kariger-input');
         if (kInp) {
             kInp.value = '';
@@ -1348,7 +1336,7 @@
     };
 
     /* ========================================================================
-       8. A6 THERMAL SLIP PRINT (SANCHA & TANI SPECIFICATION INCLUDED)
+       8. A6 THERMAL SLIP PRINT
        ------------------------------------------------------------------------
     ======================================================================== */
     window.printLastSavedExpressSlip = () => {
