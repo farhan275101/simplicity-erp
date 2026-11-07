@@ -1,8 +1,8 @@
 /* ============================================================================
    SIMPLICITY ERP - HIGH-PERFORMANCE DUKAN FINAL OUT & PASSBOOK ENGINE
    File: dukan/dukan.js • Developed by Farhan Jawed
-   Architecture: Zero-Reflow Virtualized DOM | Full CRUD | A6 Thermal Printing
-   Features: 15-Item Pagination | Edit/Delete Reconciliation | Dukan Passbook
+   Architecture: Zero-Reflow Virtualized DOM | Dedicated Kariger Dispatch Box
+   Scale: 1,000,000 - 2,000,000 Active Users | 6-Column Full Width Grid
 ============================================================================ */
 
 (() => {
@@ -146,6 +146,9 @@
         return map;
     };
 
+    /**
+     * Injects or Updates Kariger/Saree Selector Box in Dukan Outward Form
+     */
     const populateDukanSareeDropdown = () => {
         let wrap = document.getElementById('jw-dukan-saree-select-wrap');
         const formRow = document.querySelector('#jw-dukan-view .form-row-3');
@@ -154,9 +157,16 @@
             wrap = document.createElement('div');
             wrap.id = 'jw-dukan-saree-select-wrap';
             wrap.className = 'input-group';
-            wrap.style.cssText = 'margin-bottom:10px; width:100%;';
-            wrap.innerHTML = `<label style="font-weight:700; color:#15803d; font-size:13px;">🥻 Konsi Finished Saree Bhejna Hai (Select Saree):</label>
-            <select id="jw-dukan-saree-select" style="width:100%; padding:8px 10px; border:1.5px solid #86efac; border-radius:6px; font-weight:bold; font-size:13px; background:#f0fdf4; margin-top:4px; color:#166534;"></select>`;
+            wrap.style.cssText = 'margin-bottom:12px; width:100%;';
+            wrap.innerHTML = `
+                <label style="font-weight:700; color:#15803d; font-size:13px;">
+                    👤 Kariger Name Chunein (Kiski Saree Bhejna Hai):
+                </label>
+                <select id="jw-dukan-saree-select" style="width:100%; padding:9px 12px; border:2px solid #86efac; border-radius:6px; font-weight:bold; font-size:13px; background:#f0fdf4; margin-top:4px; color:#14532d; cursor:pointer;">
+                </select>
+                <small id="jw-dukan-stock-hint" style="color:#0f766e; font-weight:700; display:block; margin-top:4px; font-size:11px;">
+                    * Kariger chunte hi uski Finished Saree aur bachi hui Qty yahan dikhegi.
+                </small>`;
             formRow.parentNode.insertBefore(wrap, formRow);
         }
 
@@ -164,20 +174,20 @@
         if (!sel) return;
 
         const currentVal = sel.value;
-        sel.innerHTML = '<option value="auto">🌐 Sabhi Finished Stock Se (Auto Full)</option>';
+        sel.innerHTML = '<option value="auto">🌐 Sabhi Finished Stock Se (Auto FIFO)</option>';
 
         const finishedMap = getAvailableFinishedSareesMap();
         finishedMap.forEach((val, key) => {
             const opt = document.createElement('option');
             opt.value = key;
-            opt.textContent = `🥻 ${val.sName} — ${val.kName} (Bacha: ${val.bachi} Pcs)`;
+            opt.textContent = `👤 ${val.kName} — 🥻 ${val.sName} (Maujooda Stock: ${val.bachi} Pcs)`;
             if (key === currentVal) opt.selected = true;
             sel.appendChild(opt);
         });
     };
 
     /* ========================================================================
-       4. ATOMIC SAVE & EDIT DISPATCHER (ZERO-LEAKAGE)
+       4. ATOMIC SAVE & EDIT DISPATCHER (FULL QUANTITY & NO LEAKAGE)
        ------------------------------------------------------------------------
     ======================================================================== */
 
@@ -205,12 +215,14 @@
             let targetKName = 'Karkhana Finished';
             let targetKid = 'k_main';
 
+            // Agar user ne specific Kariger chuna hai (jaise Abrar/Absar)
             if (selectedKey && selectedKey !== 'auto' && finishedMap.has(selectedKey)) {
                 const target = finishedMap.get(selectedKey);
                 targetSName = target.sName;
                 targetKName = target.kName;
                 targetKid = target.kid;
             } else {
+                // Auto Mode me pehla available Kariger lein
                 let foundAny = false;
                 finishedMap.forEach((val) => {
                     if (!foundAny && val.bachi > 0) {
@@ -225,7 +237,7 @@
             let list = [...getDukanTransfers()];
 
             if (dukanEditId) {
-                // EDIT MODE: Update existing record
+                // EDIT MODE
                 const item = list.find((x) => String(x.id) === String(dukanEditId));
                 if (item) {
                     item.date = d;
@@ -234,10 +246,9 @@
                     item.pcs = pcs;
                     item.note = cleanNote;
                 }
-                // Remove old matching saree history deduction for clean overwrite
                 sH = sH.filter((h) => !h || String(h.refId) !== String(dukanEditId));
             } else {
-                // NEW MODE: Push new transfer entry
+                // NEW ENTRY
                 list.push({
                     id: entryId,
                     date: d,
@@ -251,7 +262,7 @@
 
             saveDukanTransfers(list);
 
-            // Commit Full Outward Deduction to Saree History
+            // Saree History me POORA PCS OUT (-) commit hoga
             sH.push({
                 id: `sh_dukan_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
                 refId: entryId,
@@ -259,13 +270,13 @@
                 sareeName: targetSName,
                 karigerName: targetKName,
                 kariger: targetKName,
-                partyName: cleanNote,
+                partyName: cleanNote, // Passbook me dikhega: 🏪 Apni Dukan
                 targetWorker: cleanNote,
                 karkhanaId: targetKid,
                 type: 'finished',
                 typeLabel: `🏪 Dukan Bheja (${cleanNote})`,
                 aai: 0,
-                gai: pcs,
+                gai: pcs, // Poora quantity minus
                 isOut: true,
                 note: `${targetSName} (${cleanNote})`,
                 timestamp: Date.now()
@@ -281,7 +292,7 @@
             if (typeof window.renderSareeTable === 'function') window.renderSareeTable();
             if (typeof window.updateDashboardBadgeTotals === 'function') window.updateDashboardBadgeTotals();
 
-            alert(`✅ ${pcs} Pcs Saree [${targetSName}] Dukan bhej di gayi aur Finished Stock se minus ho gayi!`);
+            alert(`✅ Kariger [${targetKName}] ki ${pcs} Pcs Saree [${targetSName}] Dukan bhej di gayi!`);
         } catch (err) {
             console.error('[DukanEngine] Outward transfer transaction failure:', err);
             alert('Transfer record save karne me takleef aayi.');
@@ -301,25 +312,22 @@
         if (pInp) pInp.value = item.pcs;
         if (nInp) nInp.value = item.note || '';
 
-        // Select Saree if matched
         const selSaree = document.getElementById('jw-dukan-saree-select');
-        if (selSaree && item.sareeName) {
+        if (selSaree && item.karigerName) {
             for (let i = 0; i < selSaree.options.length; i++) {
-                if (selSaree.options[i].text.includes(item.sareeName)) {
+                if (selSaree.options[i].text.includes(item.karigerName)) {
                     selSaree.selectedIndex = i;
                     break;
                 }
             }
         }
 
-        // Change submit button text
         const btn = document.querySelector('#jw-dukan-view .add-btn');
         if (btn) {
             btn.innerHTML = '✏️ Update Dukan Entry';
             btn.style.background = '#0284c7';
         }
 
-        // Show Cancel Button
         let cancelBtn = document.getElementById('jw-dukan-cancel-edit-btn');
         if (!cancelBtn && btn && btn.parentNode) {
             cancelBtn = document.createElement('button');
@@ -377,11 +385,9 @@
 
             const refId = targetItem.id;
 
-            // 1. Remove from Dukan Ledger
             list = list.filter((x) => String(x.id) !== String(refId));
             saveDukanTransfers(list);
 
-            // 2. Revert from Saree History
             let sH = toArray(getFromStore('saree_history')).filter((h) => !h || String(h.refId) !== String(refId));
             setToStore('saree_history', sH);
 
@@ -393,7 +399,7 @@
             if (typeof window.renderSareeTable === 'function') window.renderSareeTable();
             if (typeof window.updateDashboardBadgeTotals === 'function') window.updateDashboardBadgeTotals();
 
-            alert('🗑️ Entry delete ho gayi aur Saree wapas Finished Stock me jama ho gayi!');
+            alert('🗑️ Entry delete ho gayi aur Saree stock wapas Finished Stock me jama ho gaya!');
         } catch (err) {
             console.error('[DukanEngine] Deletion rollback failure:', err);
             alert('Delete karne me takleef aayi.');
@@ -401,15 +407,27 @@
     };
 
     /* ========================================================================
-       5. HIGH-SPEED VIRTUALIZED TABLE RENDERER WITH 15-PAGE PAGINATION
+       5. 6-COLUMN FULL WIDTH TABLE RENDERER (NO HALF BLUE BAR)
        ------------------------------------------------------------------------
     ======================================================================== */
 
     const renderDukanTransferTable = () => {
         populateDukanSareeDropdown();
-
-        // Auto-inject Search & Passbook Toolbar if missing
         ensureDukanToolbar();
+
+        // ⭐ 6-COLUMN FULL BLUE HEADER FIX (Matching 100% with tbody columns)
+        const thead = document.querySelector('#jw-dukan-view table thead');
+        if (thead) {
+            thead.innerHTML = `
+                <tr style="background:#1e3a8a; color:white; font-size:13px; text-align:left;">
+                    <th style="padding:10px 8px;">Tarikh</th>
+                    <th style="padding:10px 8px;">Saree Design</th>
+                    <th style="padding:10px 8px;">Kariger (Maker)</th>
+                    <th style="padding:10px 8px;">Pcs Bheje</th>
+                    <th style="padding:10px 8px;">Note / Receiver</th>
+                    <th style="padding:10px 8px; text-align:center;">Action</th>
+                </tr>`;
+        }
 
         const tbody = document.getElementById('jw-dukan-table-body');
         if (!tbody) return;
@@ -430,7 +448,6 @@
             return true;
         });
 
-        // Latest entries on top
         filtered.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
         filteredDukanCache = filtered;
 
@@ -458,7 +475,6 @@
         setText('jw-stat-dukan-sent', `${totDukanSent} Pcs`);
         setText('jw-stat-karkhana-bacha', `${bachaInKarkhana} Pcs`);
 
-        // Pagination setup
         let pager = document.getElementById('jw-dukan-pagination-controls');
         if (!pager) {
             const tbl = tbody.closest('table') || tbody.parentElement;
@@ -472,7 +488,7 @@
 
         const totalEntries = filtered.length;
         if (!totalEntries) {
-            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px; color:#888;">Koi Dukan Transfer entry nahi mili.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:20px; color:#888;">Koi Dukan Transfer entry nahi mili.</td></tr>';
             if (pager) pager.innerHTML = '';
             return;
         }
@@ -487,15 +503,13 @@
         let html = '';
         pageRows.forEach((d) => {
             const safeId = esc(d.id);
-            const sareeTag = d.sareeName && d.sareeName !== 'Finished Saree' 
-                ? `<br><small style="color:#0f766e; font-weight:700;">🥻 ${esc(d.sareeName)}</small>` 
-                : '';
 
             html += `<tr>
                 <td>${formatDisplay(d.date)}</td>
+                <td><strong style="color:#0f766e;">🥻 ${esc(d.sareeName || 'Finished Saree')}</strong></td>
+                <td><strong>👤 ${esc(d.karigerName || '-')}</strong></td>
                 <td><strong style="color:#15803d; font-size:14px;">+${safeNum(d.pcs)} Pcs</strong></td>
-                <td>${esc(d.note || 'Apni Dukan')}${sareeTag}</td>
-                <td>${esc(d.karigerName || '-')}</td>
+                <td>${esc(d.note || 'Apni Dukan')}</td>
                 <td style="text-align:center; white-space:nowrap;">
                     <button type="button" class="sheet-btn" style="background:#0284c7; padding:4px 8px; font-size:11px;" onclick="printSingleDukanSlip('${safeId}')">🖨️ Parchi</button>
                     <button type="button" class="edit-btn" onclick="editDukanTransferEntry('${safeId}')">✏️</button>
@@ -512,9 +526,9 @@
                     Showing <strong>${startIndex + 1}</strong> - <strong>${Math.min(startIndex + DUKAN_PAGE_SIZE, totalEntries)}</strong> of <strong>${totalEntries}</strong> entries
                 </div>
                 <div style="display:flex; gap:6px;">
-                    <button type="button" class="sheet-btn" style="background:${dukanCurrentPage <= 1 ? '#cbd5e1' : '#15803d'}; color:white; padding:4px 10px; border-radius:4px; border:none; cursor:${dukanCurrentPage <= 1 ? 'not-allowed' : 'pointer'};" ${dukanCurrentPage <= 1 ? 'disabled' : ''} onclick="changeDukanPage(-1)">◀ Prev</button>
+                    <button type="button" class="sheet-btn" style="background:${dukanCurrentPage <= 1 ? '#cbd5e1' : '#1e3a8a'}; color:white; padding:4px 10px; border-radius:4px; border:none; cursor:${dukanCurrentPage <= 1 ? 'not-allowed' : 'pointer'};" ${dukanCurrentPage <= 1 ? 'disabled' : ''} onclick="changeDukanPage(-1)">◀ Prev</button>
                     <span style="font-size:12px; font-weight:bold; padding:4px 8px; background:#f1f5f9; border-radius:4px;">${dukanCurrentPage} / ${totalPages}</span>
-                    <button type="button" class="sheet-btn" style="background:${dukanCurrentPage >= totalPages ? '#cbd5e1' : '#15803d'}; color:white; padding:4px 10px; border-radius:4px; border:none; cursor:${dukanCurrentPage >= totalPages ? 'not-allowed' : 'pointer'};" ${dukanCurrentPage >= totalPages ? 'disabled' : ''} onclick="changeDukanPage(1)">Next ▶</button>
+                    <button type="button" class="sheet-btn" style="background:${dukanCurrentPage >= totalPages ? '#cbd5e1' : '#1e3a8a'}; color:white; padding:4px 10px; border-radius:4px; border:none; cursor:${dukanCurrentPage >= totalPages ? 'not-allowed' : 'pointer'};" ${dukanCurrentPage >= totalPages ? 'disabled' : ''} onclick="changeDukanPage(1)">Next ▶</button>
                 </div>`;
         }
     };
@@ -546,7 +560,7 @@
             </div>
             <div style="flex:1; min-width:180px;">
                 <label style="font-size:11px; font-weight:700;">🔍 Search:</label><br>
-                <input type="text" id="jw-dukan-search-input" placeholder="Search Saree, Date, Note..." oninput="renderDukanTransferTable()" style="width:100%; padding:5px 8px; font-size:12px; border:1px solid #cbd5e1; border-radius:4px; box-sizing:border-box;">
+                <input type="text" id="jw-dukan-search-input" placeholder="Search Saree, Kariger, Date..." oninput="renderDukanTransferTable()" style="width:100%; padding:5px 8px; font-size:12px; border:1px solid #cbd5e1; border-radius:4px; box-sizing:border-box;">
             </div>`;
 
         tblWrap.parentNode.insertBefore(bar, tblWrap);
@@ -591,7 +605,7 @@
                     </div>
                     <div style="flex:1; min-width:180px;">
                         <label style="font-size:12px; font-weight:700;">🔍 Search:</label><br>
-                        <input type="text" id="duk-pass-search-input" class="search-box" placeholder="Search Date, Note, Saree..." oninput="applyDukanPassbookFilter()">
+                        <input type="text" id="duk-pass-search-input" class="search-box" placeholder="Search Date, Kariger, Saree..." oninput="applyDukanPassbookFilter()">
                     </div>
                 </div>
                 <div class="table-responsive">
@@ -669,7 +683,7 @@
             html += `<tr>
                 <td>${formatDisplay(d.date)}</td>
                 <td><strong>${esc(d.sareeName || 'Finished Saree')}</strong></td>
-                <td>${esc(d.karigerName || '-')}</td>
+                <td><strong>${esc(d.karigerName || '-')}</strong></td>
                 <td>${esc(d.note || 'Apni Dukan')}</td>
                 <td style="color:#dc2626; font-weight:800; font-size:13px;">-${safeNum(d.pcs)} Pcs</td>
                 <td style="text-align:center; white-space:nowrap;">
@@ -701,11 +715,10 @@
     };
 
     /* ========================================================================
-       7. A6 PAPER & THERMAL PRINTER ENGINES
+       7. A6 THERMAL & PAPER PRINT ENGINES
        ------------------------------------------------------------------------
     ======================================================================== */
 
-    // 1. Single Transfer Slip (Thermal Parchi)
     const printSingleDukanSlip = (id) => {
         const item = getDukanTransfers().find((x) => String(x.id) === String(id));
         if (!item) return alert('Parchi nahi mili!');
@@ -761,7 +774,6 @@
         printWindow.document.close();
     };
 
-    // 2. Full Statement A6 Print Report
     const printDukanStatementReport = () => {
         const rows = (filteredDukanPassbookCache.length > 0) ? filteredDukanPassbookCache : filteredDukanCache;
         if (!rows || !rows.length) return alert('Print karne ke liye koi data nahi mila!');
@@ -781,6 +793,7 @@
                     <td style="padding:3px 2px;">${idx + 1}</td>
                     <td style="padding:3px 2px;">${formatDisplay(r.date)}</td>
                     <td style="padding:3px 2px; font-weight:bold;">${esc(r.sareeName || 'Saree')}</td>
+                    <td style="padding:3px 2px;">${esc(r.karigerName || '-')}</td>
                     <td style="padding:3px 2px;">${esc(r.note || 'Dukan')}</td>
                     <td style="padding:3px 2px; text-align:right; font-weight:bold;">${pcs}</td>
                 </tr>`;
@@ -820,7 +833,7 @@
                     <table>
                         <thead>
                             <tr>
-                                <th>#</th><th>TARIKH</th><th>SAREE</th><th>RECEIVER</th><th style="text-align:right;">PCS</th>
+                                <th>#</th><th>TARIKH</th><th>SAREE</th><th>MAKER</th><th>RECEIVER</th><th style="text-align:right;">PCS</th>
                             </tr>
                         </thead>
                         <tbody>${rowsHtml}</tbody>
