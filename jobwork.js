@@ -38,12 +38,46 @@
             WORKER_ACTIVE_CACHE.clear();
         }
         KARIGER_STOCK_CACHE.clear();
+
+        // Cross-Module Calculation Engine Cache Invalidation
+        if (typeof window.invalidateSareeCalcCache === 'function') {
+            window.invalidateSareeCalcCache();
+        }
+        if (typeof window.invalidateCalenderCalcCache === 'function') {
+            window.invalidateCalenderCalcCache();
+        }
+        if (typeof window.invalidateCuttingCalcCache === 'function') {
+            window.invalidateCuttingCalcCache();
+        }
     };
 
     /* ========================================================================
        2. SAFE DOM & DATA SANITIZATION UTILITIES
        ------------------------------------------------------------------------
     ======================================================================== */
+    const toArray = (v) => {
+        if (Array.isArray(v)) return v;
+        if (typeof window.safeArray === 'function') return window.safeArray(v);
+        return [];
+    };
+
+    const getFromStore = (key) => {
+        if (typeof window.getStore === 'function') return window.getStore(key);
+        try {
+            return JSON.parse(localStorage.getItem(key) || '[]');
+        } catch {
+            return [];
+        }
+    };
+
+    const setToStore = (key, val) => {
+        if (typeof window.setStore === 'function') {
+            window.setStore(key, val);
+        } else {
+            localStorage.setItem(key, JSON.stringify(val));
+        }
+    };
+
     const esc = (s) => {
         if (typeof window.sanitizeHTML === 'function') return window.sanitizeHTML(s);
         return String(s || '').replace(/[&<>"']/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
@@ -165,8 +199,8 @@
 
     const updateJobWorkHubBadges = () => {
         const workers = getJobWorkers();
-        const cutCount = workers.filter((w) => w?.type === 'cutting').length;
-        const calCount = workers.filter((w) => w?.type === 'calender').length;
+        const cutCount = workers.filter((w) => String(w?.type || '').toLowerCase() === 'cutting').length;
+        const calCount = workers.filter((w) => String(w?.type || '').toLowerCase() === 'calender').length;
 
         setText('jw-hub-badge-cutting', `${cutCount} Kariger`);
         setText('jw-hub-badge-calender', `${calCount} Kariger`);
@@ -196,22 +230,14 @@
     ======================================================================== */
 
     const getJobWorkers = () => {
-        return window.safeArray 
-            ? window.safeArray(window.getStore('jobwork_workers')) 
-            : [];
+        return toArray(getFromStore('jobwork_workers'));
     };
 
     const saveJobWorkers = (list) => {
-        const clean = window.safeArray ? window.safeArray(list) : [];
-        if (typeof window.setStore === 'function') {
-            window.setStore('jobwork_workers', clean);
-        }
+        setToStore('jobwork_workers', toArray(list));
         invalidateJobWorkCache();
     };
 
-    /**
-     * Memoized Absentee & Last-Active Resolver
-     */
     const getJobWorkerLastActiveInfo = (workerId) => {
         if (!workerId) return { lastDate: '-', daysAbsent: 0 };
         const cleanId = String(workerId).trim();
@@ -223,10 +249,9 @@
         let latestDate = null;
         const sheets = getJobWorkerSheets(cleanId);
 
-        // Fast scan: check latest sheet's rows first
         if (sheets.length > 0) {
             const lastSheet = sheets[sheets.length - 1];
-            const rows = window.safeArray ? window.safeArray(lastSheet?.rows) : [];
+            const rows = toArray(lastSheet?.rows);
             for (let i = rows.length - 1; i >= 0; i--) {
                 if (rows[i]?.date) {
                     latestDate = rows[i].date;
@@ -300,7 +325,8 @@
 
         if (!n) return alert('Kariger ka naam zaroori hai!');
 
-        const list = getJobWorkers().slice();
+        const list = [...getJobWorkers()];
+        let targetId = editId;
 
         if (editId) {
             const it = list.find((x) => String(x.id) === String(editId));
@@ -311,8 +337,9 @@
                 it.date = d;
             }
         } else {
+            targetId = `jw_${Date.now()}`;
             list.push({
-                id: `jw_${Date.now()}`,
+                id: targetId,
                 type: window.currentJobWorkMode,
                 date: d,
                 name: n,
@@ -322,6 +349,7 @@
         }
 
         saveJobWorkers(list);
+        invalidateJobWorkCache(targetId);
         cancelJobWorkerEdit();
         setDisplay('add-jw-worker-form', 'none');
         renderJobWorkWorkersTable();
@@ -356,6 +384,13 @@
     const deleteJobWorker = (workerId) => {
         if (!confirm('Kya is Job Worker ko delete karna chahte hain?')) return;
         saveJobWorkers(getJobWorkers().filter((x) => String(x.id) !== String(workerId)));
+        
+        // Clean up sheets storage
+        try {
+            localStorage.removeItem(`jobwork_sheets_${workerId}`);
+        } catch (_) {}
+
+        invalidateJobWorkCache(workerId);
         renderJobWorkWorkersTable();
         updateJobWorkHubBadges();
         if (typeof window.updateDashboardBadgeTotals === 'function') {
@@ -368,14 +403,14 @@
     };
 
     /* ========================================================================
-       5. HIGH-SPEED WORKER TABLE RENDERER (SINGLE-PASS STRING BUILDER)
+       5. HIGH-SPEED WORKER TABLE RENDERER
        ------------------------------------------------------------------------
     ======================================================================== */
     const renderJobWorkWorkersTable = () => {
         const tbody = document.getElementById('jw-workers-table-body');
         if (!tbody) return;
 
-        let filtered = getJobWorkers().filter((w) => w && w.type === window.currentJobWorkMode);
+        let filtered = getJobWorkers().filter((w) => w && String(w.type || '').toLowerCase() === String(window.currentJobWorkMode || '').toLowerCase());
         const searchInput = document.getElementById('jw-search-worker-input');
         const txt = searchInput ? searchInput.value.toLowerCase().trim() : '';
 
@@ -391,9 +426,8 @@
             filtered = filtered.filter((w) => getJobWorkerLastActiveInfo(w.id).daysAbsent >= minDays);
         }
 
-        // Summary Statistics Calculation
         let totGayi = 0, totAayi = 0, totDmg = 0;
-        const allTypeWorkers = getJobWorkers().filter((w) => w?.type === window.currentJobWorkMode);
+        const allTypeWorkers = getJobWorkers().filter((w) => w && String(w.type || '').toLowerCase() === String(window.currentJobWorkMode || '').toLowerCase());
         allTypeWorkers.forEach((w) => {
             const sum = getJobWorkerOverallSummary(w.id);
             totGayi += sum.totGayi;
@@ -448,14 +482,21 @@
         const w = getJobWorkers().find((x) => String(x.id) === String(workerId));
         if (!w) return;
 
+        const sum = getJobWorkerOverallSummary(workerId);
         const typeTitle = (w.type === 'calender') ? 'कैलेंडर' : 'कटिंग';
-        const msg = `सलाम ${w.name} भाई,\n\nकारखाने से साड़ी (${typeTitle}) का काम ले जाए आपको *${days} दिन* हो चुके हैं।\nकृपया जल्द से जल्द आकर हिसाब करें।\n\n_Simplicity ERP_`;
+        const msg = `🎛️ *SIMPLICITY ERP*\n━━━━━━━━━━━━━━━━━━━━━\n` +
+            `सलाम ${w.name} भाई,\n\n` +
+            `कारखाने से साड़ी (${typeTitle}) का काम ले जाए आपको *${days} दिन* हो चुके हैं।\n` +
+            `📦 आपके पास बकाया साड़ी: *${sum.pendingSaree} Pcs*\n\n` +
+            `कृपया जल्द से जल्द आकर तैयार साड़ी जमा करें।\n━━━━━━━━━━━━━━━━━━━━━\n_Simplicity ERP • by Farhan Jawed_`;
 
         let mob = String(w.mobile || '').trim().replace(/[^0-9]/g, '');
+        if (mob.length === 11 && mob.startsWith('0')) mob = mob.substring(1);
         if (!mob || mob.length < 10) {
             mob = prompt(`${w.name} ka 10-digit WhatsApp number:`, mob);
             if (!mob) return;
             mob = mob.trim().replace(/[^0-9]/g, '');
+            if (mob.length === 11 && mob.startsWith('0')) mob = mob.substring(1);
         }
         if (mob.length === 10) mob = `91${mob}`;
 
@@ -469,7 +510,7 @@
 
         getJobWorkers().filter((w) => w?.type === window.currentJobWorkMode).forEach((w) => {
             getJobWorkerSheets(w.id).forEach((sh) => {
-                const rows = window.safeArray ? window.safeArray(sh?.rows) : [];
+                const rows = toArray(sh?.rows);
                 rows.forEach((r) => {
                     if (!r) return;
                     if (boxCategory === 'gayi' && safeNum(r.gayiQty) > 0) {
@@ -514,30 +555,21 @@
 
     const getJobWorkerSheets = (workerId) => {
         if (!workerId) return [];
-        const raw = (typeof window.getStore === 'function')
-            ? window.getStore(`jobwork_sheets_${workerId}`)
-            : localStorage.getItem(`jobwork_sheets_${workerId}`);
-
-        const sheets = window.safeArray ? window.safeArray(raw) : (Array.isArray(raw) ? raw : []);
+        const sheets = toArray(getFromStore(`jobwork_sheets_${workerId}`));
         sheets.forEach((sh) => {
-            if (sh) sh.rows = window.safeArray ? window.safeArray(sh.rows) : [];
+            if (sh) sh.rows = toArray(sh.rows);
         });
         return sheets;
     };
 
     const saveJobWorkerSheets = (workerId, sheets) => {
         if (!workerId) return;
-        const clean = window.safeArray ? window.safeArray(sheets) : [];
+        const clean = toArray(sheets);
         clean.forEach((sh) => {
-            if (sh) sh.rows = window.safeArray ? window.safeArray(sh.rows) : [];
+            if (sh) sh.rows = toArray(sh.rows);
         });
 
-        if (typeof window.setStore === 'function') {
-            window.setStore(`jobwork_sheets_${workerId}`, clean);
-        } else {
-            localStorage.setItem(`jobwork_sheets_${workerId}`, JSON.stringify(clean));
-        }
-
+        setToStore(`jobwork_sheets_${workerId}`, clean);
         invalidateJobWorkCache(workerId);
     };
 
@@ -554,7 +586,7 @@
 
         if (!sh || typeof sh !== 'object') return def;
 
-        const rows = window.safeArray ? window.safeArray(sh.rows) : [];
+        const rows = toArray(sh.rows);
         let gayiQ = 0, aayiQ = 0, dmgAmt = 0, dmgPcs = 0;
 
         for (let i = 0; i < rows.length; i++) {
@@ -626,7 +658,7 @@
             return KARIGER_STOCK_CACHE.get(kName);
         }
 
-        const sH = window.safeArray ? window.safeArray(window.getStore('saree_history')) : [];
+        const sH = toArray(getFromStore('saree_history'));
         let fAai = 0, fGai = 0, cAai = 0, cGai = 0;
 
         for (let i = 0; i < sH.length; i++) {
@@ -881,7 +913,7 @@
         if (!dl) return;
 
         dl.innerHTML = '';
-        const list = window.safeArray ? window.safeArray(window.getStore('kariger_list')) : [];
+        const list = toArray(getFromStore('kariger_list'));
         list.forEach((k) => {
             if (k?.name) {
                 const opt = document.createElement('option');
@@ -996,8 +1028,10 @@
     };
 
     /* ========================================================================
-       10. ATOMIC BATCH DISPATCHER & STOCK RECONCILIATION
+       10. ATOMIC BATCH DISPATCHER & STOCK RECONCILIATION ENGINE
        ------------------------------------------------------------------------
+       Accurately tags Saree History with destination/source worker names so
+       Passbooks show the recipient (Calender/Cutting) instead of only the maker!
     ======================================================================== */
 
     const saveJobWorkBatchLine = () => {
@@ -1008,7 +1042,7 @@
 
         const worker = getJobWorkers().find((x) => String(x.id) === String(window.activeJobWorkerId));
         const workerName = worker ? worker.name : 'Worker';
-        const isCalender = (worker?.type === 'calender');
+        const isCalender = (String(worker?.type || '').toLowerCase() === 'calender');
 
         let totGayi = 0;
         window.currentDiyaBatch.forEach((x) => { totGayi += safeInt(x.qty); });
@@ -1022,12 +1056,11 @@
             return alert('Jane ya Aane wali saree ke karigar [+] jodein!');
         }
 
-        // Accurate Stock Source Resolution (Fresh vs. Cutting)
+        // ⭐ ACCURATE STOCK SOURCE RESOLUTION (Cutting vs. Fresh)
         let stockSource = 'fresh';
         if (isCalender) {
             const radCut = document.getElementById('jw-source-cutting');
-            const radFresh = document.getElementById('jw-source-fresh');
-            stockSource = (radFresh && radFresh.checked) ? 'fresh' : (radCut && radCut.checked ? 'cutting' : 'fresh');
+            stockSource = (radCut && radCut.checked) ? 'cutting' : 'fresh';
         } else {
             stockSource = 'fresh'; // Cutting always pulls from Fresh stock
         }
@@ -1036,42 +1069,50 @@
         const dDate = document.getElementById('jw-form-diya-date')?.value || getToday();
         const aDate = document.getElementById('jw-form-aayi-date')?.value || getToday();
 
-        const allKars = window.safeArray ? window.safeArray(window.getStore('kariger_list')) : [];
-        let sH = window.safeArray ? window.safeArray(window.getStore('saree_history')) : [];
+        const allKars = toArray(getFromStore('kariger_list'));
+        let sH = [...toArray(getFromStore('saree_history'))];
 
-        // 1. SAREE GAYI (Outward Entry)
+        // 1. SAREE GAYI (Outward Entry) ➔ Deduct from Fresh or Cutting
         if (totGayi > 0) {
             window.currentDiyaBatch.forEach((item) => {
                 const wKarName = String(item.karigar || 'General').trim().toUpperCase();
                 const foundKar = allKars.find((k) => k?.name && k.name.trim().toUpperCase() === wKarName);
-                const sDesign = foundKar?.saree || foundKar?.name || 'Saree';
+                const sDesign = foundKar?.saree || 'General Saree';
                 const kGodown = foundKar?.karkhanaId || 'k_main';
+
+                const targetLabel = isCalender ? `${workerName} (Calender)` : `${workerName} (Cutting)`;
 
                 sH.push({
                     id: `sh_diya_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
                     refId: batchRowId,
                     date: dDate,
                     sareeName: sDesign,
-                    karigerName: wKarName,
+                    karigerName: wKarName, // Bunne wala (Khata ledger match karne ke liye)
                     kariger: wKarName,
+                    partyName: targetLabel, // ⭐ Passbook me dikhega: Jahan Saree gayi!
+                    targetWorker: targetLabel,
                     karkhanaId: kGodown,
-                    type: stockSource, // 'fresh' or 'cutting' accurately tagged
-                    typeLabel: `${workerName} (${isCalender ? 'Calender' : 'Cutting Worker'}) ko bheja [${stockSource === 'cutting' ? 'Cutting Stock' : 'Fresh Stock'}]`,
+                    type: stockSource, // 'fresh' ya 'cutting' se minus
+                    typeLabel: `📤 ${targetLabel} ko bheja [${stockSource === 'cutting' ? 'Cutting Stock' : 'Fresh Stock'}]`,
                     aai: 0,
                     gai: safeNum(item.qty),
                     isOut: true,
-                    note: `${workerName} ko bheja (${stockSource})`
+                    note: `${targetLabel} ko bheja (${stockSource})`,
+                    timestamp: Date.now()
                 });
             });
         }
 
-        // 2. SAREE AAYI (Inward Entry)
+        // 2. SAREE AAYI (Inward Entry) ➔ Add to Cutting or Finished
         if (totAayi > 0) {
             window.currentAayiBatch.forEach((item) => {
                 const wKarName = String(item.karigar || 'General').trim().toUpperCase();
                 const foundKar = allKars.find((k) => k?.name && k.name.trim().toUpperCase() === wKarName);
-                const sDesign = foundKar?.saree || foundKar?.name || 'Saree';
+                const sDesign = foundKar?.saree || 'General Saree';
                 const kGodown = foundKar?.karkhanaId || 'k_main';
+
+                const sourceLabel = isCalender ? `${workerName} (Calender)` : `${workerName} (Cutting)`;
+                const targetTab = isCalender ? 'finished' : 'cutting';
 
                 sH.push({
                     id: `sh_aayi_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
@@ -1080,19 +1121,24 @@
                     sareeName: sDesign,
                     karigerName: wKarName,
                     kariger: wKarName,
+                    partyName: sourceLabel, // ⭐ Passbook me dikhega: Kisse tayyar aayi!
+                    targetWorker: sourceLabel,
                     karkhanaId: kGodown,
-                    type: isCalender ? 'finished' : 'cutting',
-                    typeLabel: `${workerName} (${isCalender ? 'Calender' : 'Cutting'}) se tayyar aayi`,
+                    type: targetTab, // Calender se finished me, Cutting se cutting tab me
+                    typeLabel: isCalender ? `✨ ${sourceLabel} se Finished Aayi` : `✂️ ${sourceLabel} se Tayyar Aayi`,
                     aai: safeNum(item.qty),
                     gai: 0,
                     isOut: false,
-                    note: `${workerName} se tayyar aayi`
+                    note: `${sourceLabel} se tayyar aayi`,
+                    timestamp: Date.now() + 1
                 });
             });
         }
 
-        // 3. DAMAGE SAREE (Lott Entry)
+        // 3. DAMAGE SAREE (Lott Entry) ➔ Add to Lott
         if (damagePcs > 0) {
+            const workerLabel = isCalender ? `${workerName} (Calender)` : `${workerName} (Cutting)`;
+
             sH.push({
                 id: `sh_dmg_${Date.now()}`,
                 refId: batchRowId,
@@ -1100,22 +1146,23 @@
                 sareeName: 'Damage Saree',
                 karigerName: workerName,
                 kariger: workerName,
+                partyName: workerLabel,
+                targetWorker: workerLabel,
                 karkhanaId: 'k_main',
                 type: 'lott',
-                typeLabel: `${workerName} se Damage Aayi (Fine: ₹${damageAmt})`,
+                typeLabel: `⚠️ ${workerLabel} se Damage Aayi (Fine: ₹${damageAmt})`,
                 aai: damagePcs,
                 gai: 0,
                 isOut: false,
-                note: 'Damage Saree'
+                note: `Damage Fine: ₹${damageAmt}`,
+                timestamp: Date.now() + 2
             });
         }
 
-        if (typeof window.setStore === 'function') {
-            window.setStore('saree_history', sH);
-        }
+        setToStore('saree_history', sH);
 
         // Append to Sheet Model
-        sh.rows = window.safeArray ? window.safeArray(sh.rows) : [];
+        sh.rows = toArray(sh.rows);
         sh.rows.push({
             id: batchRowId,
             date: (totGayi > 0) ? dDate : aDate,
@@ -1147,14 +1194,15 @@
         if (typeof window.renderSareeTable === 'function') window.renderSareeTable();
         if (typeof window.updateDashboardBadgeTotals === 'function') window.updateDashboardBadgeTotals();
 
-        alert(`✅ Batch Entry Save ho gayi (${stockSource === 'cutting' ? 'Cutting Se' : 'Fresh Se'})!`);
+        const destMsg = isCalender ? 'Finished Stock' : 'Cutting Stock';
+        alert(`✅ Batch Entry Save ho gayi!\n• Gayi: -${totGayi} Pcs (${stockSource.toUpperCase()})\n• Aayi: +${totAayi} Pcs (${destMsg})`);
     };
 
     const renderJobWorkSheetTable = (sh) => {
         const tbody = document.getElementById('jw-sheet-rows-body');
         if (!tbody) return;
 
-        const rows = window.safeArray ? window.safeArray(sh?.rows) : [];
+        const rows = toArray(sh?.rows);
 
         if (!rows.length) {
             tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:15px; color:#888;">Is Mahine me abhi koi entry nahi hui hai.</td></tr>';
@@ -1202,13 +1250,12 @@
         const sh = sheets.find((s) => s && String(s.id) === String(window.activeJobSheetId));
         if (!sh) return;
 
-        const r = window.safeArray ? window.safeArray(sh.rows)[idx] : null;
+        const r = toArray(sh.rows)[idx];
         if (!r) return;
 
         if (r.id) {
-            let sH = window.safeArray ? window.safeArray(window.getStore('saree_history')) : [];
-            sH = sH.filter((h) => !h || String(h.refId) !== String(r.id));
-            if (typeof window.setStore === 'function') window.setStore('saree_history', sH);
+            let sH = toArray(getFromStore('saree_history')).filter((h) => !h || String(h.refId) !== String(r.id));
+            setToStore('saree_history', sH);
         }
 
         sh.rows.splice(idx, 1);
@@ -1231,7 +1278,7 @@
     const openJwBatchModal = (sheetId, rowId, type) => {
         window.activeBatchModalInfo = { sheetId, rowId, type };
         const sh = getJobWorkerSheets(window.activeJobWorkerId).find((s) => s && String(s.id) === String(sheetId));
-        const r = sh ? (window.safeArray ? window.safeArray(sh.rows).find((x) => x && String(x.id) === String(rowId)) : null) : null;
+        const r = sh ? toArray(sh.rows).find((x) => x && String(x.id) === String(rowId)) : null;
         if (!r) return;
 
         setText('jw-batch-modal-title', (type === 'gayi') ? '📤 Gayi Saree Batch Breakdown' : '📥 Wapas Aayi Batch Breakdown');
@@ -1249,7 +1296,7 @@
     const renderJwBatchModalTable = () => {
         if (!window.activeBatchModalInfo) return;
         const sh = getJobWorkerSheets(window.activeJobWorkerId).find((s) => s && String(s.id) === String(window.activeBatchModalInfo.sheetId));
-        const r = sh ? (window.safeArray ? window.safeArray(sh.rows).find((x) => x && String(x.id) === String(window.activeBatchModalInfo.rowId)) : null) : null;
+        const r = sh ? toArray(sh.rows).find((x) => x && String(x.id) === String(window.activeBatchModalInfo.rowId)) : null;
         if (!r) return;
 
         const tbody = document.getElementById('jw-batch-modal-tbody');
@@ -1257,8 +1304,8 @@
         if (!tbody) return;
 
         const items = (window.activeBatchModalInfo.type === 'gayi') 
-            ? (window.safeArray ? window.safeArray(r.gayiItems) : []) 
-            : (window.safeArray ? window.safeArray(r.aayiItems) : []);
+            ? toArray(r.gayiItems) 
+            : toArray(r.aayiItems);
 
         let tot = 0;
         let html = '';
@@ -1286,11 +1333,11 @@
     const editJwBatchItem = (itemIdx) => {
         if (!window.activeBatchModalInfo) return;
         const sh = getJobWorkerSheets(window.activeJobWorkerId).find((s) => s && String(s.id) === String(window.activeBatchModalInfo.sheetId));
-        const r = sh ? (window.safeArray ? window.safeArray(sh.rows).find((x) => x && String(x.id) === String(window.activeBatchModalInfo.rowId)) : null) : null;
+        const r = sh ? toArray(sh.rows).find((x) => x && String(x.id) === String(window.activeBatchModalInfo.rowId)) : null;
         if (!r) return;
 
         const isGayi = (window.activeBatchModalInfo.type === 'gayi');
-        const items = isGayi ? (window.safeArray ? window.safeArray(r.gayiItems) : []) : (window.safeArray ? window.safeArray(r.aayiItems) : []);
+        const items = isGayi ? toArray(r.gayiItems) : toArray(r.aayiItems);
         const it = items[itemIdx];
         if (!it) return;
 
@@ -1320,11 +1367,11 @@
 
         const sheets = getJobWorkerSheets(window.activeJobWorkerId);
         const sh = sheets.find((s) => s && String(s.id) === String(window.activeBatchModalInfo.sheetId));
-        const r = sh ? (window.safeArray ? window.safeArray(sh.rows).find((x) => x && String(x.id) === String(window.activeBatchModalInfo.rowId)) : null) : null;
+        const r = sh ? toArray(sh.rows).find((x) => x && String(x.id) === String(window.activeBatchModalInfo.rowId)) : null;
         if (!r) return;
 
         const isGayi = (window.activeBatchModalInfo.type === 'gayi');
-        const items = isGayi ? (window.safeArray ? window.safeArray(r.gayiItems) : []) : (window.safeArray ? window.safeArray(r.aayiItems) : []);
+        const items = isGayi ? toArray(r.gayiItems) : toArray(r.aayiItems);
 
         items.splice(itemIdx, 1);
         let newTot = 0;
@@ -1343,15 +1390,11 @@
        ------------------------------------------------------------------------
     ======================================================================== */
 
-    const getJwBills = () => window.safeArray ? window.safeArray(window.getStore('jw_bills_list')) : [];
-    const saveJwBills = (list) => {
-        if (typeof window.setStore === 'function') window.setStore('jw_bills_list', window.safeArray ? window.safeArray(list) : []);
-    };
+    const getJwBills = () => toArray(getFromStore('jw_bills_list'));
+    const saveJwBills = (list) => setToStore('jw_bills_list', toArray(list));
 
-    const getJwPayments = () => window.safeArray ? window.safeArray(window.getStore('jw_payments_list')) : [];
-    const saveJwPayments = (list) => {
-        if (typeof window.setStore === 'function') window.setStore('jw_payments_list', window.safeArray ? window.safeArray(list) : []);
-    };
+    const getJwPayments = () => toArray(getFromStore('jw_payments_list'));
+    const saveJwPayments = (list) => setToStore('jw_payments_list', toArray(list));
 
     const initJobWorkBillingView = () => {
         populateWorkerSelectOptions();
@@ -1403,7 +1446,7 @@
         if (!wId || amt <= 0) return alert('Worker aur Sahi Bill Amount (₹) bharein!');
 
         const worker = getJobWorkers().find((x) => String(x.id) === String(wId));
-        const bills = getJwBills().slice();
+        const bills = [...getJwBills()];
 
         bills.push({
             id: `bill_${Date.now()}`,
@@ -1547,7 +1590,7 @@
         const p = payments.find((x) => x && String(x.id) === String(payId));
         if (!p) return;
 
-        const bills = getJwBills();
+        const bills = [...getJwBills()];
         const b = bills.find((x) => x && String(x.id) === String(billId));
         if (b) {
             b.paidAmt = Math.max(0, safeNum(b.paidAmt) - safeNum(p.amount));
@@ -1594,14 +1637,14 @@
 
         if (payAmt <= 0) return alert('Sahi Payment Amount bharein!');
 
-        const bills = getJwBills();
+        const bills = [...getJwBills()];
         const b = bills.find((x) => String(x.id) === String(billId));
         if (!b) return;
 
         b.paidAmt = safeNum(b.paidAmt) + payAmt;
         saveJwBills(bills);
 
-        const payments = getJwPayments().slice();
+        const payments = [...getJwPayments()];
         payments.push({
             id: `pay_${Date.now()}`,
             billId,
@@ -1634,10 +1677,12 @@
             `━━━━━━━━━━━━━━━━━━━━━\n_Simplicity ERP • by Farhan Jawed_`;
 
         let mobile = worker ? String(worker.mobile || '').trim().replace(/[^0-9]/g, '') : '';
+        if (mobile.length === 11 && mobile.startsWith('0')) mobile = mobile.substring(1);
         if (!mobile || mobile.length < 10) {
             mobile = prompt('WhatsApp Number (10-digit):', mobile);
             if (!mobile) return;
             mobile = mobile.trim().replace(/[^0-9]/g, '');
+            if (mobile.length === 11 && mobile.startsWith('0')) mobile = mobile.substring(1);
         }
         if (mobile.length === 10) mobile = `91${mobile}`;
 
@@ -1668,10 +1713,12 @@
             `-------------------------------------\n🟠 *ABHI BAKI SAREE: ${c.pendingSaree} Pcs*\n━━━━━━━━━━━━━━━━━━━━━\n_Simplicity ERP • by Farhan Jawed_`;
 
         let mobile = String(w.mobile || '').trim().replace(/[^0-9]/g, '');
+        if (mobile.length === 11 && mobile.startsWith('0')) mobile = mobile.substring(1);
         if (!mobile || mobile.length < 10) {
             mobile = prompt('WhatsApp Number (10-digit):', mobile);
             if (!mobile) return;
             mobile = mobile.trim().replace(/[^0-9]/g, '');
+            if (mobile.length === 11 && mobile.startsWith('0')) mobile = mobile.substring(1);
         }
         if (mobile.length === 10) mobile = `91${mobile}`;
 
@@ -1714,7 +1761,7 @@
         getJobWorkers().forEach((w) => {
             const isCal = (w.type === 'calender');
             getJobWorkerSheets(w.id).forEach((sh) => {
-                const rows = window.safeArray ? window.safeArray(sh.rows) : [];
+                const rows = toArray(sh.rows);
                 rows.forEach((r) => {
                     if (!r || r.date !== d) return;
                     const gQty = safeNum(r.gayiQty);
@@ -1904,15 +1951,12 @@
         invalidateJobWorkCache
     };
 
-    // Attach to global window object for legacy callers
     Object.keys(jobWorkAPI).forEach((fnName) => {
         window[fnName] = jobWorkAPI[fnName];
     });
 
-    // Namespace wrapper
     window.JobWorkEngine = jobWorkAPI;
 
-    // Attach debouncers to search inputs
     document.addEventListener('DOMContentLoaded', () => {
         const workerSearch = document.getElementById('jw-search-worker-input');
         if (workerSearch) {
@@ -1939,7 +1983,6 @@
         }
     });
 
-    // Unit test export
     if (typeof module !== 'undefined' && module.exports) {
         module.exports = jobWorkAPI;
     }
