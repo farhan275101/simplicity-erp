@@ -1,8 +1,7 @@
 /* ============================================================================
-   SIMPLICITY ERP - HIGH-PERFORMANCE SANCHA (TANI & CHUKKA) STOCK & PASSBOOK (WITH LIVE SEARCH & A6 PRINT)
+   SIMPLICITY ERP - HIGH-PERFORMANCE SANCHA (TANI & CHUKKA) STOCK & PASSBOOK
    File: sancha/sancha-ui.js • Developed by Farhan Jawed
-   Architecture: Virtualized Pagination | Opening Stock Distinction | Live Search | A6 Thermal Print
-   Scale: 1,000,000 - 2,000,000 Active Users | Multi-Godam Lock Protection
+   (Accurate Category Routing • Instant Live Search • A6 Thermal Print)
 ============================================================================ */
 
 (() => {
@@ -10,8 +9,7 @@
 
     /* ========================================================================
        1. GLOBAL STATE & PAGINATION CONTEXT
-       ------------------------------------------------------------------------
-    ======================================================================== */
+       ======================================================================== */
     window.currentSanchaCategory = 'tani'; // 'tani' or 'chukka'
     window.currentSanchaKarkhanaFilter = 'all';
     window.currentPassbookSanchaItem = '';
@@ -28,8 +26,7 @@
 
     /* ========================================================================
        2. SAFE DOM & DATA SANITIZATION UTILITIES
-       ------------------------------------------------------------------------
-    ======================================================================== */
+       ======================================================================== */
     const esc = (s) => {
         if (typeof window.sanitizeHTML === 'function') return window.sanitizeHTML(s);
         return String(s || '').replace(/[&<>"']/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
@@ -59,8 +56,7 @@
 
     /* ========================================================================
        3. NAVIGATION & CATEGORY / BRANCH CONTROLLERS
-       ------------------------------------------------------------------------
-    ======================================================================== */
+       ======================================================================== */
     const openSanchaModule = () => {
         setDisplay('dashboard-view', 'none');
         setDisplay('sancha-section', 'block');
@@ -80,8 +76,9 @@
         if (tabT) tabT.className = (window.currentSanchaCategory === 'tani') ? 'sheet-tab active' : 'sheet-tab';
         if (tabC) tabC.className = (window.currentSanchaCategory === 'chukka') ? 'sheet-tab active' : 'sheet-tab';
 
-        const rTani = document.getElementById('sancha-cat-tani');
-        const rChuk = document.getElementById('sancha-cat-chukka');
+        // Safe Radio Button Selector
+        const rTani = document.querySelector('input[name="sancha-cat"][value="tani"]');
+        const rChuk = document.querySelector('input[name="sancha-cat"][value="chukka"]');
         if (rTani && window.currentSanchaCategory === 'tani') rTani.checked = true;
         if (rChuk && window.currentSanchaCategory === 'chukka') rChuk.checked = true;
 
@@ -124,7 +121,6 @@
         renderSanchaTable();
     };
 
-    // 🔍 LIVE SEARCH BINDER (Instant search on typing)
     const bindSanchaSearchInput = () => {
         const searchInp = document.getElementById('search-sancha-input');
         if (searchInp && !searchInp.dataset.bound) {
@@ -143,8 +139,7 @@
 
     /* ========================================================================
        4. INWARD INVENTORY PURCHASE ENGINE (Khareed)
-       ------------------------------------------------------------------------
-    ======================================================================== */
+       ======================================================================== */
     const toggleAddSanchaForm = () => {
         const f = document.getElementById('add-sancha-item-form');
         if (!f) return;
@@ -159,6 +154,13 @@
                     ? window.getTodayDate() 
                     : new Date().toISOString().split('T')[0];
             }
+
+            // Sync radio button to current active tab
+            const rTani = document.querySelector('input[name="sancha-cat"][value="tani"]');
+            const rChuk = document.querySelector('input[name="sancha-cat"][value="chukka"]');
+            if (window.currentSanchaCategory === 'chukka' && rChuk) rChuk.checked = true;
+            else if (rTani) rTani.checked = true;
+
             toggleSanchaFormOptions();
         }
     };
@@ -171,10 +173,12 @@
         setDisplay('sancha-existing-group', isNew ? 'none' : 'block');
         setDisplay('sancha-new-group', isNew ? 'block' : 'none');
 
-        const isChuk = document.getElementById('sancha-cat-chukka') 
-            ? document.getElementById('sancha-cat-chukka').checked 
-            : false;
-        window.currentSanchaCategory = isChuk ? 'chukka' : 'tani';
+        // Robust category check (Value based)
+        const selectedRadio = document.querySelector('input[name="sancha-cat"]:checked');
+        if (selectedRadio) {
+            window.currentSanchaCategory = String(selectedRadio.value).toLowerCase() === 'chukka' ? 'chukka' : 'tani';
+        }
+
         populateSanchaExistingDropdown();
     };
 
@@ -183,10 +187,11 @@
         if (!sel) return;
 
         sel.innerHTML = '';
+        const currentCat = window.currentSanchaCategory || 'tani';
         const list = (window.safeArray ? window.safeArray(window.getStore('sancha_items')) : [])
             .filter((s) => {
                 const cat = s.category || 'tani';
-                return cat.toLowerCase() === window.currentSanchaCategory.toLowerCase();
+                return cat.toLowerCase() === currentCat.toLowerCase();
             });
 
         const unique = new Set();
@@ -217,10 +222,12 @@
         const qty = safeNum(qtyInp?.value);
         const person = String(document.getElementById('sancha-person')?.value || '').trim();
 
-        const isChuk = document.getElementById('sancha-cat-chukka') 
-            ? document.getElementById('sancha-cat-chukka').checked 
-            : false;
-        const category = isChuk ? 'chukka' : 'tani';
+        // 🎯 100% FOOLPROOF CHUKKA VS TANI CHECK
+        let category = window.currentSanchaCategory || 'tani';
+        const checkedCatRadio = document.querySelector('input[name="sancha-cat"]:checked');
+        if (checkedCatRadio && checkedCatRadio.value) {
+            category = String(checkedCatRadio.value).toLowerCase() === 'chukka' ? 'chukka' : 'tani';
+        }
 
         if (!name) return alert('Sancha Item ka naam zaroori hai!');
         if (qty <= 0) return alert('Wazan (Qty Kg me) daalein!');
@@ -285,26 +292,25 @@
 
         triggerSanchaCacheInvalidation();
         toggleAddSanchaForm();
-        populateSanchaExistingDropdown();
-        renderSanchaTable();
-
+        switchSanchaCategory(category); // Automatically switch view to the added category
         alert(`✅ Sancha (${category === 'tani' ? 'Tani' : 'Chukka'}) Stock me jama ho gaya!`);
     };
 
     /* ========================================================================
-       5. MAIN TABLE RENDERER (WITH LIVE SEARCH, PAGINATION & PRINT)
-       ------------------------------------------------------------------------
-    ======================================================================== */
+       5. MAIN TABLE RENDERER
+       ======================================================================== */
     const renderSanchaTable = () => {
         bindSanchaSearchInput();
 
         const tbody = document.getElementById('sancha-table-body');
         if (!tbody) return;
 
+        const currentCat = window.currentSanchaCategory || 'tani';
+
         const rawStock = (window.safeArray ? window.safeArray(window.getStore('sancha_items')) : [])
             .filter((s) => {
                 const cat = s.category || 'tani';
-                return cat.toLowerCase() === window.currentSanchaCategory.toLowerCase();
+                return cat.toLowerCase() === currentCat.toLowerCase();
             });
 
         const uniqueNames = [...new Set(rawStock.map((s) => (s?.name ? s.name.trim() : '')).filter(Boolean))];
@@ -312,7 +318,7 @@
         const rows = [];
         uniqueNames.forEach((name) => {
             if (typeof window.getSanchaItemStats === 'function') {
-                const stats = window.getSanchaItemStats(null, name, window.currentSanchaCategory, window.currentSanchaKarkhanaFilter);
+                const stats = window.getSanchaItemStats(null, name, currentCat, window.currentSanchaKarkhanaFilter);
                 if (stats.aaya > 0 || stats.gaya > 0 || stats.bacha > 0) {
                     const foundOriginal = rawStock.find((x) => x?.name && x.name.toLowerCase() === name.toLowerCase());
                     stats.person = foundOriginal ? (foundOriginal.person || '-') : '-';
@@ -324,14 +330,12 @@
         const searchInp = document.getElementById('search-sancha-input');
         const txt = searchInp ? searchInp.value.toLowerCase().trim() : '';
 
-        // Universal Search: Name, Person, Date, Category, Bacha
         const filteredRows = txt 
             ? rows.filter((s) => `${s.name || ''} ${s.person || ''} ${s.date || ''} ${s.category || ''} ${s.bacha || ''}`.toLowerCase().includes(txt)) 
             : rows;
 
         currentSanchaFilteredRowsCache = filteredRows;
 
-        // Auto-inject A6 Print Button next to search input
         if (searchInp && searchInp.parentElement && !document.getElementById('sancha-stock-print-btn')) {
             const printBtn = document.createElement('button');
             printBtn.id = 'sancha-stock-print-btn';
@@ -363,7 +367,7 @@
         }
 
         if (!totalEntries) {
-            tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding:20px; color:#888;">Koi ${window.currentSanchaCategory === 'tani' ? 'Tani' : 'Chukka'} Stock nahi mila.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding:20px; color:#888;">Koi ${currentCat === 'tani' ? 'Tani' : 'Chukka'} Stock nahi mila.</td></tr>`;
             if (pager) pager.innerHTML = '';
         } else {
             const totalPages = Math.ceil(totalEntries / SANCHA_STOCK_PAGE_SIZE) || 1;
@@ -401,7 +405,6 @@
 
             tbody.innerHTML = html;
 
-            // Render Stock Pagination Controls
             if (pager) {
                 pager.innerHTML = `
                     <div style="font-size:12px; color:#475569; font-weight:600;">
@@ -417,7 +420,7 @@
 
         const opVal = document.getElementById('sancha-opening-val');
         if (opVal) {
-            opVal.textContent = `${totalBacha.toFixed(2)} Kg Kul ${window.currentSanchaCategory === 'tani' ? 'Tani' : 'Chukka'} Bacha`;
+            opVal.textContent = `${totalBacha.toFixed(2)} Kg Kul ${currentCat === 'tani' ? 'Tani' : 'Chukka'} Bacha`;
         }
     };
 
@@ -428,8 +431,7 @@
 
     /* ========================================================================
        6. INTER-GODOWN TRANSFER MODAL
-       ------------------------------------------------------------------------
-    ======================================================================== */
+       ======================================================================== */
     const openSanchaTransferModal = (safeName, safeCat, availableBacha) => {
         const itemName = decodeURIComponent(safeName);
         const category = decodeURIComponent(safeCat);
@@ -539,8 +541,7 @@
 
     /* ========================================================================
        7. 📱 20-ITEM PAGINATED SANCHA PASSBOOK ENGINE (WITH A6 PRINT)
-       ------------------------------------------------------------------------
-    ======================================================================== */
+       ======================================================================== */
     const openSanchaPassbook = (itemName) => {
         window.currentPassbookSanchaItem = decodeURIComponent(itemName);
         sanchaPassbookCurrentPage = 1;
@@ -599,7 +600,7 @@
 
     const applySanchaPassbookFilters = () => {
         const targetItemLower = window.currentPassbookSanchaItem.toLowerCase();
-        const targetCatLower = window.currentSanchaCategory.toLowerCase();
+        const targetCatLower = (window.currentSanchaCategory || 'tani').toLowerCase();
         const allHist = window.safeArray ? window.safeArray(window.getStore('sancha_history')) : [];
 
         let hist = allHist.filter((x) => {
@@ -658,7 +659,7 @@
         let html = '';
         pageRows.forEach((r) => {
             const aayaQty = safeNum(r.aaya);
-            const gayaQty = safeNum(r.gaya || r.qty);
+            const gayaQty = safeNum(r.gaya !== undefined ? r.gaya : r.qty);
 
             const isOpening = (r.isOpening === true) || String(r.type || '').includes('Opening') || String(r.kariger || '').includes('Opening');
             const isKariger = String(r.type || '').includes('Kariger Issue') || String(r.kariger || '').includes('Kariger');
@@ -706,7 +707,6 @@
 
         tbody.innerHTML = html;
 
-        // Render Pagination Bar
         if (pager) {
             pager.innerHTML = `
                 <div style="font-size:12px; color:#475569; font-weight:600;">
@@ -726,9 +726,8 @@
     };
 
     /* ========================================================================
-       8. A6 PAPER & THERMAL PRINTER PRINT ENGINES
-       ------------------------------------------------------------------------
-    ======================================================================== */
+       8. A6 PRINT ENGINES
+       ======================================================================== */
     const getSanchaKarkhanaPrintName = (kId) => {
         if (!kId || kId === 'all') return 'Sabhi Karkhane (All Units)';
         if (typeof window.getKarkhanaNameById === 'function') {
@@ -737,7 +736,6 @@
         return kId;
     };
 
-    // 1. Main Sancha Stock Report Print
     const printSanchaStockReport = () => {
         const rows = currentSanchaFilteredRowsCache;
         if (!rows || !rows.length) {
@@ -745,7 +743,7 @@
         }
 
         const kName = getSanchaKarkhanaPrintName(window.currentSanchaKarkhanaFilter);
-        const catLabel = (window.currentSanchaCategory === 'chukka' ? 'CHUKKA' : 'TANI') + ' STOCK';
+        const catLabel = ((window.currentSanchaCategory || 'tani') === 'chukka' ? 'CHUKKA' : 'TANI') + ' STOCK';
         const today = new Date().toLocaleDateString('hi-IN');
 
         let totalAaya = 0;
@@ -841,7 +839,6 @@
         printWindow.document.close();
     };
 
-    // 2. Filtered Sancha Passbook Statement Print
     const printSanchaPassbookFiltered = () => {
         const rows = filteredSanchaPassbookCache;
         if (!rows || !rows.length) {
@@ -849,7 +846,7 @@
         }
 
         const itemName = window.currentPassbookSanchaItem || 'Sancha Item';
-        const catLabel = (window.currentSanchaCategory === 'chukka' ? 'Chukka' : 'Tani');
+        const catLabel = ((window.currentSanchaCategory || 'tani') === 'chukka' ? 'Chukka' : 'Tani');
         const kName = getSanchaKarkhanaPrintName(window.currentSanchaKarkhanaFilter);
         const fDate = document.getElementById('sancha-pass-from-date')?.value || '';
         const tDate = document.getElementById('sancha-pass-to-date')?.value || '';
@@ -861,7 +858,7 @@
         let rowsHtml = '';
         rows.forEach((r) => {
             const aaya = safeNum(r.aaya);
-            const gaya = safeNum(r.gaya || r.qty);
+            const gaya = safeNum(r.gaya !== undefined ? r.gaya : r.qty);
 
             totalAaya += aaya;
             totalGaya += gaya;
@@ -948,7 +945,6 @@
         printWindow.document.close();
     };
 
-    // 3. Single Entry Slip Print
     const printSingleSanchaPassbookEntry = (id) => {
         const hist = window.safeArray ? window.safeArray(window.getStore('sancha_history')) : [];
         const entry = hist.find((x) => x && x.id === id);
@@ -958,7 +954,7 @@
         const catLabel = (entry.category || window.currentSanchaCategory || 'tani').toUpperCase();
         const kName = getSanchaKarkhanaPrintName(entry.karkhanaId || window.currentSanchaKarkhanaFilter);
         const aaya = safeNum(entry.aaya);
-        const gaya = safeNum(entry.gaya || entry.qty);
+        const gaya = safeNum(entry.gaya !== undefined ? entry.gaya : entry.qty);
         const isAaya = aaya > 0;
         const wazanDisplay = isAaya ? `+${aaya.toFixed(2)} Kg` : `-${gaya.toFixed(2)} Kg`;
 
@@ -1016,8 +1012,7 @@
 
     /* ========================================================================
        9. DELETE & EDIT ENGINES
-       ------------------------------------------------------------------------
-    ======================================================================== */
+       ======================================================================== */
     const deleteSanchaHistoryEntry = (id) => {
         if (!confirm('Kya aap sach me ye Passbook entry DELETE karna chahte hain?\nIsse stock balance wapas sahi settle ho jayega.')) return;
 
@@ -1179,8 +1174,7 @@
 
     /* ========================================================================
        10. GLOBAL EXPORT
-       ------------------------------------------------------------------------
-    ======================================================================== */
+       ======================================================================== */
     const sanchaUIAPI = {
         openSanchaModule,
         switchSanchaCategory,
