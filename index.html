@@ -169,56 +169,100 @@
                 </div>
             </div>
 
-            <!-- DASHBOARD HOME VIEW (CLEAN MENU GRID ONLY) -->
+            <!-- DASHBOARD HOME VIEW (EXPRESS BUTTONS ON TOP AS REQUESTED) -->
             <section id="dashboard-view">
                 <div id="dash-karkhana-tabs-bar" class="sheet-tabs-bar" style="margin-bottom:14px;"></div>
 
                 <div class="menu-grid">
-                    <div class="menu-btn" style="border-top:4px solid #14b8a6;" onclick="openKarigerModule()">
-                        <span class="icon">🧵</span><span class="title">1. Kariger Master</span><span class="menu-badge badge-kar-btn" id="btn-total-kariger">Total: 0</span>
-                    </div>
-                    <div class="menu-btn" style="border-top:4px solid #6366f1;" onclick="alert('Info Ledger')">
-                        <span class="icon">📋</span><span class="title">2. Info Ledger</span><span class="menu-badge badge-info-btn" id="btn-total-info">Total: 0</span>
-                    </div>
-                    <div class="menu-btn" style="border-top:4px solid #10b981;" onclick="openBanaModule()">
-                        <span class="icon">🧶</span><span class="title">3. Bana Stock</span><span class="menu-badge badge-bana-btn" id="btn-total-bana">Bacha: 0</span>
-                    </div>
-                    <div class="menu-btn" style="border-top:4px solid #f97316;" onclick="openZariModule()">
-                        <span class="icon">✨</span><span class="title">4. Zari Stock</span><span class="menu-badge badge-zari-btn" id="btn-total-zari">Bacha: 0</span>
-                    </div>
-                    <div class="menu-btn" style="border-top:4px solid #2563eb;" onclick="openSareeModule()">
-                        <span class="icon">🥻</span><span class="title">5. Saree Stock</span><span class="menu-badge badge-saree-btn" id="btn-total-saree">Stock: 0</span>
-                    </div>
-                    <div class="menu-btn" style="border-top:4px solid #8b5cf6;" onclick="openPaymentModule()">
-                        <span class="icon">💳</span><span class="title">6. Payments</span><span class="menu-badge badge-pay-btn" id="btn-total-payment">Baki: ₹ 0</span>
-                    </div>
-                    <div class="menu-btn" style="border-top:4px solid #0284c7;" onclick="openSanchaModule()">
-                        <span class="icon">⚙️</span><span class="title">7. Sancha (Tani)</span><span class="menu-badge badge-sancha-btn" id="btn-total-sancha">Bacha: 0</span>
-                    </div>
-                    <div class="menu-btn" style="border-top:4px solid #0d9488;" onclick="openJobWorkModule()">
-                        <span class="icon">🧵</span><span class="title">8. Job Work</span><span class="menu-badge" id="btn-total-jobwork" style="background:#ccfbf1; color:#0f766e;">Workers: 0</span>
-                    </div>
-
-                    <!-- 9. KARIGER EXPRESS BUTTON -->
+                    <!-- 1. KARIGER EXPRESS -->
                     <div class="menu-btn" style="border-top:4px solid #ef4444;" onclick="openKarigerExpressModal()">
-                        <span class="icon">⚡</span><span class="title">9. Kariger Express</span><span class="menu-badge" id="btn-total-kariger-express" style="background:#fee2e2; color:#b91c1c;">Baithak Mode</span>
+                        <span class="icon">⚡</span>
+                        <span class="title">1. Kariger Express</span>
+                        <span class="menu-badge" id="btn-total-kariger-express" style="background:#fee2e2; color:#b91c1c;">Baithak Mode</span>
                     </div>
 
-                    <!-- 10. STOCK EXPRESS BUTTON -->
+                    <!-- 2. STOCK EXPRESS -->
                     <div class="menu-btn" style="border-top:4px solid #10b981;" onclick="openStockExpressModal()">
-                        <span class="icon">⚡</span><span class="title">10. Stock Express</span><span class="menu-badge" style="background:#d1fae5; color:#047857;">Inward Mode</span>
+                        <span class="icon">⚡</span>
+                        <span class="title">2. Stock Express</span>
+                        <span class="menu-badge" style="background:#d1fae5; color:#047857;">Inward Mode</span>
                     </div>
 
-                    <!-- 11. ROZANA DAY-BOOK MODULE BUTTON -->
+                    <!-- 3. JOBWORK EXPRESS -->
+                    <div class="menu-btn" style="border-top:4px solid #0284c7;" onclick="openJobWorkExpressModal()">
+                        <span class="icon">⚡</span>
+                        <span class="title">3. JobWork Express</span>
+                        <span class="menu-badge" style="background:#e0f2fe; color:#0369a1;">Batch Mode</span>
+                    </div>
+
+                    <!-- 4. KARIGER MASTER -->
+                    <div class="menu-btn" style="border-top:4px solid #14b8a6;" onclick="openKarigerModule()">
+                        <span class="icon">🧵</span>
+                        <span class="title">4. Kariger Master</span>
+                        <span class="menu-badge badge-kar-btn" id="btn-total-kariger">Total: 0</span>
+                    </div>
+
+                    <!-- 5. INFO LEDGER -->
+                    <div class="menu-btn" style="border-top:4px solid #6366f1;" onclick="alert('Info Ledger')">
+                        <span class="icon">📋</span>
+                        <span class="title">5. Info Ledger</span>
+                        <span class="menu-badge badge-info-btn" id="btn-total-info">Total: 0</span>
+                    </div>
+
+                    <!-- 6. BANA STOCK -->
+                    <div class="menu-btn" style="border-top:4px solid #10b981;" onclick="openBanaModule()">
+                        <span class="icon">🧶</span>
+                        <span class="title">6. Bana Stock</span>
+                        <span class="menu-badge badge-bana-btn" id="btn-total-bana">Bacha: 0</span>
+                    </div>
+
+                    <!-- 7. ZARI STOCK -->
+                    <div class="menu-btn" style="border-top:4px solid #f97316;" onclick="openZariModule()">
+                        <span class="icon">✨</span>
+                        <span class="title">7. Zari Stock</span>
+                        <span class="menu-badge badge-zari-btn" id="btn-total-zari">Bacha: 0</span>
+                    </div>
+
+                    <!-- 8. SAREE STOCK -->
+                    <div class="menu-btn" style="border-top:4px solid #2563eb;" onclick="openSareeModule()">
+                        <span class="icon">🥻</span>
+                        <span class="title">8. Saree Stock</span>
+                        <span class="menu-badge badge-saree-btn" id="btn-total-saree">Stock: 0</span>
+                    </div>
+
+                    <!-- 9. PAYMENTS -->
+                    <div class="menu-btn" style="border-top:4px solid #8b5cf6;" onclick="openPaymentModule()">
+                        <span class="icon">💳</span>
+                        <span class="title">9. Payments</span>
+                        <span class="menu-badge badge-pay-btn" id="btn-total-payment">Baki: ₹ 0</span>
+                    </div>
+
+                    <!-- 10. SANCHA (TANI) -->
+                    <div class="menu-btn" style="border-top:4px solid #0284c7;" onclick="openSanchaModule()">
+                        <span class="icon">⚙️</span>
+                        <span class="title">10. Sancha (Tani)</span>
+                        <span class="menu-badge badge-sancha-btn" id="btn-total-sancha">Bacha: 0</span>
+                    </div>
+
+                    <!-- 11. JOB WORK HUB -->
+                    <div class="menu-btn" style="border-top:4px solid #0d9488;" onclick="openJobWorkModule()">
+                        <span class="icon">✂️</span>
+                        <span class="title">11. Job Work Hub</span>
+                        <span class="menu-badge" id="btn-total-jobwork" style="background:#ccfbf1; color:#0f766e;">Workers: 0</span>
+                    </div>
+
+                    <!-- 12. ROZANA DAY-BOOK -->
                     <div class="menu-btn" style="border-top:4px solid #1e3a8a;" onclick="openDayBookModule()">
-                        <span class="icon">📖</span><span class="title">11. Rozana Day-Book</span><span class="menu-badge" style="background:#e0e7ff; color:#1e3a8a;">Daily Register</span>
+                        <span class="icon">📖</span>
+                        <span class="title">12. Rozana Day-Book</span>
+                        <span class="menu-badge" style="background:#e0e7ff; color:#1e3a8a;">Daily Register</span>
                     </div>
                 </div>
 
                 <footer class="creator-footer" style="margin-top:30px;">Simplicity ERP • by <span>Farhan Jawed</span></footer>
             </section>
 
-            <!-- MODULE: ROZANA DAY-BOOK (SEPARATE PAGE VIEW) -->
+            <!-- MODULE: ROZANA DAY-BOOK -->
             <section id="daybook-section" class="module-section" style="display:none;">
                 <div class="module-header">
                     <button type="button" class="back-btn" onclick="backToDashboard()">← Dashboard</button>
@@ -315,7 +359,7 @@
                     <div><label>Zari Waste</label><input type="number" step="0.01" id="waste-zari-input" onchange="saveCurrentSheetConfig()"></div>
                 </div>
 
-                <!-- 📦 ITEM SELECTION (WITH SAREE PCS & RESPONSIVE 8 COLORS) -->
+                <!-- ITEM SELECTION -->
                 <div style="background:#f1f5f9; border:1px solid #cbd5e1; padding:12px; border-radius:10px; margin-bottom:14px;">
                     <div style="font-weight:800; color:#1e293b; margin-bottom:10px;">📦 Item Selection:</div>
                     
@@ -332,7 +376,7 @@
                         </div>
                     </div>
 
-                    <!-- 3. TANI SELECT (4 COLUMNS INCLUDING TANI SAREE PCS) -->
+                    <!-- 3. TANI SELECT -->
                     <div class="form-row-4" style="margin-bottom:10px; background:#eff6ff; padding:8px; border-radius:8px;">
                         <div class="input-group">
                             <label style="color:#0284c7; font-weight:700;">3. Tani Select Item:</label>
@@ -353,7 +397,7 @@
                         </div>
                     </div>
 
-                    <!-- 4. CHUKKA SELECT (4 COLUMNS INCLUDING CHUKKA SAREE PCS) -->
+                    <!-- 4. CHUKKA SELECT -->
                     <div class="form-row-4" style="margin-bottom:10px; background:#faf5ff; padding:8px; border-radius:8px;">
                         <div class="input-group">
                             <label style="color:#7c3aed; font-weight:700;">4. Chukka Select Item:</label>
@@ -374,7 +418,7 @@
                         </div>
                     </div>
 
-                    <!-- 🎨 8 COLORS MATCHING STRIP (RESPONSIVE AUTO-FIT) -->
+                    <!-- 🎨 8 COLORS MATCHING STRIP -->
                     <div style="background:#fffbeb; border:1.5px solid #fde68a; padding:10px; border-radius:8px; box-sizing:border-box;">
                         <label style="font-size:12px; font-weight:900; color:#b45309; display:block; margin-bottom:6px;">
                             🎨 Tani Ke 8 Colors (Matching Setting):
@@ -397,7 +441,7 @@
                     <datalist id="sheet-sancha-chukka-dl"></datalist>
                 </div>
 
-                <!-- ➕ ROZANA LINE ENTRY (MANUAL ENTRY / EDIT FORM SAFE INTACT) -->
+                <!-- ➕ ROZANA LINE ENTRY -->
                 <div style="background:#f8fafc; border:1px solid #cbd5e1; padding:12px; border-radius:10px; margin-bottom:14px;">
                     <div style="font-weight:800; color:#1e293b; margin-bottom:8px;">➕ Rozana Line Entry:</div>
                     <div class="form-row-4" style="margin-bottom:8px;">
@@ -591,7 +635,7 @@
                         <div>
                             <strong>Category:</strong>
                             <label style="margin-left:8px;"><input type="radio" name="sancha-cat" id="sancha-cat-tani" value="tani" checked onchange="toggleSanchaFormOptions()"> 🧵 Tani</label>
-                            <label style="margin-left:8px;"><input type="radio" name="sancha-cat" id="sancha-cat-tani" value="chukka" onchange="toggleSanchaFormOptions()"> ⚙️ Chukka</label>
+                            <label style="margin-left:8px;"><input type="radio" name="sancha-cat" id="sancha-cat-chukka" value="chukka" onchange="toggleSanchaFormOptions()"> ⚙️ Chukka</label>
                         </div>
                         <div>
                             <strong>Stock Type:</strong>
@@ -820,7 +864,7 @@
                     </div>
                 </div>
 
-                <!-- DUKAN BHEJA VIEW -->
+                <!-- DUKAN BHEJA VIEW (6-COLUMN FULL BLUE HEADER) -->
                 <div id="jw-dukan-view" style="display:none;">
                     <div style="display:flex; justify-content:space-between; margin-bottom:12px; align-items:center;">
                         <button type="button" class="back-btn" onclick="showJobWorkHub()">← Hub Menu</button>
@@ -858,8 +902,8 @@
                     <div class="table-responsive">
                         <table>
                             <thead>
-                                <tr style="background:#15803d; color:white;">
-                                    <th>Tarikh</th><th>Pcs Bheje</th><th>Note / Receiver</th><th style="text-align:center;">Action</th>
+                                <tr style="background:#1e3a8a; color:white;">
+                                    <th>Tarikh</th><th>Saree Design</th><th>Kariger (Maker)</th><th>Pcs Bheje</th><th>Note / Receiver</th><th style="text-align:center;">Action</th>
                                 </tr>
                             </thead>
                             <tbody id="jw-dukan-table-body"></tbody>
@@ -867,7 +911,7 @@
                     </div>
                 </div>
 
-                <!-- JOB WORK BILLING & HISAB VIEW -->
+                <!-- JOB WORK BILLING VIEW -->
                 <div id="jw-billing-view" style="display:none;">
                     <div style="display:flex; justify-content:space-between; margin-bottom:12px; align-items:center;">
                         <button type="button" class="back-btn" onclick="showJobWorkHub()">← Hub Menu</button>
@@ -927,7 +971,7 @@
                     </div>
                 </div>
 
-                <!-- JOB WORK DAY-BOOK & TRACKING VIEW -->
+                <!-- JOB WORK DAY-BOOK VIEW -->
                 <div id="jw-movement-view" style="display:none;">
                     <div style="display:flex; justify-content:space-between; margin-bottom:12px; align-items:center;">
                         <button type="button" class="back-btn" onclick="showJobWorkHub()">← Hub Menu</button>
@@ -1083,7 +1127,7 @@
     <datalist id="dl-karigers-list"></datalist>
 
     <!-- ==================================================================== -->
-    <!-- 4. MODULAR SCRIPTS (BUMPED TO VERSION v3.1 FOR HARD CACHE CLEAR)     -->
+    <!-- 4. MODULAR SCRIPTS (ALL SYNCED v3.1)                                  -->
     <!-- ==================================================================== -->
     <script src="core/utils.js?v=3.1"></script>
     <script src="core/storage.js?v=3.1"></script>
@@ -1119,9 +1163,10 @@
     <script src="admin/admin.js?v=3.1"></script>
     <script src="backup/backup.js?v=3.1"></script>
 
-    <!-- ⚡ EXPRESS MODULES -->
+    <!-- ⚡ EXPRESS MODULES (ALL 3 TOP ENGINES) -->
     <script src="kariger-express/kariger-express.js?v=3.1"></script>
     <script src="stock-express/stock-express.js?v=3.1"></script>
+    <script src="jobwork-express/jobwork-express.js?v=3.1"></script>
 
     <!-- 5. APPLICATION INITIALIZER -->
     <script>
@@ -1161,7 +1206,6 @@
             }
         }
 
-        // 📖 ROZANA DAY-BOOK MODULE OPENER
         window.openDayBookModule = function() {
             document.querySelectorAll(".module-section").forEach(s => s.style.display = "none");
             const dView = document.getElementById("dashboard-view");
@@ -1173,7 +1217,6 @@
             }
         };
 
-        // 🛡️ UNIVERSAL DAYBOOK SHIELD (Jab bhi koi doosra module ya back button click ho, Daybook 100% chhip jaye)
         document.addEventListener('click', (e) => {
             const btn = e.target.closest('.menu-btn, .back-btn');
             if (btn && !btn.getAttribute('onclick')?.includes('openDayBookModule')) {
