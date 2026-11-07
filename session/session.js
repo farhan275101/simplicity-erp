@@ -1,7 +1,7 @@
 /* ============================================================================
    SIMPLICITY ERP - HIGH-SCALE FINANCIAL YEAR SESSION CONTROLLER
    File: session/session.js • Developed by Farhan Jawed
-   Architecture: Supabase PostgreSQL Realtime Engine & Crash-Proof Session Switch
+   Architecture: Supabase Realtime Sync, Cloud Session Resolver & Auto-Discovery
 ============================================================================ */
 
 (() => {
@@ -25,6 +25,10 @@
         return 'farhan';
     };
 
+    /**
+     * Auto-detects all sessions created across devices (Phone & Computer)
+     * by scanning local keys, active session markers, and cloud state.
+     */
     const getAppSessions = () => {
         const uId = getEffectiveUserId();
         const userKey = `${uId}_app_sessions_list`;
@@ -39,16 +43,45 @@
             list = [];
         }
 
-        if (!Array.isArray(list) || list.length === 0) {
-            list = [DEFAULT_BOOTSTRAP_SESSION];
-            try {
-                localStorage.setItem(userKey, JSON.stringify(list));
-                if (window.APP_MEMORY_CACHE) window.APP_MEMORY_CACHE[userKey] = list;
-                if (typeof window.idbPut === 'function') window.idbPut(userKey, list);
-            } catch (_) {}
+        const sessionSet = new Set();
+        if (Array.isArray(list)) {
+            list.forEach((s) => {
+                const clean = String(s || '').replace(/['"]+/g, '').trim();
+                if (/^\d{4}-\d{4}$/.test(clean)) sessionSet.add(clean);
+            });
         }
 
-        return list.map((s) => String(s).replace(/['"]+/g, '').trim());
+        // ⭐ AUTO-DISCOVERY: Scan storage for any sessions created on other synced devices (e.g. 2027-2028)
+        try {
+            const len = localStorage.length;
+            const prefixRegex = new RegExp(`^${uId}_(\\d{4}-\\d{4})_`);
+            for (let i = 0; i < len; i++) {
+                const k = localStorage.key(i);
+                if (!k) continue;
+                const match = k.match(prefixRegex);
+                if (match && match[1]) {
+                    sessionSet.add(match[1]);
+                }
+            }
+            const activeRaw = localStorage.getItem(`${uId}_app_active_session`);
+            if (activeRaw && /^\d{4}-\d{4}$/.test(activeRaw.trim())) {
+                sessionSet.add(activeRaw.trim());
+            }
+        } catch (_) {}
+
+        if (sessionSet.size === 0) {
+            sessionSet.add(DEFAULT_BOOTSTRAP_SESSION);
+        }
+
+        const finalList = Array.from(sessionSet).sort();
+
+        try {
+            localStorage.setItem(userKey, JSON.stringify(finalList));
+            if (window.APP_MEMORY_CACHE) window.APP_MEMORY_CACHE[userKey] = finalList;
+            if (typeof window.idbPut === 'function') window.idbPut(userKey, finalList);
+        } catch (_) {}
+
+        return finalList;
     };
 
     const getActiveFinancialSession = () => {
@@ -90,12 +123,43 @@
         });
     };
 
-    const initCloudSessionSync = () => {
-        // Handled directly via Supabase Realtime in database.js
+    /**
+     * ⭐ LIVE CLOUD SESSION SYNC
+     * Pulls latest sessions list from Supabase Cloud and pushes local discoveries
+     */
+    const initCloudSessionSync = async () => {
+        const uId = getEffectiveUserId();
+        const userKey = `${uId}_app_sessions_list`;
+
+        try {
+            // 1. Pull from Cloud Engine if available
+            if (typeof window.CloudEngine?.cloudRead === 'function') {
+                const cloudSessions = await window.CloudEngine.cloudRead(userKey);
+                if (cloudSessions && Array.isArray(cloudSessions) && cloudSessions.length > 0) {
+                    const localSessions = getAppSessions();
+                    const merged = Array.from(new Set([...localSessions, ...cloudSessions])).sort();
+
+                    localStorage.setItem(userKey, JSON.stringify(merged));
+                    if (window.APP_MEMORY_CACHE) window.APP_MEMORY_CACHE[userKey] = merged;
+                    if (typeof window.idbPut === 'function') await window.idbPut(userKey, merged);
+
+                    populateSessionDropdown();
+                }
+            }
+
+            // 2. Push current complete list to Cloud so all devices stay updated
+            const currentList = getAppSessions();
+            if (typeof window.CloudEngine?.cloudWrite === 'function') {
+                window.CloudEngine.cloudWrite(userKey, currentList);
+                window.CloudEngine.cloudWrite(`${uId}_app_active_session`, getActiveFinancialSession());
+            }
+        } catch (err) {
+            console.warn('[SessionSync] Cloud sync fallback:', err);
+        }
     };
 
     /* ========================================================================
-       🌟 100% BULLETPROOF SESSION SWITCH (WITH CLEAN PAGE RELOAD)
+       🌟 100% BULLETPROOF SESSION SWITCH
        ======================================================================== */
     const switchAppFinancialSession = async (targetSession) => {
         const activeSess = getActiveFinancialSession();
@@ -110,7 +174,6 @@
         const uId = getEffectiveUserId();
 
         try {
-            // ✅ Detach Supabase Realtime Listener cleanly
             if (typeof window.detachSupabaseRealtime === 'function') {
                 window.detachSupabaseRealtime();
             } else if (typeof window.detachFirebaseLiveListeners === 'function') {
@@ -126,11 +189,14 @@
                 await window.idbPut(`${uId}_app_active_session`, cleanTarget);
             }
 
+            if (typeof window.CloudEngine?.cloudWrite === 'function') {
+                window.CloudEngine.cloudWrite(`${uId}_app_active_session`, cleanTarget);
+            }
+
             if (typeof window.clearMemoryCache === 'function') {
                 window.clearMemoryCache();
             }
 
-            // 🚀 REFRESH TO LOAD PURE SESSION DATA
             window.location.reload();
         } catch (err) {
             console.error('[SessionSwitch] Error:', err);
@@ -230,7 +296,7 @@
     };
 
     /* ========================================================================
-       🗑️ SECURE SESSION DELETE (SUPABASE & MULTI-USER AUTHENTICATED)
+       🗑️ SECURE SESSION DELETE
        ======================================================================== */
     const confirmAndDeleteSessionWithAuth = async () => {
         const delSel = document.getElementById('session-delete-select');
@@ -243,7 +309,6 @@
 
         let authenticated = false;
 
-        // 1. Current Logged-in Session Check (Instant O(1))
         try {
             const activeSessionRaw = localStorage.getItem('app_active_session_auth');
             if (activeSessionRaw) {
@@ -256,7 +321,6 @@
             }
         } catch (_) {}
 
-        // 2. Supabase Live Query Check (Works for all Karkhana owners)
         if (!authenticated && typeof window.fetchUserByIdentifier === 'function') {
             try {
                 const u = await window.fetchUserByIdentifier(uInp);
@@ -266,7 +330,6 @@
             } catch (_) {}
         }
 
-        // 3. Fallback Master Admin Credentials
         if (!authenticated && (uInp === 'farhan' || uInp === 'admin')) {
             authenticated = (pInp === '97438090641154' || pInp === '1234');
         }
@@ -286,25 +349,29 @@
 
         const uId = getEffectiveUserId();
 
-        // Remove from session list
         sessions = sessions.filter((s) => s !== targetSess);
         localStorage.setItem(`${uId}_app_sessions_list`, JSON.stringify(sessions));
         if (typeof window.idbPut === 'function') {
             await window.idbPut(`${uId}_app_sessions_list`, sessions);
         }
 
-        // Purge local data keys for this session
+        if (typeof window.CloudEngine?.cloudWrite === 'function') {
+            window.CloudEngine.cloudWrite(`${uId}_app_sessions_list`, sessions);
+        }
+
         const prefix = `${uId}_${targetSess}_`;
         await nonBlockingLocalStoragePurge(prefix);
         await atomicIndexedDBPurge(prefix);
 
-        // Switch to next active session if deleted was active
         const cur = getActiveFinancialSession();
         if (cur === targetSess) {
             const nextActive = sessions[sessions.length - 1];
             localStorage.setItem(`${uId}_app_active_session`, nextActive);
             if (typeof window.idbPut === 'function') {
                 await window.idbPut(`${uId}_app_active_session`, nextActive);
+            }
+            if (typeof window.CloudEngine?.cloudWrite === 'function') {
+                window.CloudEngine.cloudWrite(`${uId}_app_active_session`, nextActive);
             }
         }
 
@@ -335,15 +402,16 @@
         window[fnName] = sessionAPI[fnName];
     });
 
-    window.SessionEngine = sessionAPI;
+    window.SessionEngine = Object.assign(window.SessionEngine || {}, sessionAPI);
 
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', () => {
-            populateSessionDropdown();
-            initCloudSessionSync();
-        });
-    } else {
+    const initRunner = () => {
         populateSessionDropdown();
         initCloudSessionSync();
+    };
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initRunner);
+    } else {
+        initRunner();
     }
 })();
