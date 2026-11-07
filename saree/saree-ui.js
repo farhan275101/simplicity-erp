@@ -190,6 +190,7 @@
             sareeName: name,
             karigerName: source,
             kariger: source,
+            partyName: source,
             karkhanaId: targetKid,
             type: window.currentSareeTab,
             typeLabel: `Direct Godown Inward (${window.currentSareeTab.toUpperCase()})`,
@@ -266,7 +267,6 @@
 
         currentSareeFilteredRowsCache = rows;
 
-        // Auto-inject A6 Print Button next to search input if not present
         if (searchInput && searchInput.parentElement && !document.getElementById('saree-stock-print-btn')) {
             const printBtn = document.createElement('button');
             printBtn.id = 'saree-stock-print-btn';
@@ -336,7 +336,6 @@
 
         tbody.innerHTML = html;
 
-        // Render Saree Stock Pagination Controls
         if (pager) {
             pager.innerHTML = `
                 <div style="font-size:12px; color:#475569; font-weight:600;">
@@ -523,7 +522,7 @@
     };
 
     /* ========================================================================
-       7. 📱 20-ITEM PAGINATED SAREE PASSBOOK (WITH A6 PRINT)
+       7. 📱 20-ITEM PAGINATED SAREE PASSBOOK (ACCURATE DESTINATION/ORIGIN DISPLAY)
        ------------------------------------------------------------------------
     ======================================================================== */
     const openSareePassbook = (safeSaree, safeKariger, safeKid) => {
@@ -562,14 +561,19 @@
                     </div>
                     <div style="flex:1; min-width:180px;">
                         <label style="font-size:12px; font-weight:700;">🔍 Search:</label><br>
-                        <input type="text" id="saree-pass-search-input" class="search-box" placeholder="Search Date, Detail, Qty..." oninput="applySareePassbookFilters()">
+                        <input type="text" id="saree-pass-search-input" class="search-box" placeholder="Search Party, Worker, Note, Qty..." oninput="applySareePassbookFilters()">
                     </div>
                 </div>
                 <div class="table-responsive">
                     <table>
                         <thead>
                             <tr style="background:#1e3a8a; color:white; font-size:12px;">
-                                <th>TARIKH</th><th>DETAIL (VIVRAN)</th><th>BUNNE WALA (MAKER)</th><th>AAI (+)</th><th>GAYI (-)</th><th style="text-align:center;">ACTION</th>
+                                <th>TARIKH</th>
+                                <th>DETAIL (VIVRAN)</th>
+                                <th>KAHAN GAYI / KISSE AAYI (PARTY)</th>
+                                <th>AAI (+)</th>
+                                <th>GAYI (-)</th>
+                                <th style="text-align:center;">ACTION</th>
                             </tr>
                         </thead>
                         <tbody id="saree-passbook-table-body"></tbody>
@@ -616,7 +620,7 @@
 
         if (sTxt) {
             list = list.filter((item) => {
-                const fullText = `${item.date || ''} ${item.sareeName || ''} ${item.karigerName || ''} ${item.typeLabel || ''} ${item.aai || ''} ${item.gai || ''}`.toLowerCase();
+                const fullText = `${item.date || ''} ${item.sareeName || ''} ${item.karigerName || ''} ${item.partyName || ''} ${item.targetWorker || ''} ${item.typeLabel || ''} ${item.note || ''} ${item.aai || ''} ${item.gai || ''}`.toLowerCase();
                 return fullText.includes(sTxt);
             });
         }
@@ -627,6 +631,10 @@
         renderPaginatedSareePassbook();
     };
 
+    /* ========================================================================
+       RENDER PASSBOOK: ACCURATE RECIPIENT / ORIGIN RESOLUTION
+       ------------------------------------------------------------------------
+    ======================================================================== */
     const renderPaginatedSareePassbook = () => {
         const tbody = document.getElementById('saree-passbook-table-body');
         const pager = document.getElementById('saree-passbook-pagination-controls');
@@ -635,12 +643,12 @@
 
         const totalEntries = filteredSareePassbookCache.length;
         if (!totalEntries) {
-            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:15px; color:#888;">Is Saree par koi transaction record nahi hai.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:15px; color:#888;">Is Saree par koi transaction record nahi mila.</td></tr>';
             if (pager) pager.innerHTML = '';
             return;
         }
 
-        const totalPages = Math.ceil(totalEntries / SAREE_PAGE_SIZE);
+        const totalPages = Math.ceil(totalEntries / SAREE_PAGE_SIZE) || 1;
         if (sareePassbookCurrentPage > totalPages) sareePassbookCurrentPage = totalPages;
         if (sareePassbookCurrentPage < 1) sareePassbookCurrentPage = 1;
 
@@ -649,38 +657,59 @@
 
         let html = '';
         pageRows.forEach((r) => {
-            const isGai = (r.isOut === true) || (safeNum(r.gai) > 0) || String(r.type || '').includes('Out');
+            const isGai = (r.isOut === true) || (safeNum(r.gai) > 0) || String(r.typeLabel || '').includes('➔') || String(r.typeLabel || '').includes('Bheja');
             const inQty = isGai ? 0 : safeInt(r.aai !== undefined ? r.aai : r.pcs);
             const outQty = isGai ? safeInt(r.gai !== undefined ? r.gai : r.pcs) : 0;
 
             const isOpening = (r.isOpening === true) || String(r.typeLabel || '').includes('Opening') || String(r.karigerName || '').includes('Opening');
-            const isKariger = Boolean(r.refId && !isOpening);
+            const isKarigerSheet = Boolean(r.refId && String(r.refId).startsWith('tani_') || String(r.typeLabel || '').includes('Kariger Sheet'));
 
             const singlePrintBtn = `<button type="button" title="A6 Slip Print" class="sheet-btn" style="background:#0284c7; color:#ffffff; padding:4px 7px; font-size:11px; font-weight:bold; border-radius:4px; border:none; cursor:pointer;" onclick="printSingleSareePassbookEntry('${esc(r.id)}')">🖨️</button>`;
 
             let typeDisplay = '';
-            let karigerDisplay = '';
+            let partyDisplay = '';
             let actBtn = '';
 
             if (isOpening) {
-                typeDisplay = `<span style="background:#fef3c7; color:#b45309; border:1px solid #fde68a; font-size:11px; font-weight:800; padding:2px 8px; border-radius:12px;">📦 Opening Stock (Pichle Saal Ka)</span>`;
-                karigerDisplay = `<span style="color:#b45309; font-weight:bold;">📦 Pichla Bacha Stock</span>`;
+                typeDisplay = `<span style="background:#fef3c7; color:#b45309; border:1px solid #fde68a; font-size:11px; font-weight:800; padding:2px 8px; border-radius:12px;">📦 Opening Stock (Pichla)</span>`;
+                partyDisplay = `<span style="color:#b45309; font-weight:bold;">📦 Pichla Bacha Stock</span>`;
                 actBtn = `<div style="display:flex; gap:6px; justify-content:center; align-items:center;">
                     <span style='color:#64748b; font-size:11px; font-weight:700;'>🔒 Opening Lock</span>
                     ${singlePrintBtn}
                 </div>`;
-            } else if (isKariger) {
-                typeDisplay = `<span style="background:#ecfdf5; color:#059669; border:1px solid #a7f3d0; font-size:11px; font-weight:800; padding:2px 8px; border-radius:12px;">🌱 Kariger Sheet Se Aai</span>`;
-                karigerDisplay = `👤 ${esc(r.karigerName || r.kariger || '-')}`;
+            } else if (isGai) {
+                // ⭐ SAREE GAYI (-): Jahan Saree gayi uska naam dikhana (Calender / Cutting / Dukan)
+                const destination = r.partyName || r.targetWorker || r.note || r.karigerName || 'Outward';
+                let icon = '👉 ';
+                if (String(destination).toLowerCase().includes('calender')) icon = '🎛️ ';
+                else if (String(destination).toLowerCase().includes('cutting')) icon = '✂️ ';
+                else if (String(destination).toLowerCase().includes('dukan')) icon = '🏪 ';
+
+                typeDisplay = `<strong style="color:#dc2626;">${esc(r.typeLabel || 'Saree Out')}</strong>`;
+                partyDisplay = `<strong style="color:#dc2626;">${icon}${esc(destination)}</strong>`;
                 actBtn = `<div style="display:flex; gap:6px; justify-content:center; align-items:center;">
-                    <span style='color:#64748b; font-size:11px; font-weight:700;'>🔒 Kariger Sheet</span>
+                    <span style='color:#dc2626; font-size:11px; font-weight:700;'>📤 Outward</span>
+                    ${singlePrintBtn}
+                </div>`;
+            } else if (isKarigerSheet) {
+                // ⭐ WEAVER SE AAYI (+): Loom se aai to bunne wale ka naam dikhana
+                typeDisplay = `<span style="background:#ecfdf5; color:#059669; border:1px solid #a7f3d0; font-size:11px; font-weight:800; padding:2px 8px; border-radius:12px;">🌱 Kariger Sheet Se Aai</span>`;
+                partyDisplay = `👤 <strong>${esc(r.karigerName || r.kariger || '-')}</strong> <small style="color:#64748b;">(Maker)</small>`;
+                actBtn = `<div style="display:flex; gap:6px; justify-content:center; align-items:center;">
+                    <span style='color:#059669; font-size:11px; font-weight:700;'>🔒 Tani Sheet</span>
                     ${singlePrintBtn}
                 </div>`;
             } else {
-                typeDisplay = `<strong style="color:#1e3a8a;">${esc(r.typeLabel || r.note || 'Saree Movement')}</strong>`;
-                karigerDisplay = `👤 ${esc(r.karigerName || r.kariger || '-')}`;
+                // ⭐ CALENDER / CUTTING YA TRANSFER SE AAYI (+)
+                const source = r.partyName || r.targetWorker || r.note || r.karigerName || 'Inward';
+                let icon = '📥 ';
+                if (String(source).toLowerCase().includes('calender')) icon = '🎛️ ';
+                else if (String(source).toLowerCase().includes('cutting')) icon = '✂️ ';
+
+                typeDisplay = `<strong style="color:#059669;">${esc(r.typeLabel || 'Tayyar Saree Aai')}</strong>`;
+                partyDisplay = `<strong style="color:#059669;">${icon}${esc(source)}</strong>`;
                 actBtn = `<div style="display:flex; gap:6px; justify-content:center; align-items:center;">
-                    <button type="button" class="delete-btn" onclick="deleteManualSareeEntry('${esc(r.id)}')">🗑️ Delete</button>
+                    <button type="button" class="delete-btn" onclick="deleteManualSareeEntry('${esc(r.id)}')">🗑️</button>
                     ${singlePrintBtn}
                 </div>`;
             }
@@ -688,7 +717,7 @@
             html += `<tr>
                 <td>${formatDisplay(r.date)}</td>
                 <td>${typeDisplay}</td>
-                <td>${karigerDisplay}</td>
+                <td>${partyDisplay}</td>
                 <td style="color:#059669; font-weight:800;">${inQty > 0 ? `+${inQty} Pcs` : '-'}</td>
                 <td style="color:#dc2626; font-weight:800;">${outQty > 0 ? `-${outQty} Pcs` : '-'}</td>
                 <td style="text-align:center;">${actBtn}</td>
@@ -697,7 +726,6 @@
 
         tbody.innerHTML = html;
 
-        // Render Pagination Controls Bar
         if (pager) {
             pager.innerHTML = `
                 <div style="font-size:12px; color:#475569; font-weight:600;">
@@ -749,7 +777,6 @@
         return kId;
     };
 
-    // 1. Main Saree Stock Report Print (Current Tab & Filtered rows)
     const printSareeStockReport = () => {
         const rows = currentSareeFilteredRowsCache;
         if (!rows || !rows.length) {
@@ -853,7 +880,6 @@
         printWindow.document.close();
     };
 
-    // 2. Filtered Saree Passbook Statement Print (Date Filter Supported)
     const printSareePassbookFiltered = () => {
         const rows = filteredSareePassbookCache;
         if (!rows || !rows.length) {
@@ -871,19 +897,21 @@
 
         let rowsHtml = '';
         rows.forEach((r) => {
-            const isGai = (r.isOut === true) || (safeNum(r.gai) > 0) || String(r.type || '').includes('Out');
+            const isGai = (r.isOut === true) || (safeNum(r.gai) > 0) || String(r.typeLabel || '').includes('➔') || String(r.typeLabel || '').includes('Bheja');
             const inQty = isGai ? 0 : safeInt(r.aai !== undefined ? r.aai : r.pcs);
             const outQty = isGai ? safeInt(r.gai !== undefined ? r.gai : r.pcs) : 0;
 
             totalAai += inQty;
             totalGai += outQty;
 
-            const vivran = r.typeLabel || r.note || r.karigerName || 'Movement';
+            const partyInfo = r.partyName || r.targetWorker || r.note || r.karigerName || 'Movement';
+            const vivran = r.typeLabel || 'Saree Movement';
 
             rowsHtml += `
                 <tr style="border-bottom:1px dashed #ccc;">
                     <td style="padding:3px 2px;">${formatDisplay(r.date)}</td>
                     <td style="padding:3px 2px; font-weight:600;">${esc(vivran)}</td>
+                    <td style="padding:3px 2px;">${esc(partyInfo)}</td>
                     <td style="padding:3px 2px; text-align:right;">${inQty > 0 ? `+${inQty}` : '-'}</td>
                     <td style="padding:3px 2px; text-align:right;">${outQty > 0 ? `-${outQty}` : '-'}</td>
                 </tr>`;
@@ -926,7 +954,7 @@
                     <table>
                         <thead>
                             <tr>
-                                <th>TARIKH</th><th>DETAIL (VIVRAN)</th><th style="text-align:right;">AAI</th><th style="text-align:right;">GAI</th>
+                                <th>TARIKH</th><th>DETAIL</th><th>PARTY</th><th style="text-align:right;">AAI</th><th style="text-align:right;">GAI</th>
                             </tr>
                         </thead>
                         <tbody>${rowsHtml}</tbody>
@@ -959,16 +987,15 @@
         printWindow.document.close();
     };
 
-    // 3. Single Saree Slip Print (Thermal Parchi)
     const printSingleSareePassbookEntry = (id) => {
         const history = window.safeArray ? window.safeArray(window.getStore('saree_history')) : [];
         const entry = history.find(x => x && String(x.id) === String(id));
         if (!entry) return alert('Entry nahi mili!');
 
         const sName = entry.sareeName || entry.name || 'Saree';
-        const kName = entry.karigerName || entry.kariger || '-';
+        const party = entry.partyName || entry.targetWorker || entry.karigerName || entry.kariger || '-';
         const godamName = getSareeKarkhanaPrintName(entry.karkhanaId);
-        const isGai = (entry.isOut === true) || (safeNum(entry.gai) > 0) || String(entry.type || '').includes('Out');
+        const isGai = (entry.isOut === true) || (safeNum(entry.gai) > 0) || String(entry.typeLabel || '').includes('➔');
         const pcs = isGai ? safeInt(entry.gai !== undefined ? entry.gai : entry.pcs) : safeInt(entry.aai !== undefined ? entry.aai : entry.pcs);
         const pcsDisplay = isGai ? `-${pcs} Pcs` : `+${pcs} Pcs`;
 
@@ -1001,8 +1028,8 @@
                     <div class="row"><span><strong>Tarikh:</strong></span><span>${formatDisplay(entry.date)}</span></div>
                     <div class="row"><span><strong>Godam:</strong></span><span>${esc(godamName)}</span></div>
                     <div class="row"><span><strong>Saree Name:</strong></span><span>${esc(sName)}</span></div>
-                    <div class="row"><span><strong>Karigar (Maker):</strong></span><span>${esc(kName)}</span></div>
-                    <div class="row"><span><strong>Type / Detail:</strong></span><span>${esc(entry.typeLabel || entry.type || 'Movement')}</span></div>
+                    <div class="row"><span><strong>Party / Karigar:</strong></span><span>${esc(party)}</span></div>
+                    <div class="row"><span><strong>Detail:</strong></span><span>${esc(entry.typeLabel || entry.type || 'Movement')}</span></div>
                     <div class="total-highlight">
                         KUL SAREE: ${pcsDisplay}
                     </div>
