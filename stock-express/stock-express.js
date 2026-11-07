@@ -4,7 +4,7 @@
    Developed for: Farhan Jawed
    Features:
    - Bada Wide Screen (880px Counter Layout like Kariger Express)
-   - Fixed Shortcuts: F1/F2/F3 & Alt+1/2/3 (Digit + Numpad Support)
+   - Strict Keyboard Capture (F1/F2/F3/F4 no conflict with Kariger Express)
    - Bana, Zari & Sancha (Tani/Chukka) Inward Engine
    - Purana vs Naya Mode with Datalist Auto-Complete
    - Live Godown Stock Display & Instant A6 Print
@@ -239,7 +239,7 @@
         bindStockExpressEvents();
     };
 
-    // 2. KEYBOARD LISTENERS & SHORTCUT FIX
+    // 2. KEYBOARD LISTENERS & SHORTCUT FIX (CAPTURE PHASE + STOP PROPAGATION)
     const bindStockExpressEvents = () => {
         const modal = document.getElementById('master-stock-express-modal');
         if (!modal) return;
@@ -266,56 +266,71 @@
         });
 
         // Enter on QTY saves immediately
-        qtyInp.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                submitMasterStockExpress();
-            }
-        });
+        if (qtyInp) {
+            qtyInp.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    submitMasterStockExpress();
+                }
+            });
+        }
 
         // Live Stock Update on Input
-        nameInp.addEventListener('input', updateStockExpressLiveStats);
+        if (nameInp) {
+            nameInp.addEventListener('input', updateStockExpressLiveStats);
+        }
 
-        window.removeEventListener('keydown', handleStockExpressGlobalKeydown);
-        window.addEventListener('keydown', handleStockExpressGlobalKeydown);
+        // ⭐ CAPTURE PHASE (`true`) SE BIND KIYA HAI TAHO KARIGER EXPRESS CONFLICT NA HO
+        window.removeEventListener('keydown', handleStockExpressGlobalKeydown, true);
+        window.addEventListener('keydown', handleStockExpressGlobalKeydown, true);
     };
 
-    // 🔹 FIXED SHORTCUT HANDLER (F1/F2/F3 & ALT+1/2/3 DIGIT/NUMPAD)
+    // 🔹 FIXED SHORTCUT HANDLER (STRICT CAPTURE + STOP PROPAGATION)
     const handleStockExpressGlobalKeydown = (e) => {
         const modal = document.getElementById('master-stock-express-modal');
-        if (!modal) return;
+        if (!modal || modal.style.display === 'none') return;
 
         // Escape to Close
         if (e.key === 'Escape') {
             e.preventDefault();
+            e.stopPropagation();
+            e.stopImmediatePropagation();
             closeStockExpressModal();
             return;
         }
 
-        // F1 or Alt+1 -> Bana
+        // ⭐ F1 or Alt+1 -> Bana (Kariger Express ko 100% block kiya)
         if (e.key === 'F1' || (e.altKey && (e.key === '1' || e.code === 'Digit1' || e.code === 'Numpad1'))) {
             e.preventDefault();
+            e.stopPropagation();
+            e.stopImmediatePropagation();
             switchStockCategory('bana');
             return;
         }
 
-        // F2 or Alt+2 -> Zari
+        // ⭐ F2 or Alt+2 -> Zari
         if (e.key === 'F2' || (e.altKey && (e.key === '2' || e.code === 'Digit2' || e.code === 'Numpad2'))) {
             e.preventDefault();
+            e.stopPropagation();
+            e.stopImmediatePropagation();
             switchStockCategory('zari');
             return;
         }
 
-        // F3 or Alt+3 -> Sancha
+        // ⭐ F3 or Alt+3 -> Sancha
         if (e.key === 'F3' || (e.altKey && (e.key === '3' || e.code === 'Digit3' || e.code === 'Numpad3'))) {
             e.preventDefault();
+            e.stopPropagation();
+            e.stopImmediatePropagation();
             switchStockCategory('sancha');
             return;
         }
 
-        // F4 -> Toggle Purana / Naya
+        // ⭐ F4 -> Toggle Purana / Naya
         if (e.key === 'F4') {
             e.preventDefault();
+            e.stopPropagation();
+            e.stopImmediatePropagation();
             setStockExpressMode(stockMode === 'purana' ? 'naya' : 'purana');
             return;
         }
@@ -323,13 +338,15 @@
         // Alt+P -> Print
         if (e.altKey && (e.key === 'p' || e.key === 'P')) {
             e.preventDefault();
+            e.stopPropagation();
+            e.stopImmediatePropagation();
             printLastSavedStockSlip();
             return;
         }
     };
 
     window.closeStockExpressModal = () => {
-        window.removeEventListener('keydown', handleStockExpressGlobalKeydown);
+        window.removeEventListener('keydown', handleStockExpressGlobalKeydown, true);
         const modal = document.getElementById('master-stock-express-modal');
         if (modal) modal.remove();
     };
@@ -348,7 +365,6 @@
 
         const { banaOpts, zariOpts, sanchaOpts } = getStockExpressDatalists();
 
-        // Reset Styles
         [btnB, btnZ, btnS].forEach(b => {
             if (b) { b.style.background = '#f1f5f9'; b.style.color = '#475569'; b.style.border = '1px solid #cbd5e1'; }
         });
