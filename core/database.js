@@ -1,7 +1,7 @@
 /* ============================================================================
-   SIMPLICITY ERP - ENTERPRISE AUTO-POLLING & LIVE REALTIME ENGINE (INPUT SHIELD)
+   SIMPLICITY ERP - ENTERPRISE AUTO-POLLING & LIVE REALTIME ENGINE (ALL MODULES)
    File: core/database.js • Developed by Farhan Jawed
-   Architecture: Focus Guard Shield • Zero Keystroke Interruption • Instant Sync
+   Architecture: Focus Guard Shield • Full Job Work Support • Instant Auto-Sync
 ============================================================================ */
 
 (() => {
@@ -73,7 +73,10 @@
         if (k.includes('karkhana') || k.includes('godown')) return 'karkhanas';
         if (k.includes('material_transfers') || k.includes('transfer')) return 'material_transfers';
         if (k.includes('dukan')) return 'dukan_challans';
-        if (k.includes('jobwork') || k.includes('job_work')) return 'job_workers';
+
+        // 🎯 JOB WORK ROUTING FIX
+        if (k.includes('jw_bill') || k.includes('jobwork_bill')) return 'job_work_bills';
+        if (k.includes('jobwork') || k.includes('job_work') || k.includes('jw_payment')) return 'job_workers';
 
         return 'app_store';
     };
@@ -119,16 +122,10 @@
         }
     };
 
-    /**
-     * ⚡ SMART UI REPAINTER (WITH INPUT SHIELD GUARD)
-     */
     const triggerSmartUIRepaint = () => {
-        // 🛡️ TYPING SHIELD: Agar user kisi bhi input box me likh raha hai, toh beech me bilkul interrupt mat karo!
         const activeEl = document.activeElement;
         const isUserTyping = activeEl && ['INPUT', 'TEXTAREA', 'SELECT'].includes(activeEl.tagName);
-        if (isUserTyping) {
-            return;
-        }
+        if (isUserTyping) return;
 
         if (renderDebounceTimer) clearTimeout(renderDebounceTimer);
         renderDebounceTimer = setTimeout(() => {
@@ -161,6 +158,13 @@
             if (sSec && sSec.style.display !== 'none') {
                 if (typeof window.renderSareeTable === 'function') window.renderSareeTable();
                 if (typeof window.applySareePassbookFilters === 'function') window.applySareePassbookFilters();
+            }
+
+            const jwSec = document.getElementById('jobwork-section');
+            if (jwSec && jwSec.style.display !== 'none') {
+                if (typeof window.renderJobWorkersTable === 'function') window.renderJobWorkersTable();
+                if (typeof window.renderJobWorkMovementDaybook === 'function') window.renderJobWorkMovementDaybook();
+                if (typeof window.renderJobWorkBillsTable === 'function') window.renderJobWorkBillsTable();
             }
 
             if (typeof window.renderDashboardDayBook === 'function') {
@@ -218,7 +222,7 @@
     };
 
     /**
-     * 📥 SMART CLOUD PULL (Sirf tabhi screen redraw karo jab sach me data badla ho)
+     * 📥 SMART CLOUD PULL (Job Work Tables Added)
      */
     const pullAllCloudData = async (silent = true) => {
         if (!supabaseClient || !navigator.onLine) return;
@@ -227,7 +231,8 @@
         const tables = [
             'saree_stock', 'zari_stock', 'zari_history', 'bana_stock', 'bana_history',
             'sancha_list', 'sancha_history', 'karigers', 'tani_sheets', 
-            'material_transfers', 'karkhanas', 'dukan_challans', 'app_store'
+            'material_transfers', 'karkhanas', 'dukan_challans', 
+            'job_workers', 'job_work_bills', 'app_store'
         ];
 
         let hasNewData = false;
@@ -244,7 +249,6 @@
                         const targetKey = row.id;
                         const rowData = row.data !== undefined ? row.data : row;
                         if (targetKey && typeof window.setRemoteStore === 'function') {
-                            // Purane cached data se compare karo taaki bina wajah reload na ho
                             const oldCache = window.APP_MEMORY_CACHE ? window.APP_MEMORY_CACHE[targetKey] : null;
                             if (JSON.stringify(oldCache) !== JSON.stringify(rowData)) {
                                 window.setRemoteStore(targetKey, rowData);
@@ -272,7 +276,6 @@
             const activeEl = document.activeElement;
             const isUserTyping = activeEl && ['INPUT', 'TEXTAREA', 'SELECT'].includes(activeEl.tagName);
             
-            // Agar user likh raha hai toh background check ko thodi der skip karo
             if (!isUserTyping && navigator.onLine && !document.hidden) {
                 pullAllCloudData(true);
             }
