@@ -1,7 +1,7 @@
 /* ============================================================================
-   SIMPLICITY ERP - ENTERPRISE AUTO-POLLING & LIVE REALTIME ENGINE (SAFE SELECT)
+   SIMPLICITY ERP - ENTERPRISE AUTO-POLLING & LIVE REALTIME ENGINE (INPUT SHIELD)
    File: core/database.js • Developed by Farhan Jawed
-   Architecture: Zero-Error Safe Select | Auto-Sync Heartbeat
+   Architecture: Focus Guard Shield • Zero Keystroke Interruption • Instant Sync
 ============================================================================ */
 
 (() => {
@@ -119,7 +119,17 @@
         }
     };
 
+    /**
+     * ⚡ SMART UI REPAINTER (WITH INPUT SHIELD GUARD)
+     */
     const triggerSmartUIRepaint = () => {
+        // 🛡️ TYPING SHIELD: Agar user kisi bhi input box me likh raha hai, toh beech me bilkul interrupt mat karo!
+        const activeEl = document.activeElement;
+        const isUserTyping = activeEl && ['INPUT', 'TEXTAREA', 'SELECT'].includes(activeEl.tagName);
+        if (isUserTyping) {
+            return;
+        }
+
         if (renderDebounceTimer) clearTimeout(renderDebounceTimer);
         renderDebounceTimer = setTimeout(() => {
             const shSec = document.getElementById('kariger-sheet-section');
@@ -208,7 +218,7 @@
     };
 
     /**
-     * 📥 SAFE CLOUD PULL (.select('*') Se Kabhi 400 Error Nahi Aata)
+     * 📥 SMART CLOUD PULL (Sirf tabhi screen redraw karo jab sach me data badla ho)
      */
     const pullAllCloudData = async (silent = true) => {
         if (!supabaseClient || !navigator.onLine) return;
@@ -224,7 +234,6 @@
 
         for (const tbl of tables) {
             try {
-                // ✅ Safe select: Koi column miss hone par bhi crash nahi hoga
                 const { data, error } = await supabaseClient
                     .from(tbl)
                     .select('*')
@@ -235,8 +244,12 @@
                         const targetKey = row.id;
                         const rowData = row.data !== undefined ? row.data : row;
                         if (targetKey && typeof window.setRemoteStore === 'function') {
-                            window.setRemoteStore(targetKey, rowData);
-                            hasNewData = true;
+                            // Purane cached data se compare karo taaki bina wajah reload na ho
+                            const oldCache = window.APP_MEMORY_CACHE ? window.APP_MEMORY_CACHE[targetKey] : null;
+                            if (JSON.stringify(oldCache) !== JSON.stringify(rowData)) {
+                                window.setRemoteStore(targetKey, rowData);
+                                hasNewData = true;
+                            }
                         }
                     });
                 }
@@ -250,13 +263,17 @@
     };
 
     /**
-     * ⚡ 5-SECOND BACKGROUND LIVE SYNC
+     * ⚡ 5-SECOND LIVE HEARTBEAT
      */
     const startLiveAutoSyncHeartbeat = () => {
         if (autoSyncIntervalTimer) clearInterval(autoSyncIntervalTimer);
 
         autoSyncIntervalTimer = setInterval(() => {
-            if (navigator.onLine && !document.hidden) {
+            const activeEl = document.activeElement;
+            const isUserTyping = activeEl && ['INPUT', 'TEXTAREA', 'SELECT'].includes(activeEl.tagName);
+            
+            // Agar user likh raha hai toh background check ko thodi der skip karo
+            if (!isUserTyping && navigator.onLine && !document.hidden) {
                 pullAllCloudData(true);
             }
         }, 5000);
