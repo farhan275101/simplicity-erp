@@ -1,7 +1,8 @@
 /* ============================================================================
    SIMPLICITY ERP - HIGH-SCALE FINANCIAL YEAR SESSION CONTROLLER
    File: session/session.js • Developed by Farhan Jawed
-   Architecture: Supabase Realtime Sync, Cloud Session Resolver & Auto-Discovery
+   Architecture: Global Cloud Active Session Lock (Cross-Device Auto-Sync)
+   Guarantee: Phone & Computer always stay on the EXACT SAME financial session!
 ============================================================================ */
 
 (() => {
@@ -26,8 +27,7 @@
     };
 
     /**
-     * Auto-detects all sessions created across devices (Phone & Computer)
-     * by scanning local keys, active session markers, and cloud state.
+     * Auto-detects all available financial sessions across devices
      */
     const getAppSessions = () => {
         const uId = getEffectiveUserId();
@@ -51,7 +51,7 @@
             });
         }
 
-        // ⭐ AUTO-DISCOVERY: Scan storage for any sessions created on other synced devices (e.g. 2027-2028)
+        // Auto-scan storage for any session data synced from other devices (e.g. 2027-2028)
         try {
             const len = localStorage.length;
             const prefixRegex = new RegExp(`^${uId}_(\\d{4}-\\d{4})_`);
@@ -84,6 +84,9 @@
         return finalList;
     };
 
+    /**
+     * Returns the locally stored active session
+     */
     const getActiveFinancialSession = () => {
         const uId = getEffectiveUserId();
         const userKey = `${uId}_app_active_session`;
@@ -124,48 +127,90 @@
     };
 
     /**
-     * ⭐ LIVE CLOUD SESSION SYNC
-     * Pulls latest sessions list from Supabase Cloud and pushes local discoveries
+     * ⭐ GLOBAL CLOUD ACTIVE SESSION SYNC (Cross-Device Lock)
+     * Checks what session is active in the Cloud. If Phone has 2027-2028 active,
+     * Computer will automatically switch to 2027-2028!
      */
     const initCloudSessionSync = async () => {
         const uId = getEffectiveUserId();
-        const userKey = `${uId}_app_sessions_list`;
+        const sessionsKey = `${uId}_app_sessions_list`;
+        const activeKey = `${uId}_app_active_session`;
 
         try {
-            // 1. Pull from Cloud Engine if available
+            let cloudActive = null;
+            let cloudSessions = null;
+
+            // 1. Fetch from CloudEngine
             if (typeof window.CloudEngine?.cloudRead === 'function') {
-                const cloudSessions = await window.CloudEngine.cloudRead(userKey);
-                if (cloudSessions && Array.isArray(cloudSessions) && cloudSessions.length > 0) {
-                    const localSessions = getAppSessions();
-                    const merged = Array.from(new Set([...localSessions, ...cloudSessions])).sort();
-
-                    localStorage.setItem(userKey, JSON.stringify(merged));
-                    if (window.APP_MEMORY_CACHE) window.APP_MEMORY_CACHE[userKey] = merged;
-                    if (typeof window.idbPut === 'function') await window.idbPut(userKey, merged);
-
-                    populateSessionDropdown();
+                cloudActive = await window.CloudEngine.cloudRead(activeKey);
+                cloudSessions = await window.CloudEngine.cloudRead(sessionsKey);
+            } 
+            // 2. Direct Supabase Query Fallback
+            else if (window.supabaseClient || window.supabase) {
+                const client = window.supabaseClient || (window.supabase?.from ? window.supabase : null);
+                if (client && typeof client.from === 'function') {
+                    const { data } = await client.from('app_store').select('key, value').in('key', [activeKey, sessionsKey]);
+                    if (data && Array.isArray(data)) {
+                        data.forEach((row) => {
+                            if (row.key === activeKey) cloudActive = row.value;
+                            if (row.key === sessionsKey) cloudSessions = row.value;
+                        });
+                    }
                 }
             }
 
-            // 2. Push current complete list to Cloud so all devices stay updated
-            const currentList = getAppSessions();
-            if (typeof window.CloudEngine?.cloudWrite === 'function') {
-                window.CloudEngine.cloudWrite(userKey, currentList);
-                window.CloudEngine.cloudWrite(`${uId}_app_active_session`, getActiveFinancialSession());
+            // Sync Sessions List
+            if (cloudSessions) {
+                let parsedList = (typeof cloudSessions === 'string') ? JSON.parse(cloudSessions) : cloudSessions;
+                if (Array.isArray(parsedList) && parsedList.length > 0) {
+                    const localList = getAppSessions();
+                    const merged = Array.from(new Set([...localList, ...parsedList])).sort();
+                    localStorage.setItem(sessionsKey, JSON.stringify(merged));
+                    if (window.APP_MEMORY_CACHE) window.APP_MEMORY_CACHE[sessionsKey] = merged;
+                    if (typeof window.idbPut === 'function') await window.idbPut(sessionsKey, merged);
+                }
             }
+
+            // ⭐ CROSS-DEVICE ACTIVE SESSION ENFORCEMENT:
+            if (cloudActive) {
+                const cleanCloudActive = String(cloudActive).replace(/['"]+/g, '').trim();
+                const currentLocalActive = getActiveFinancialSession();
+
+                // Agar Cloud me session alag hai (jaise Phone ne 2027-2028 khola hai), to Computer bhi automatic switch hoga!
+                if (cleanCloudActive && /^\d{4}-\d{4}$/.test(cleanCloudActive) && cleanCloudActive !== currentLocalActive) {
+                    console.log(`[SessionSync] Cloud Master Session is '${cleanCloudActive}'. Aligning device from '${currentLocalActive}'...`);
+                    
+                    localStorage.setItem(activeKey, cleanCloudActive);
+                    if (window.APP_MEMORY_CACHE) window.APP_MEMORY_CACHE[activeKey] = cleanCloudActive;
+                    if (typeof window.idbPut === 'function') await window.idbPut(activeKey, cleanCloudActive);
+
+                    // Silently reload to pure session data so all numbers match
+                    window.location.reload();
+                    return;
+                }
+            } else {
+                // Agar Cloud par active session nahi hai, to current device ka session Cloud me push karein
+                const currentLocalActive = getActiveFinancialSession();
+                if (typeof window.CloudEngine?.cloudWrite === 'function') {
+                    window.CloudEngine.cloudWrite(activeKey, currentLocalActive);
+                    window.CloudEngine.cloudWrite(sessionsKey, getAppSessions());
+                }
+            }
+
+            populateSessionDropdown();
         } catch (err) {
             console.warn('[SessionSync] Cloud sync fallback:', err);
         }
     };
 
     /* ========================================================================
-       🌟 100% BULLETPROOF SESSION SWITCH
+       🌟 BULLETPROOF SESSION SWITCH (COMMITS TO CLOUD GLOBALLY)
        ======================================================================== */
     const switchAppFinancialSession = async (targetSession) => {
         const activeSess = getActiveFinancialSession();
         if (!targetSession || targetSession === activeSess) return;
 
-        if (!confirm(`Kya aap Session badal kar '${targetSession}' me jana chahte hain?\nApp fresh naye saal ke data ke sath reload hoga.`)) {
+        if (!confirm(`Kya aap Session badal kar '${targetSession}' me jana chahte hain?\nYe session aapke sabhi devices (Phone & Computer) par active ho jayega.`)) {
             populateSessionDropdown();
             return;
         }
@@ -180,6 +225,7 @@
                 window.detachFirebaseLiveListeners();
             }
 
+            // Save locally
             localStorage.setItem(`${uId}_app_active_session`, cleanTarget);
             if (window.APP_MEMORY_CACHE) {
                 window.APP_MEMORY_CACHE[`${uId}_app_active_session`] = cleanTarget;
@@ -189,8 +235,10 @@
                 await window.idbPut(`${uId}_app_active_session`, cleanTarget);
             }
 
+            // ⭐ COMMIT TO CLOUD GLOBALLY (So Phone and Computer both switch!)
             if (typeof window.CloudEngine?.cloudWrite === 'function') {
                 window.CloudEngine.cloudWrite(`${uId}_app_active_session`, cleanTarget);
+                window.CloudEngine.cloudWrite(`${uId}_app_sessions_list`, getAppSessions());
             }
 
             if (typeof window.clearMemoryCache === 'function') {
@@ -414,4 +462,17 @@
     } else {
         initRunner();
     }
+
+    // ⭐ AUTO-SYNC ON TAB FOCUS / UNLOCK:
+    // Phone se Computer par aate hi latest session check karega
+    document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) {
+            initCloudSessionSync();
+        }
+    });
+
+    window.addEventListener('focus', () => {
+        initCloudSessionSync();
+    });
+
 })();
