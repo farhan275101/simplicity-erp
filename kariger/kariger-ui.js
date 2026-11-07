@@ -1,7 +1,7 @@
 /* ============================================================================
    SIMPLICITY ERP - WEAVER (KARIGER) UI & SHEET CONTROLLER (WITH LIVE SEARCH & A6 PRINT)
    File: kariger/kariger-ui.js • Developed by Farhan Jawed
-   (Live Realtime Sheet Sync + Auto-Godam Stock + 8 Colors & Tani Saree Pcs Engine)
+   (Accurate Fresh/Lott Saree Math • Live Realtime Sheet Sync • Auto-Godam Stock)
 ============================================================================ */
 
 (() => {
@@ -443,7 +443,7 @@
     };
 
     /* ========================================================================
-       3. TANI KHATA CONTROLLER (With Saree Pcs & 8 Colors Engine)
+       3. TANI KHATA CONTROLLER
        ------------------------------------------------------------------------
     ======================================================================== */
     const openKarigerSheet = (id) => {
@@ -594,7 +594,6 @@
         loadCurrentSheetData();
     };
 
-    // 🔹 LOAD SHEET (WITH SAREE PCS & 8 COLORS)
     const loadCurrentSheetData = () => {
         const sheets = (typeof window.getKarigerSheets === 'function') ? window.getKarigerSheets(window.activeKarigerId) : [];
         const sh = sheets[window.activeSheetIndex] || sheets[0];
@@ -618,11 +617,9 @@
         setVal('sheet-chukka-sancha', sh.chukkaSancha || '');
         setVal('sheet-chukka-wazan', sh.chukkaWazan || '');
 
-        // Load Saree Pcs
         setVal('sheet-tani-pcs', (sh.taniPcs !== undefined) ? sh.taniPcs : 72);
         setVal('sheet-chukka-pcs', (sh.chukkaPcs !== undefined) ? sh.chukkaPcs : 72);
 
-        // Load 8 Colors
         for (let i = 1; i <= 8; i++) {
             setVal(`sheet-color-${i}`, (sh.colors && sh.colors[i - 1]) ? sh.colors[i - 1] : '');
         }
@@ -631,7 +628,6 @@
         updateLiveStockDisplay();
     };
 
-    // 🔹 SAVE SHEET (WITH SAREE PCS & 8 COLORS)
     const saveCurrentSheetConfig = () => {
         if (!window.activeKarigerId) return;
         const sheets = (typeof window.getKarigerSheets === 'function') ? window.getKarigerSheets(window.activeKarigerId) : [];
@@ -654,11 +650,9 @@
         sh.banaItem = String(document.getElementById('line-bana-name')?.value || '').trim();
         sh.zariItem = String(document.getElementById('line-zari-name')?.value || '').trim();
 
-        // Save Saree Pcs
         sh.taniPcs = safeNum(document.getElementById('sheet-tani-pcs')?.value, 72);
         sh.chukkaPcs = safeNum(document.getElementById('sheet-chukka-pcs')?.value, 72);
 
-        // Save 8 Colors
         sh.colors = [];
         for (let i = 1; i <= 8; i++) {
             const cVal = String(document.getElementById(`sheet-color-${i}`)?.value || '').trim();
@@ -762,7 +756,7 @@
     };
 
     /* ========================================================================
-       4. LINE ROW SAVE / EDIT / DELETE
+       4. LINE ROW SAVE / EDIT / DELETE (ACCURATE FRESH & LOTT MATH FIX)
        ------------------------------------------------------------------------
     ======================================================================== */
     const saveTaniRow = () => {
@@ -851,12 +845,16 @@
             window.saveKarigerSheets(window.activeKarigerId, sheets);
         }
 
+        // 🎯 EXACT FRESH & LOTT CALCULATION (10 Saree me se 1 Lott = 9 Fresh)
+        const freshSaree = Math.max(0, saree - lott);
+
         if (typeof window.recordSareeFromKariger === 'function') {
-            window.recordSareeFromKariger(d, sDesign, kName, kGodown, saree, lott, rowId);
+            window.recordSareeFromKariger(d, sDesign, kName, kGodown, freshSaree, lott, rowId);
         } else {
             let sHist = window.safeArray ? window.safeArray(window.getStore('saree_history')) : [];
             sHist = sHist.filter((h) => !h || String(h.refId) !== String(rowId));
-            if (saree > 0) {
+
+            if (freshSaree > 0) {
                 sHist.push({
                     id: `saree_${Date.now()}_f`,
                     refId: rowId,
@@ -866,11 +864,12 @@
                     karkhanaId: kGodown,
                     type: 'fresh',
                     typeLabel: 'Fresh Saree (Kariger Sheet)',
-                    aai: saree,
+                    aai: freshSaree, // 👈 9 Fresh Saree jayegi
                     gai: 0,
                     timestamp: Date.now()
                 });
             }
+
             if (lott > 0) {
                 sHist.push({
                     id: `saree_${Date.now()}_l`,
@@ -881,12 +880,15 @@
                     karkhanaId: kGodown,
                     type: 'lott',
                     typeLabel: 'Lott Saree (Kariger Sheet)',
-                    aai: lott,
+                    aai: lott, // 👈 1 Lott Saree jayegi
                     gai: 0,
-                    timestamp: Date.now()
+                    timestamp: Date.now() + 1
                 });
             }
-            if (typeof window.setStore === 'function') window.setStore('saree_history', sHist);
+
+            if (typeof window.setStore === 'function') {
+                window.setStore('saree_history', sHist);
+            }
         }
 
         if (banaItemName && (nBana > 0 || retB > 0)) {
