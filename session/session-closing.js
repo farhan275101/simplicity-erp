@@ -2,7 +2,7 @@
    SIMPLICITY ERP - 5-STAGE ENTERPRISE BULLETPROOF YEAR CLOSING ENGINE
    File: session/session-closing.js • Developed by Farhan Jawed
    Architecture: Supabase PostgreSQL & Multi-Branch Reconcile Engine
-   (100% Exact Match: Bana 2347 Kg, Zari 2821 Kg, Sancha 2467/1483 Kg)
+   (100% Exact Match: Bana, Zari, Sancha, Saree & Kariger Carry Forward)
 ============================================================================ */
 
 (() => {
@@ -133,11 +133,11 @@
     const startSequentialYearClosing = async () => {
         if (isClosingInProgress) return;
 
-        const curSess = window.getActiveFinancialSession ? window.getActiveFinancialSession() : '2028-2029';
+        const curSess = window.getActiveFinancialSession ? window.getActiveFinancialSession() : '2026-2027';
         const newSessEl = document.getElementById('session-new-input');
         const newSess = String(newSessEl?.value || '').trim();
 
-        if (!newSess) return alert('Naye Saal ka naam daalein! (Jaise: 2029-2030)');
+        if (!newSess) return alert('Naye Saal ka naam daalein! (Jaise: 2027-2028)');
         if (newSess === curSess) return alert('Naya session purane se alag hona chahiye!');
 
         const sessions = window.getAppSessions ? window.getAppSessions() : [];
@@ -147,7 +147,7 @@
 
         const uId = getSafeUserId();
 
-        // ✅ Detach Realtime cleanly
+        // Detach Realtime Listeners cleanly during migration
         if (typeof window.detachSupabaseRealtime === 'function') {
             window.detachSupabaseRealtime();
         } else if (typeof window.detachFirebaseLiveListeners === 'function') {
@@ -263,7 +263,7 @@
     };
 
     /* ========================================================================
-       STAGE 2: SAREE STOCK (100% Match)
+       STAGE 2: SAREE STOCK (Opening Stock Exact Reconcile)
        ======================================================================== */
     const runStage2_SareeStockAsync = async (curSess, newSess) => {
         const rawHistory = window.safeArray 
@@ -275,8 +275,8 @@
             : (window.safeArray ? window.safeArray(window.getStore('karkhana_list')) : []);
         if (!karkhanas.length) karkhanas = [{ id: 'k_main', name: 'Main Godown', isDefault: true }];
 
-        const todayStr = (typeof window.getTodayDate === 'function') ? window.getTodayDate() : '';
-        const tabs = ['fresh', 'finished', 'lott'];
+        const todayStr = (typeof window.getTodayDate === 'function') ? window.getTodayDate() : getToday();
+        const tabs = ['fresh', 'cutting', 'finished', 'lott'];
         let seq = 0;
 
         for (const k of karkhanas) {
@@ -301,6 +301,7 @@
                             sareeName: r.sareeName || 'Standard Saree',
                             karigerName: r.karigerName || '📦 Pichla Bacha Stock',
                             kariger: r.karigerName || '📦 Pichla Bacha Stock',
+                            partyName: '📦 Pichla Bacha Stock',
                             karkhanaId: k.id,
                             type: tb,
                             typeLabel: `📦 Opening Stock (${curSess} Se Aaya)`,
@@ -308,7 +309,8 @@
                             gai: 0,
                             isOut: false,
                             isOpening: true,
-                            note: 'Opening Stock'
+                            note: 'Opening Stock',
+                            timestamp: Date.now()
                         });
 
                         pipelineState.stage2_newSareeStock.push({
@@ -340,7 +342,7 @@
             : (window.safeArray ? window.safeArray(window.getStore('karkhana_list')) : []);
         if (!karkhanas.length) karkhanas = [{ id: 'k_main', name: 'Main Godown', isDefault: true }];
 
-        const todayStr = (typeof window.getTodayDate === 'function') ? window.getTodayDate() : '';
+        const todayStr = (typeof window.getTodayDate === 'function') ? window.getTodayDate() : getToday();
         let bSeq = 0, zSeq = 0;
 
         // 1. BANA SCANNING
@@ -515,7 +517,7 @@
        STAGE 4: SANCHA (TANI & CHUKKA) & JOB WORK
        ======================================================================== */
     const runStage4_SanchaAndJobworkAsync = async (curSess, newSess) => {
-        const todayStr = (typeof window.getTodayDate === 'function') ? window.getTodayDate() : '';
+        const todayStr = (typeof window.getTodayDate === 'function') ? window.getTodayDate() : getToday();
         const rawSancha = window.safeArray ? window.safeArray(window.getStore('sancha_items')) : [];
         let sSeq = 0;
 
@@ -585,7 +587,7 @@
     };
 
     /* ========================================================================
-       STAGE 5: ATOMIC COMMIT (SUPABASE ALIGNED)
+       STAGE 5: ATOMIC COMMIT (SUPABASE CLOUD SYNCED)
        ======================================================================== */
     const runStage5_FinalizeCommitAsync = async (curSess, newSess, uId) => {
         updateProgressUI(5, '⏳ Storing Core Data...', 10, 82);
@@ -606,13 +608,18 @@
             await window.idbPut(`${uId}_app_active_session`, newSess);
         }
 
+        // ⭐ CLOUD SYNC FOR SESSIONS LIST (Pushes session list to Supabase so Computer syncs)
+        if (typeof window.CloudEngine?.cloudWrite === 'function') {
+            window.CloudEngine.cloudWrite(`${uId}_app_sessions_list`, sessions);
+            window.CloudEngine.cloudWrite(`${uId}_app_active_session`, newSess);
+        }
+
         const persistGeneralStore = (key, data) => {
             const fullKey = `${uId}_${newSess}_${key}`;
             if (window.APP_MEMORY_CACHE) window.APP_MEMORY_CACHE[fullKey] = data;
             if (typeof window.idbPut === 'function') window.idbPut(fullKey, data);
             safeSetLocalStorage(fullKey, data, uId, curSess, newSess);
 
-            // Cloud sync to Supabase
             if (typeof window.CloudEngine?.cloudWrite === 'function') {
                 window.CloudEngine.cloudWrite(fullKey, data);
             }
@@ -711,14 +718,18 @@
         if (modal) modal.style.display = 'none';
 
         const uId = getSafeUserId();
-        const s = targetSess || pendingTransferNewSession || (window.getActiveFinancialSession ? window.getActiveFinancialSession() : '2028-2029');
+        const s = targetSess || pendingTransferNewSession || (window.getActiveFinancialSession ? window.getActiveFinancialSession() : '2026-2027');
 
         safeSetLocalStorage(`${uId}_app_active_session`, s);
         if (window.APP_MEMORY_CACHE) window.APP_MEMORY_CACHE[`${uId}_app_active_session`] = s;
         if (typeof window.idbPut === 'function') window.idbPut(`${uId}_app_active_session`, s);
 
+        // ⭐ CLOUD SYNC COMMIT
         if (typeof window.CloudEngine?.cloudWrite === 'function') {
             window.CloudEngine.cloudWrite(`${uId}_app_active_session`, s);
+            const curSessions = window.getAppSessions ? window.getAppSessions() : [];
+            if (!curSessions.includes(s)) curSessions.push(s);
+            window.CloudEngine.cloudWrite(`${uId}_app_sessions_list`, curSessions);
         }
 
         if (typeof window.populateSessionDropdown === 'function') {
@@ -749,7 +760,8 @@
         window[fnName] = sessionClosingAPI[fnName];
     });
 
-    window.SessionEngine = sessionClosingAPI;
+    // Object.assign to preserve all methods on SessionEngine without wiping
+    window.SessionEngine = Object.assign(window.SessionEngine || {}, sessionClosingAPI);
 
     if (typeof module !== 'undefined' && module.exports) {
         module.exports = sessionClosingAPI;
